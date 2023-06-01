@@ -1,0 +1,2493 @@
+#!/usr/bin/env python3
+
+#  (c) Copyright IBM Corp. 2023
+#  (c) Copyright Instana Inc. 2023
+
+"""Command Line Tool for Synthetic Monitoring to Manage Synthetic Test and Locations Easily"""
+import argparse
+from base64 import b64encode, b64decode
+# from getpass import getpass
+import json
+from pathlib import Path
+import os
+import random
+import re
+import string
+import sys
+# import textwrap
+import time
+
+import requests
+import urllib3
+
+VERSION = "1.0.3"
+
+# disable warning when certificate is self signed
+# InsecureRequestWarning: Unverified HTTPS request is being made to host 'some url'.
+# Adding certificate verification is strongly advised.
+# See: https://urllib3.readthedocs.io/en/1.26.x/advanced-usage.html#ssl-warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+HTTPAction_TYPE = "HTTPAction"
+HTTPScript_TYPE = "HTTPScript"
+
+BrowserScript_TYPE = "BrowserScript"
+WebpageScript_TYPE = "WebpageScript"
+# WebpageAction_TYPE = "WebpageAction"
+
+# supported synthetic type
+synthetic_type = (
+    HTTPAction_TYPE,     # 0
+    HTTPScript_TYPE,     # 1
+    BrowserScript_TYPE,  # 2
+    WebpageScript_TYPE   # 3
+    # WebpageAction_TYPE,  # 4
+)
+
+SYN_TEST = "test"
+SYN_LOCATION = "location"
+SYN_LO = "lo"  # short for location
+SYN_APPLICATION = "application"
+SYN_APP = "app"  # short for application
+
+POSITION_PARAMS = "commands"
+OPTIONS_PARAMS = "options"
+
+
+def show_version():
+    """show synctl version"""
+    print(f"synctl version: {VERSION}")
+
+
+def general_helper() -> None:
+    m = """Usage: synctl [--verify-tls] <command> [options]
+
+Options:
+  -h, --help            show this help message and exit
+  --version, -v         show version
+  --verify-tls          verify tls certificate
+
+Commands:
+    config              manage configuration file
+    create              create a synthetic test
+    get                 get synthetic tests or locations
+    patch               patch a synthetic test
+    update              update a synthetic test
+    delete              delete synthetic tests or locations
+
+Use "synctl <command> --help" for more information about a command.
+    """
+    print(m)
+
+
+COMMAND_CONFIG = 'config'
+COMMAND_CREATE = 'create'
+COMMAND_GET = 'get'
+COMMAND_DELETE = 'delete'
+COMMAND_PATCH = 'patch'
+COMMAND_UPDATE = 'update'
+
+CONFIG_USAGE = """synctl config {set,list,use,remove} [options]
+
+examples:
+# set a default instana backend to connect
+synctl config set --host <host> --token <token> --name <name>"""
+
+CREATE_USAGE = """synctl create test [options]
+
+examples:
+# create a simple ping
+synctl create test -t 0 --label simple-ping-test --location <location-id> --url <url> --frequency 5
+
+# create an API script
+synctl create test -t 1 --label script-test --location <location-id> --from-file script-name.js"""
+
+GET_USAGE = """synctl get {location,lo,test,application,app} [id] [options]
+
+examples:
+# display all tests
+synctl get test
+
+# display all locations
+synctl get location
+synctl get lo
+
+# show test details
+synctl get test <id> --show-details"""
+
+PATCH_USAGE = """synctl patch test id [options]
+
+examples:
+# set active to false
+synctl patch test <syn-id> --active false
+
+# update frequency to 5, run test every 5min
+synctl patch test <id> --frequency 5"""
+
+UPDATE_USAGE = """synctl update test <id> [options]
+
+examples:
+# update synthetic test
+synctl update test <id> --from-data '{}'
+"""
+
+DELETE_USAGE = """synctl delete {location,lo,test} [id...] [options]
+
+examples:
+# delete a test
+synctl delete test <id>
+
+# delete a location
+synctl delete location <location-id>
+
+# delete all test which label match regex
+synctl delete test --match-regex "^simple-ping-"
+
+# delete all test with no locations
+synctl delete test --no-locations
+
+# delete all tests on a location
+synctl delete test --match-location <location-id>"""
+
+
+class Base:
+
+    def __init__(self) -> None:
+        self.auth = {
+            "host": "",
+            "token": ""
+        }
+        self.insecure = False
+
+    def set_auth(self, auth: dict):
+        """set auth"""
+        if auth is not None:
+            self.auth = auth
+        else:
+            print("auth is None")
+
+    def set_host_token(self, new_host=None, new_token=None):
+        if new_host is not None and new_token is not None:
+            self.auth["host"] = new_host
+            self.auth["token"] = new_token
+        else:
+            print("both --host and --token are required")
+
+    def check_host_and_token(self, host, token):
+        if host == "" or token == "":
+            print("host or token should not be empty")
+            sys.exit(-1)
+
+    def set_insecure(self, verify=False):
+        self.insecure = verify
+
+    def get_insecure(self):
+        return self.insecure
+
+    def fill_space(self, s: str, length: int = 25) -> str:
+        l = len(s)
+        if l < length:
+            return s + ' '*(length-l)
+        else:
+            return s
+
+    def get_home_path(self) -> str:
+        """return home directory"""
+        return str(Path.home())
+
+    def ask_answer(self, message: str) -> bool:
+        answer = input(message + " [yes/no] ")
+        if answer == "yes" or answer == "y":
+            return True
+        else:
+            return False
+
+    def merge_json(self, dict1: dict, dict2: dict) -> dict:
+        """merge two dicts"""
+        for i in dict2.keys():
+            dict1[i] = dict2[i]
+        return dict1
+
+    def exit_synctl(self, error_code=-1, message=''):
+        """exit synctl"""
+        if message != '':
+            print(message)
+        sys.exit(error_code)
+
+
+class ConfigurationFile(Base):
+    def __init__(self) -> None:
+        Base.__init__(self)
+
+        HOME_PATH = self.get_home_path()
+        self.CONFIG_FOLDER = HOME_PATH + "/.synthetic/"
+        self.CONFIG_FILE = HOME_PATH + "/.synthetic/config.json"
+
+        # create config folder if not exists
+        self.__initial_config_folder()
+        self.__initial_config_file()
+
+        self.config_json = self.__read_config_file()
+
+    def __initial_config_folder(self):
+        if not os.path.isdir(self.CONFIG_FOLDER):
+            os.mkdir(self.CONFIG_FOLDER)
+
+    def __initial_config_file(self):
+        default_config_json = []
+
+        if not os.path.isfile(self.CONFIG_FILE):
+            with open(self.CONFIG_FILE, "w", encoding="utf-8") as fp:
+                json.dump(default_config_json,
+                          fp,
+                          ensure_ascii=True,
+                          indent=4)
+
+    def __check_config_file(self):
+        # path exists or not
+        is_exist = os.path.isfile(self.CONFIG_FILE)
+        if not is_exist:
+            return False
+        return True
+
+    def __read_config_file(self):
+        if self.__check_config_file():
+            with open(self.CONFIG_FILE, "r+", encoding="utf-8") as file1:
+                # Reading from a file
+                info = file1.read()
+                return json.loads(info)
+        else:
+            print("no config file")
+
+    def __write_json_to_file(self):
+        """write config to ~/.synthetic/config.json"""
+        with open(self.CONFIG_FILE, 'w', encoding='utf-8') as config_file1:
+            json.dump(self.config_json, config_file1,
+                      ensure_ascii=True, indent=4)
+
+    def print_config_file(self, name=""):
+        """print all config info"""
+        print(self.fill_space("NAME".upper()),
+              self.fill_space("Default".upper(), 13),
+              self.fill_space("Token".upper()),
+              "Hostname".upper())
+        if name != "" and name != "default" and name is not None:
+            for _, item in enumerate(self.config_json):
+                if item["name"] == name:
+                    print(self.fill_space(item["name"]),
+                          self.fill_space(str(item["default"]), 13),
+                          self.fill_space(item["token"]),
+                          item["host"])
+        else:
+            # show all
+            for _, item in enumerate(self.config_json):
+                print(self.fill_space(item["name"]),
+                      self.fill_space(str(item["default"]), 13),
+                      self.fill_space(item["token"]),
+                      item["host"])
+
+    def __check_if_already_in_config(self, name: str) -> bool:
+        for _, item in enumerate(self.config_json):
+            if item["name"] == name:
+                return True
+
+        return False
+
+    def add_an_item_to_config(self, name, host, token, set_default=False):
+        """add a new config"""
+        if name is None or host is None or token is None:
+            print("name, host, and token should not be none")
+        elif name == "" or host == "" or token == "":
+            print("name, host, and token must not be none")
+        elif self.__check_if_already_in_config(name):
+            # update it
+            self.update_an_item(name, host, token, set_default=set_default)
+        else:
+            self.config_json.append({
+                "name": name,
+                "host": host,
+                "token": token,
+                "default": False
+            })
+
+            if set_default is True:
+                self.set_env_to_default(name)
+            elif len(self.config_json) == 1 and set_default is False:
+                self.config_json[0]["default"] = True
+
+            self.__write_json_to_file()
+
+    def remove_an_item_from_config(self, name):
+        """remove a config"""
+        if_default = False
+        for index, item in enumerate(self.config_json):
+            if name == item["name"]:
+                if_default = item["default"] is True
+                del self.config_json[index]
+        # if delete the default, set 0 to default
+        if if_default is True and len(self.config_json) > 0:
+            self.config_json[0]["default"] = True
+
+        self.__write_json_to_file()
+
+    def update_an_item(self, name, host, token, set_default=False):
+        """update a config"""
+        for _, item in enumerate(self.config_json):
+            if item["name"] == name:
+                item["host"] = host
+                item["token"] = token
+        if set_default is True:
+            self.set_env_to_default(name)
+        self.__write_json_to_file()
+
+    def set_env_to_default(self, name):
+        """set config to default"""
+        set_default = False
+        for _, item in enumerate(self.config_json):
+            if name == item["name"]:
+                item["default"] = True
+                set_default = True
+            else:
+                item["default"] = False
+        # name not exist and set the first to default
+        if set_default is False and len(self.config_json) > 0:
+            self.config_json[0]["default"] = True
+
+        self.__write_json_to_file()
+
+    def get_config_json_data(self):
+        """get configuration content"""
+        return self.config_json
+
+    def get_default_config(self):
+        for item in self.config_json:
+            if item["default"] is True:
+                return {
+                    "host": item["host"],
+                    "token": item["token"]
+                }
+        if len(self.config_json) > 0:
+            return {
+                "host": self.config_json[0]["host"],
+                "token": self.config_json[0]["token"]
+            }
+        else:
+            print("no configurations")
+            sys.exit(-1)
+
+    def get_auth_by_name(self, name):
+        if len(self.config_json) > 0:
+            for item in self.config_json:
+                if item["name"] == name:
+                    return {
+                        "host": item["host"],
+                        "token": item["token"]
+                    }
+            raise ValueError(f"no config named {name}")
+        else:
+            return {"host": "", "token": ""}
+
+
+class Authentication(ConfigurationFile):
+    def __init__(self) -> None:
+        ConfigurationFile.__init__(self)
+
+    def __get_from_environment_var(self):
+        self.auth["host"] = os.getenv('SYN_SERVER_HOSTNAME')
+        self.auth["token"] = os.getenv('SYN_API_TOKEN')
+
+    def __check_syn_env(self) -> bool:
+        if os.getenv('SYN_SERVER_HOSTNAME') is not None and os.getenv('SYN_API_TOKEN') is not None:
+            return True
+        return False
+
+    def get_auth(self, env_name=None):
+        """get auth from Global Variable or config file"""
+        if self.__check_syn_env():
+            self.__get_from_environment_var()
+            return self.auth
+        elif env_name is not None:
+            return ConfigurationFile.get_auth_by_name(self, name=env_name)
+        else:
+            return ConfigurationFile.get_default_config(self)
+
+
+class SyntheticConfiguration(Base):
+
+    def __init__(self, syn_type: str = "HTTPAction", bundle_type: bool = False) -> None:
+        Base.__init__(self)
+        self.syn_test_config = {
+            # Unique identifier of the Synthetic test resource.
+            # "id": "",
+            # Friendly name of the Synthetic test resource.
+            "label": "default-test-label",
+            # "tenantId": "instanalocal",
+            # The description of the Synthetic test.
+            "description": "This is a synthetic test",
+            # Indicates if the Synthetic test is started or not. The default is true.
+            "active": True,  # required
+            # Unique identifier of the Application Perspective.
+            "applicationId": None,
+
+            # customProperties An object with name/value pairs to provide additional information of the Synthetic test.
+            "customProperties": {},
+            # locations It is an array of the PoP location IDs where the Synthetic tests are located.
+            "locations": [],
+            # modifiedAt The test last updated time, following RFC3339 standard.
+            # modifiedBy The user identifier who updated the test resource.
+
+            # playbackMode Defines how the Synthetic test should be executed across multiple PoPs.
+            # Possible values are Simultaneous or Staggered. Simultaneous Synthetic tests run at all locations simultaneously.
+            # Staggered Synthetic tests run from a different location at each interval.
+            # This property is optional, and its default value is Simultaneous.
+            "playbackMode": "Simultaneous",
+            # testFrequency How often the playback for a Synthetic test is scheduled.
+            # The unit of the testFrequency parameter is minute.
+            # The default is every 15 minutes.
+            # The range is from 1 minute to 120 minutes.
+            "testFrequency": "15",
+
+            # An object which has two properties: syntheticType and the corresponding configuration object
+            "configuration": {
+                # Flag used to control if HTTP calls will be marked as synthetic calls/endpoints in Instana backend,
+                # so they can be ignored when calculating service and application KPIs, users can also check "Hide
+                # Synthetic Calls" checkbox to hide/show them in UI.
+                "markSyntheticCall": True,
+                # An integer type from 0 to 2, 0 by default.
+                # It indicates how many attempts (max 2) will be allowed to get a successful connection (not necessarily a successful result).
+                # Failures like socket hangups, gateway timeouts, and DNS lookup fails cause retries, but 404's 400's, do not.
+                "retries": 0,
+                # The time interval between retries in seconds. The default is 1s, max is 10s.
+                "retryInterval": "1",
+                # The timeout to be used by the PoP playback engines running the test.
+                # Values in integer followed by time unit (ms, s, m).
+                # If timeout is not provided the playback engine will use its own timeout value.
+                "timeout": "1m",
+            }
+        }
+
+        http_action_con = {
+            # The type of the Synthetic test.
+            # Supported values are HTTPAction, HTTScript, BrowserScript, WebpageAction, WebpageScript, and DNSAction.
+            # The locations assigned to execute this Synthetic test must support this syntheticType, i.e
+            # the location's playbackCapabilities property.
+            "syntheticType": HTTPAction_TYPE,
+
+            # The URL is being tested. It is required.
+            "url": "",
+            # An operation being used must be one of GET, HEAD, OPTIONS, PATCH, POST, PUT, and DELETE. By default, it is GET.
+            "operation": "GET",
+            # headers An object with header/value pairs
+            # header The header to be sent in operation. It should not contain the terminating ':' character.
+            # value The value of the header.
+            "headers": {},
+            # body The body content to send with the operation.
+            "body": "",
+            # validationString An expression to be evaluated.
+            "validationString": "",
+            # followRedirect A boolean type, true by default; to allow redirect.
+            "followRedirect": True,
+            # allowInsecure A boolean type, true by default;
+            # if set to true then allow insecure certificates (expired, self-signed, etc).
+            "allowInsecure": True,
+            # expectStatus An integer type, by default, the Synthetic passes for any 2XX status code.
+            # This forces just one status code to cause a pass, including what would normally be a fail, for example, a 404.
+            "expectStatus": None,  # default None
+            # expectJson An optional object to be used to check against the test response object.
+            "expectJson": {},  # dict
+            # expectMatch An optional regular expression string to be used to check the test response.
+            "expectMatch": "",
+            # expectExists An optional list of property labels used to check if
+            # they are present in the test response object.
+            "expectExists": [],  # list
+            # expectNotEmpty An optional list of property labels used to check if
+            # they are present in the test response object with a non-empty value.
+            "expectNotEmpty": []  # list
+        }
+
+        http_script_con = {
+            "syntheticType": HTTPScript_TYPE,
+            "script": "",  # api script
+            "retries": 0,  # [0,2]
+            "retryInterval": 5,
+            "scriptType": "Basic"  # ["Jest", "Basic"]
+        }
+
+        http_bundle_con = {
+            "syntheticType": HTTPScript_TYPE,
+            "scripts": {
+                "scriptFile": "index.js",
+                "bundle": ""  # base64 string
+            },  # bundle
+            "retries": 0,  # [0,2]
+            "retryInterval": 5,
+            "scriptType": "Basic"
+        }
+
+        # syntheticType BrowserScript
+        self.browser_script_conf = {
+            "scripts": {
+                "scriptFile": "index.js",
+                "bundle": ""
+            },
+            "syntheticType": "BrowserScript",
+            "browser": "firefox",
+        }
+
+        # syntheticType WebpageScript
+        self.webpage_script_conf = {
+            "script": "",
+            "syntheticType": "WebpageScript",
+            "browser": "chrome",
+        }
+
+        self.webpage_action_conf = {}
+
+        self.script_type = [HTTPScript_TYPE, BrowserScript_TYPE]
+        if syn_type in [HTTPAction_TYPE, HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE]:
+            self.syn_type = syn_type
+        if bundle_type is True:
+            self.is_bundle = True
+        if syn_type == HTTPAction_TYPE:
+            self.syn_test_config["configuration"] = self.merge_json(
+                self.syn_test_config["configuration"], http_action_con)
+        if bundle_type is True and syn_type == HTTPScript_TYPE:
+            self.syn_test_config["configuration"] = self.merge_json(
+                self.syn_test_config["configuration"], http_bundle_con)
+        if bundle_type is False and syn_type == HTTPScript_TYPE:
+            self.syn_test_config["configuration"] = self.merge_json(
+                self.syn_test_config["configuration"], http_script_con)
+
+        if syn_type == BrowserScript_TYPE:
+            self.syn_test_config["configuration"] = self.merge_json(
+                self.syn_test_config["configuration"], self.browser_script_conf)
+        # if syn_type == WebpageAction_TYPE:
+        #     self.syn_test_config["configuration"] = self.merge_json(
+        #         self.syn_test_config["configuration"], self.webpage_action_conf)
+        if syn_type == WebpageScript_TYPE:
+            self.syn_test_config["configuration"] = self.merge_json(
+                self.syn_test_config["configuration"], self.webpage_script_conf)
+
+        # set syntheticType
+        self.syn_test_config["configuration"]["syntheticType"] = syn_type
+
+    def __ensure_script_not_empty(self):
+        if "script" in self.syn_test_config["configuration"]:
+            if self.syn_test_config["configuration"]["script"] is None or self.syn_test_config["configuration"]["script"] == "":
+                print("Error: script cannot be empty")
+                sys.exit(-1)
+
+    def __ensure_bundle_script_not_empty(self):
+        if "scripts" in self.syn_test_config["configuration"]:
+            bundle_scripts = self.syn_test_config["configuration"]["scripts"]["bundle"]
+            if bundle_scripts is None or bundle_scripts == "":
+                print("Error: bundle script cannot be empty")
+                sys.exit(-1)
+
+    def set_application_id(self, application_id: str):
+        """set application id"""
+        if application_id is not None:
+            self.syn_test_config["applicationId"] = application_id
+
+    def set_label(self, label: str = "default-test-name") -> None:
+        """set label"""
+        if label != "":
+            self.syn_test_config["label"] = label
+
+    def set_description(self, description: str = "This is default description"):
+        """set description"""
+        if description != "":
+            self.syn_test_config["description"] = description
+
+    def set_active(self, active: bool):
+        """set active default True"""
+        pass
+
+    def set_custom_properties(self, custom_prop: dict):
+        """customProperties"""
+        if custom_prop is not None and isinstance(custom_prop, dict):
+            self.syn_test_config["customProperties"] = custom_prop
+
+    def set_locations(self, locations: list = None):
+        """locations"""
+        if locations is None:
+            locations = []
+        if len(locations) > 0:
+            self.syn_test_config["locations"] = locations
+
+    def set_timeout(self, timeout: int) -> None:
+        """timeout"""
+        self.syn_test_config["configuration"]["timeout"] = timeout
+
+    def set_frequency(self, frequency: int = 15) -> None:
+        """testFrequency"""
+        if frequency > 0 and frequency <= 120:
+            self.syn_test_config["testFrequency"] = frequency
+        else:
+            self.syn_test_config["testFrequency"] = 15
+
+    def set_ping_url(self, url: str) -> None:
+        """url"""
+        if self.syn_type == HTTPAction_TYPE and url != "":
+            self.syn_test_config["configuration"]["url"] = url
+
+    def set_ping_operation(self, method: str = "GET"):
+        """operation"""
+        valid_methods = ["GET", "HEAD", "POST", "PUT", "DELETE",
+                         "CONNECT", "OPTIONS", "TRACE", "PATCH"]
+        if method is not None and method.upper() in valid_methods:
+            self.syn_test_config["configuration"]["operation"] = method.upper()
+        else:
+            print(f"{method} is not allowed")
+
+    def set_ping_headers(self, headers: dict):
+        """headers"""
+        if headers is not None:
+            self.syn_test_config["configuration"]["headers"] = headers
+
+    def set_ping_body(self, body: str):
+        """body"""
+        if body:
+            self.syn_test_config["configuration"]["body"] = body
+
+    def set_api_script_script(self, script_str: str) -> None:
+        """set script"""
+        if script_str is None:
+            print(f"script content: {script_str}")
+            sys.exit(-1)
+
+        if self.syn_type == HTTPScript_TYPE and script_str != "":
+            self.syn_test_config["configuration"]["script"] = script_str
+
+        if self.syn_type == WebpageScript_TYPE and script_str != "":
+            self.syn_test_config["configuration"]["script"] = script_str
+
+    def get_api_script_script(self) -> str:
+        """return script"""
+        return self.syn_test_config["configuration"]["script"]
+
+    def set_api_bundle_script(self, script_str: str, script_file: str = "index.js") -> None:
+        """set bundle script and scriptFile"""
+        if script_str is None:
+            print("bundle script is None")
+            sys.exit(-1)
+
+        if self.syn_type in self.script_type and self.is_bundle is True:
+            self.syn_test_config["configuration"]["scripts"]["bundle"] = script_str
+            self.syn_test_config["configuration"]["scripts"]["scriptFile"] = script_file
+
+    def set_mark_synthetic_call(self, mark):
+        """markSyntheticCall"""
+        pass
+
+    def set_retries(self, retry):
+        """retries"""
+        if retry >= 0 and retry <= 2:
+            self.syn_test_config["configuration"]["retries"] = retry
+        else:
+            raise ValueError("retry should be [0, 2]")
+
+    def set_retry_interval(self, interval: int):
+        """retryInterval"""
+        if interval is None:
+            interval = 1
+        if interval > 0 and interval < 10:
+            self.syn_test_config["configuration"]["retryInterval"] = interval
+
+    def set_follow_redirect(self, follow_redirect):
+        """set followRedirect"""
+        if follow_redirect.lower() == "false":
+            self.syn_test_config["configuration"]["followRedirect"] = False
+        if follow_redirect.lower() == "true":
+            self.syn_test_config["configuration"]["followRedirect"] = True
+
+    def set_expect_status(self, expect_status: int) -> None:
+        """set expectStatus for HTTPAction"""
+        if expect_status is None:
+            self.syn_test_config["configuration"]["expectStatus"] = None
+            return
+        if expect_status > 0:
+            self.syn_test_config["configuration"]["expectStatus"] = expect_status
+        else:
+            self.syn_test_config["configuration"]["expectStatus"] = 200
+
+    def set_expect_json(self, expect_json: dict):
+        """set expectJson"""
+        if expect_json:
+            self.syn_test_config["configuration"]["expectJson"] = expect_json
+
+    def set_expect_match(self, expect_match: str):
+        """set expectMatch"""
+        if expect_match:
+            self.syn_test_config["configuration"]["expectMatch"] = expect_match
+
+    def set_expect_exists(self, expect_exists: list):
+        """set expectExists"""
+        if expect_exists:
+            self.syn_test_config["configuration"]["expectExists"] = expect_exists
+
+    def set_expect_not_empty(self, expect_not_empty: list):
+        """set expectNotEmpty"""
+        if expect_not_empty:
+            self.syn_test_config["configuration"]["expectNotEmpty"] = expect_not_empty
+
+    def set_allow_insecure(self, allow_insecure):
+        if allow_insecure is None:
+            allow_insecure = True
+        if allow_insecure == 'false':
+            self.syn_test_config["configuration"]["allowInsecure"] = False
+        if allow_insecure == 'true' or allow_insecure is True:
+            self.syn_test_config["configuration"]["allowInsecure"] = True
+
+    def set_browser_type(self, browser):
+        """browser type"""
+        if browser:
+            self.syn_test_config["configuration"]["browser"] = browser
+
+    def read_js_file(self, file_name: str) -> str:
+        """read javascript file"""
+        try:
+            with open(file_name, "r+", encoding="utf-8") as file1:
+                # Reading from a file
+                info = file1.read()
+                return info
+        except FileNotFoundError as not_found_e:
+            print(not_found_e)
+            sys.exit(-1)
+
+    def get_test_conf_ins(self):
+        if len(self.syn_test_config["locations"]) == 0:
+            raise ValueError("no location, add a location for test")
+        return self.syn_test_config  # dict
+
+    def loads_from_json_file(self, json_file_name):
+        try:
+            with open(json_file_name, "r", encoding="utf-8") as json_file1:
+                json_payload = json_file1.read()
+                self.syn_test_config = json.loads(json_payload)
+        except FileNotFoundError as not_found_e:
+            print(not_found_e)
+            sys.exit(-1)
+
+    def read_zip_file(self, file_name):
+        with open(file_name, 'rb') as file1:
+            zip_content_byte = file1.read()
+            zip_content_byte_base64 = b64encode(zip_content_byte)
+            self.set_api_bundle_script(zip_content_byte_base64)
+            return zip_content_byte_base64
+
+    def get_json(self):
+        """return payload as json"""
+        if len(self.syn_test_config["locations"]) == 0:
+            print("Error: no location, set --location <location-id> at least a location")
+            sys.exit(-1)
+
+        # script should not be empty
+        self.__ensure_script_not_empty()
+        # bundle script should not be empty
+        self.__ensure_bundle_script_not_empty()
+
+        result = json.dumps(self.syn_test_config)
+        return result
+
+
+class SyntheticPoP(Base):
+    def __init__(self) -> None:
+        Base.__init__(self)
+
+    def retrieve_synthetic_locations(self, location_id=None):
+        host = self.auth["host"]
+        token = self.auth["token"]
+        self.check_host_and_token(host, token)
+        if location_id is None:
+            request_url = f"{host}/api/synthetics/settings/locations"
+        else:
+            request_url = f"{host}/api/synthetics/settings/locations/{location_id}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        retrieve_res = requests.get(request_url,
+                                    headers=headers,
+                                    timeout=60,
+                                    verify=self.insecure)
+
+        if retrieve_res.status_code == 200:
+            data = retrieve_res.json()
+
+            if isinstance(data, dict):
+                return [data]
+            else:
+                return data
+        else:
+            return []
+
+    def delete_a_synthetic_pop(self, pop_id=""):
+        if pop_id != "":
+            self.__delete_a_synthetic_location(location_id=pop_id)
+
+    def __delete_a_synthetic_location(self, location_id=""):
+        """delete a synthetic location"""
+        if location_id == "":
+            print("location id should not be empty")
+            return
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+
+        host = self.auth["host"]
+
+        delete_url = f"{host}/api/synthetics/settings/locations/{location_id}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "apiToken %s" % (self.auth["token"])
+        }
+
+        r = requests.delete(delete_url, headers=headers,
+                            timeout=60, verify=self.insecure)
+
+        if r.status_code == 204:
+            print(f'{location_id} is deleted')
+        elif r.status_code == 404:
+            print(f"{location_id} not found")
+        else:
+            print(f"Fail to delete {location_id}, status code {r.status_code}")
+
+    def delete_synthetic_locations(self, locations_list):
+        if locations_list is None:
+            locations_list = []
+
+        if len(locations_list) == 0:
+            print("no locations to delete")
+            return
+
+        for l in locations_list:
+            self.__delete_a_synthetic_location(l)
+
+    def print_synthetic_locations(self, locations):
+        if locations is None:
+            locations = []
+        self.__print_pop(locations)
+
+    def __print_pop(self, pop_data: list):
+        display_label_length = 30
+        status_length = 15
+        print(self.fill_space("ID".upper()),
+              self.fill_space("Label".upper()),
+              self.fill_space("DisplayLabel".upper(), display_label_length),
+              self.fill_space("Status".upper(), status_length),
+              "Description".upper())
+        if len(pop_data) > 0:
+            for pop in pop_data:
+                print(self.fill_space(pop["id"]),
+                      self.fill_space(pop['label']),
+                      self.fill_space(pop['displayLabel'],
+                                      display_label_length),
+                      self.fill_space(pop['status'], status_length),
+                      pop["description"])
+        else:
+            print('no location')
+        print('total:', len(pop_data))
+
+
+class SyntheticTest(Base):
+    """create, query, update and delete synthetic test"""
+
+    def __init__(self) -> None:
+        Base.__init__(self)
+
+        self.payload = None
+        self.test_id = ""
+        self.test_lists = []
+
+    def set_synthetic_id(self, test_id):
+        self.test_id = test_id
+
+    def get_synthetic_id(self):
+        return self.test_id
+
+    def set_synthetic_payload(self, payload=None):
+        if payload is None:
+            print("payload should not be none")
+        else:
+            self.payload = payload
+
+    def get_synthetic_payload(self):
+        return self.payload
+
+    def create_a_synthetic_test(self):
+        """create a synthetic test, test_payload is json"""
+        test_payload = self.payload
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        create_url = f"{host}/api/synthetics/settings/tests/"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        create_res = requests.post(create_url,
+                                   headers=headers,
+                                   data=test_payload,
+                                   timeout=60,
+                                   verify=self.insecure)
+
+        if create_res.status_code == 201:
+            # extracting data in json format
+            data = create_res.json()
+            test_id = data["id"]
+            test_label = data["label"]
+            print(f"{test_id} {test_label} is created")
+        else:
+            print('create test failed, status code:', create_res.status_code)
+            if create_res.text:
+                print(create_res.text)
+
+    def __generate_random_str(self, num=5):
+        # using random.choices()
+        # generating random strings
+        res = ''.join(
+            random.choices(string.ascii_lowercase + string.digits, k=num)
+        )
+        return res
+
+    # def create_synthetic_test_in_batch(self, con_ins=None, prefix_label="batch-test-", index_start=1, count=1):
+    #     total_number = 0
+    #     start_time = time.time()
+    #     for i in range(index_start, index_start+count):
+    #         random_label = self.__generate_random_str(num=5)
+    #         syn_label = prefix_label + random_label + "-"+str(i)
+    #         if con_ins is not None:
+    #             con_ins.set_label(syn_label)
+    #             self.set_synthetic_payload(payload=con_ins.get_json())
+    #             self.create_a_synthetic_test()
+    #         total_number += 1
+    #     end_time = time.time()
+    #     total_time = round((end_time - start_time)*1000, 3)
+    #     print(f'total create: {total_number}, time used: {total_time}ms')
+
+    def retrieve_a_synthetic_test(self, test_id=""):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+        if id is None or test_id == "":
+            print("test id should not be empty")
+            return
+        else:
+            retrieve_url = f"{host}/api/synthetics/settings/tests/{test_id}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        result = requests.get(retrieve_url, headers=headers,
+                              timeout=60, verify=self.insecure)
+
+        if result.status_code == 200:
+            # extracting data in json format
+            data = result.json()
+
+            if isinstance(data, list):
+                self.test_lists = data
+                return data
+            elif isinstance(data, dict):
+                self.test_lists = [data]
+                return [data]
+            else:
+                print('unknown data:', data)
+        elif result.status_code == 403:
+            self.exit_synctl(error_code=-1,
+                             message='Insufficient access rights for resource')
+        elif result.status_code == 404:
+            self.exit_synctl(error_code=-1,
+                             message=f'test {test_id} not found')
+        else:
+            print(
+                f'get test {test_id} failed, status code: {result.status_code}')
+
+    def retrieve_all_synthetic_tests(self, syn_type=None):
+        # API doc: https://instana.github.io/openapi/#operation/getSyntheticTests
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/synthetics/settings/tests/"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        query_result = requests.get(retrieve_url, headers=headers,
+                                    timeout=60, verify=self.insecure)
+        if query_result.status_code == 200:
+            # extracting data in json format
+            data = query_result.json()
+            syn_type_list = []
+            if isinstance(data, list):
+                self.test_lists = data
+                for x in data:
+                    if syn_type is not None and x["configuration"]["syntheticType"] == syn_type:
+                        syn_type_list.append(x)
+                    if syn_type is None:
+                        syn_type_list.append(x)
+                return syn_type_list
+            elif isinstance(data, dict):
+                # only one test
+                self.test_lists = [data]
+                if syn_type is not None and data["configuration"]["syntheticType"] == syn_type:
+                    return [data]
+                return []
+            else:
+                print(f'unknown data: {data}')
+        elif query_result.status_code == 403:
+            print('Insufficient access rights for resource')
+            sys.exit(-1)
+        elif query_result.status_code == 404:
+            print('test not found')
+            sys.exit(-1)
+        else:
+            print(f'get test failed, status code: {query_result.status_code}')
+            sys.exit(-1)
+
+    def patch_synthetic_test(self, test_id):
+        pass
+
+    def update_a_synthetic_test(self, test_id, new_payload):
+        """API https://instana.github.io/openapi/#operation/updateSyntheticTest"""
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+        if new_payload is None:
+            print("config cannot be empty")
+            sys.exit(-1)
+
+        if test_id is None or test_id == "":
+            print("test id should not be empty")
+            return
+        else:
+            put_url = f"{host}/api/synthetics/settings/tests/{test_id}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        update_result = requests.put(put_url,
+                                     headers=headers,
+                                     data=new_payload,
+                                     timeout=60,
+                                     verify=self.insecure)
+
+        if update_result.status_code == 200:
+            print(f"{test_id} updated")
+        elif update_result.status_code == 400:
+            print(f'Error: {update_result}', update_result.content)
+        else:
+            print(
+                f'update test {test_id} failed, status code: {update_result.status_code}')
+
+    def delete_a_synthetic_test(self, test_id=""):
+        """Delete a synthetic by id"""
+        # https://instana.github.io/openapi/#operation/deleteSyntheticTest
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        if test_id == "":
+            print("test id should not be empty")
+            return
+
+        host = self.auth["host"]
+
+        # delete url
+        delete_url = f"{host}/api/synthetics/settings/tests/{test_id}"
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": "apiToken %s" % (self.auth["token"])
+        }
+
+        del_result = requests.delete(delete_url, headers=headers,
+                                     timeout=60, verify=self.insecure)
+
+        if del_result.status_code == 204:
+            print(f'{test_id} is deleted')
+        else:
+            print(
+                f"Fail to delete {test_id}, status code {del_result.status_code}")
+
+    def delete_multiple_synthetic_tests(self, tests_list: list):
+        start_time = time.time()
+        total_number = 0
+        for t in tests_list:
+            self.delete_a_synthetic_test(t)
+            total_number += 1
+        end_time = time.time()
+        total_time = round((end_time-start_time)*1000, 3)
+        print(
+            f"total deleted: {total_number}, time used: {total_time}ms")
+
+    def delete_tests_label_match_regex(self, label_regex=None):
+        """delete all tests which match regex"""
+        delete_syn_id_lists = []
+        if label_regex is None:
+            print('no regex')
+        else:
+            prog = re.compile(label_regex)
+
+            # get full list of syn_tests
+            full_syn_tests = self.retrieve_all_synthetic_tests()
+            for syn in full_syn_tests:
+                label_1 = syn["label"]
+                match_result1 = prog.match(label_1)
+                if match_result1 is not None:
+                    print(f"{label_1} is to delete")
+                    # delete it
+                    delete_syn_id_lists.append(syn["id"])
+            print('total match:', len(delete_syn_id_lists))
+            if len(delete_syn_id_lists) > 0:
+                if self.ask_answer("are you sure to delete these tests?"):
+                    self.delete_multiple_synthetic_tests(delete_syn_id_lists)
+
+    def delete_tests_match_location(self, match_location=None):
+        """delete all tests match location"""
+        delete_syn_id_lists = []
+        if match_location is None:
+            print("no location")
+        else:
+            # get full list of syn_tests
+            full_syn_tests = self.retrieve_all_synthetic_tests()
+            for syn in full_syn_tests:
+                label_1 = syn["label"]
+                syn_locations = syn["locations"]
+                if syn_locations is not None and len(syn_locations) == 1 and syn_locations[0] == match_location:
+                    print(f"{label_1} is to delete")
+                    # add to delete list
+                    delete_syn_id_lists.append(syn["id"])
+            print(f'total test with location {match_location}:', len(
+                delete_syn_id_lists))
+            if self.ask_answer("are you sure to delete these tests?"):
+                self.delete_multiple_synthetic_tests(delete_syn_id_lists)
+
+    def delete_tests_without_location(self):
+        """delete all tests without location"""
+        delete_syn_id_lists = []
+        # get full list of syn_tests
+        full_syn_tests = self.retrieve_all_synthetic_tests()
+        for syn in full_syn_tests:
+            label_1 = syn["label"]
+            syn_locations = syn["locations"]
+            if len(syn_locations) == 0:
+                print(f"{label_1} is to delete")
+                # delete it
+                delete_syn_id_lists.append(syn["id"])
+        print('total tests:', len(delete_syn_id_lists))
+        if self.ask_answer("are you sure to delete these tests?"):
+            self.delete_multiple_synthetic_tests(delete_syn_id_lists)
+
+    def __sort_synthetic_tests(self, syn_list):
+        """sort synthetic list by locationDisplayLabels"""
+        new_list = sorted(
+            syn_list, key=lambda syn: syn["locationDisplayLabels"])
+        return new_list
+
+    def print_synthetic_test(self, out_list=None, test_id="", test_type="", output_terminal=False, summary_list=None):
+        n_list = self.__sort_synthetic_tests(out_list)
+        # n_list = out_list
+        if n_list is not None:
+            self.__output_tests_to_terminal(
+                n_list, test_type=test_type, summary_list=summary_list)
+        else:
+            self.__output_tests_to_terminal(
+                self.test_lists, test_type=test_type, summary_list=summary_list)
+
+    def __get_max_label_length(self, syn_list, max_len=60):
+        label_len = 0
+        if syn_list is not None and isinstance(syn_list, list):
+            for syn in syn_list:
+                if label_len < len(syn["label"]):
+                    label_len = len(syn["label"])
+        if label_len > 60:
+            return 60
+        else:
+            return label_len
+
+    def __output_tests_to_terminal(self, tests: list, test_type="", summary_list=None):
+        id_length = 22
+        max_label_length = self.__get_max_label_length(tests)
+        syn_type_length = 13
+        test_frequency_length = 10
+        active_length = 6
+        success_rate_length = 12
+        response_time_length = 12
+        location_str = "no locations"
+
+        test_type = "" if test_type is None else test_type
+        # show title
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("Label".upper(), max_label_length),
+              self.fill_space("syntheticType".upper(), syn_type_length),
+              self.fill_space("Frequency".upper(), test_frequency_length),
+              self.fill_space("SuccessRate".upper(), success_rate_length),
+              self.fill_space("Latency".upper(), response_time_length),
+              self.fill_space("Active".upper(), active_length),
+              self.fill_space("Locations".upper()),
+              "URL".upper())
+
+        # tests = self.test_lists
+        output_lists = []
+        for t in tests:
+            success_rate_value = "Not Defined"
+            current_response_time = "Not Defined"
+            if t["id"] in summary_list:
+                success_rate_value = summary_list[t["id"]]["success_rate"]
+                # current_response_time = summary_list[""]
+                current_response_time = str(
+                    summary_list[t["id"]]["response_time"])+"ms" if summary_list[t["id"]]["response_time"] != "N/A" else "N/A"
+            # else:
+            #     print(t["id"], "not in summary list")
+            current_type = t['configuration']['syntheticType']
+            if (current_type == HTTPAction_TYPE):
+                if len(t['locations']) > 0:
+                    # locations,
+                    location_str = ','.join(t['locationDisplayLabels'])
+                else:
+                    location_str = "no locations"
+                if test_type == "" or (test_type != "" and current_type == test_type):
+                    print(self.fill_space(t["id"], id_length),
+                          self.fill_space(t['label'], max_label_length),
+                          self.fill_space(t['configuration']
+                                          ['syntheticType'], syn_type_length),
+                          self.fill_space(str(t["testFrequency"])+"m",
+                                          test_frequency_length),
+                          self.fill_space(str(success_rate_value),
+                                          success_rate_length),
+                          self.fill_space(current_response_time,
+                                          response_time_length),
+                          self.fill_space(str(t["active"]), active_length),
+                          self.fill_space(location_str),
+                          t['configuration']['url'])
+                    output_lists.append(t)
+            if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]):
+                if len(t['locations']) > 0:
+                    location_str = ','.join(t['locationDisplayLabels'])
+                else:
+                    location_str = "no locations"
+                if test_type == "" or (test_type != "" and current_type == test_type):
+                    print(self.fill_space(t["id"], id_length),
+                          self.fill_space(t['label'], max_label_length),
+                          self.fill_space(t['configuration']
+                                          ['syntheticType'], syn_type_length),
+                          self.fill_space(str(t["testFrequency"])+"m",
+                                          test_frequency_length),
+                          self.fill_space(str(success_rate_value),
+                                          success_rate_length),
+                          self.fill_space(current_response_time,
+                                          response_time_length),
+                          self.fill_space(str(t["active"]), active_length),
+                          self.fill_space(location_str),
+                          "None URL")
+                    output_lists.append(t)
+        print('total:', len(output_lists))
+
+    def save_api_script_to_local(self, test):
+        # save api script to local file
+        if "script" in test["configuration"]:
+            api_script = test["configuration"]["script"]
+            api_label = test["label"]+".js"
+            self.__save_script_to_local(api_script, label=api_label)
+
+        # save bundle to zip file
+        if "scripts" in test["configuration"]:
+            bundle_script = test["configuration"]["scripts"]["bundle"]
+            local_label = test["label"]+".zip"
+            self.__save_bundle_to_zip(bundle_script, label=local_label)
+
+    def __save_script_to_local(self, script, label="synthetic-script.js"):
+        file_path = os.getcwd() + "/" + label
+        with open(file_path, "w", encoding="utf-8") as js_file:
+            js_file.write(script)
+        print(f"script is written to file {file_path}")
+
+    def __save_bundle_to_zip(self, script, label="synthetic-bundle.zip"):
+        """save bundle script to zip"""
+        file_path = os.getcwd() + "/" + label
+        with open(file_path, "wb") as zip_file:
+            zip_file.write(b64decode(script))
+        print(f"bundle script is written to file {file_path}")
+
+    def print_a_synthetic_details(self, single_test, show_json=False, show_details=False, show_script=False):
+        """output a single test details info"""
+        if single_test is None or len(single_test) == 0:
+            print("no synthetic test")
+            return
+        # show title
+        if show_json is True:
+            # print json data
+            print(json.dumps(single_test[0]))
+        elif show_details is True:
+            self.__print_a_synthetic_details(single_test)
+        elif show_script is True:
+            self.__print_a_synthetic_script(single_test[0])
+
+    def __print_a_synthetic_details(self, single_test):
+        """show a synthetic test details data"""
+        a_single_test = single_test[0]
+        syn_label = a_single_test["label"]
+
+        config_details = None
+        print(self.fill_space("Name".upper(), 30), "Value".upper())
+        for key, value in a_single_test.items():
+            if key == "configuration":
+                config_details = value
+            else:
+                print(self.fill_space(key, 30), value)
+
+        print("---- CONFIGURATION ----")
+        # show script content
+        script_str = None
+        for key, value in config_details.items():
+            # api script
+            if key == "script":
+                script_str = value
+            # print bundle script
+            elif key == "scripts":
+                for k1, v1 in value.items():
+                    print(self.fill_space(k1, 30), v1)
+            else:
+                print(self.fill_space(key, 30), value)
+        if script_str is not None:
+            print("")
+            print(self.__fix_length("*", 80))
+            print("Test Script ")
+            print(f"Label: {syn_label} ")
+            print(self.__fix_length("*", 80))
+            print(script_str)
+
+    def __fix_length(self, print_str, length=60):
+        if len(print_str) < length:
+            return print_str+"*"*(length-len(print_str))
+        else:
+            return print_str
+
+    def __is_httpaction(self, syn_test):
+        if syn_test['configuration']['syntheticType'] == HTTPAction_TYPE:
+            return True
+        else:
+            return False
+
+    def __is_httpscript(self, syn_test):
+        if syn_test['configuration']['syntheticType'] in [HTTPScript_TYPE, BrowserScript_TYPE]:
+            return True
+        else:
+            return False
+
+    def __print_a_synthetic_script(self, single_test):
+        # show script content
+        if self.__is_httpscript(single_test) is False:
+            return
+        if "script" in single_test["configuration"]:
+            script_str = single_test["configuration"]["script"]
+        else:
+            script_str = ""  # bundle
+            print("This is bundle script")
+            return
+        if script_str is not None and script_str != "":
+            print(f"// Label: {single_test['label']}.js")
+            print(script_str)
+
+
+class PatchSyntheticTest(SyntheticTest):
+    """patch synthetic test"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.test_id = ""
+
+    def __ensure_test_id_not_none(self, test_id):
+        if test_id is None or test_id == "":
+            print("Patch Error: test id is None")
+            sys.exit(-1)
+
+    def __patch_a_synthetic_test(self, test_id, data):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        self.__ensure_test_id_not_none(test_id)
+        patch_url = f"{host}/api/synthetics/settings/tests/{test_id}"
+
+        if data is None:
+            print("Patch Error:data cannot be empty")
+            sys.exit(-1)
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        patch_result = requests.patch(patch_url,
+                                      headers=headers,
+                                      data=data,
+                                      timeout=60,
+                                      verify=self.insecure)
+
+        if patch_result.status_code == 200:
+            print(f"{test_id} updated")
+        elif patch_result.status_code == 400:
+            print(f'Patch Error: {patch_result}', patch_result.json())
+        else:
+            print(
+                f'patch test {test_id} failed, status code: {patch_result.status_code}')
+
+    def set_test_id(self, test_id):
+        """set test id"""
+        self.__ensure_test_id_not_none(test_id)
+        self.test_id = test_id
+
+    def patch_label(self, label):
+        """label"""
+        payload = {"label": ""}
+        if label is None:
+            print("no label")
+        else:
+            payload["label"] = label
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_description(self, description):
+        """description"""
+        payload = {"description": ""}
+        if description is None:
+            print("no description")
+        else:
+            payload["description"] = description
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_active(self, active):
+        """active"""
+        if active is None:
+            return
+        payload = {"active": False}
+        if active == "false":
+            payload["active"] = False
+        if active == "true":
+            payload["active"] = True
+        self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_frequency(self, frequency):
+        """patch frequency, 1, 120"""
+        payload = {"testFrequency": 15}
+        if frequency is None:
+            frequency = 15
+        if frequency > 0 and frequency <= 120:
+            payload["testFrequency"] = frequency
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("frequency is not valid, it should be in [1,120]")
+
+    def patch_locations(self, locations):
+        """--locations patch locations"""
+        payload = {"locations": []}
+        if locations is None:
+            print("no location")
+            return
+        else:
+            payload["locations"] = locations
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_config_timeout(self, timeout):
+        """--timeout 2m, <number>(ms|s|m)"""
+        payload = {"configuration": {"timeout": ""}}
+        if timeout is None:
+            return
+        else:
+            payload["configuration"]["timeout"] = timeout
+        self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_retries(self, retry: int):
+        """retries"""
+        payload = {"configuration": {"retries": 0}}
+        if retry >= 0 and retry <= 2:
+            payload["configuration"]["retries"] = retry
+        else:
+            print("retry should be in [0, 2]")
+            return
+        self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_retry_interval(self, interval: int):
+        """retryInterval"""
+        payload = {"configuration": {"retryInterval": 1}}
+        if interval is None:
+            interval = 1
+        if interval >= 1 and interval <= 10:
+            payload["configuration"]["retryInterval"] = interval
+        else:
+            print("retryInterval should be in [1,10]")
+            return
+        self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_config_script(self, script):
+        """update script content"""
+        payload = {"configuration": {"script": ""}}
+        if script is not None:
+            payload["configuration"]["script"] = script
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("script cannot be none")
+            return
+
+    def patch_config_script_file(self, script_name):
+        """--script-file update script using script name"""
+        try:
+            with open(script_name, "r", encoding="utf-8") as script_file:
+                script_str = script_file.read()
+                self.patch_config_script(script_str)
+        except FileNotFoundError as not_found_e:
+            print(not_found_e)
+            sys.exit(-1)
+
+
+class SyntheticResult(Base):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.default_page_size = 200
+
+    def __parse_window_size_num(self, num: str):
+        match1 = re.match(r"(^[1-9]+[0-9]*)", num)
+        if match1 is not None:
+            return int(match1.group())
+        else:
+            print(f"{num} is not correct, use <num>m, <num>h")
+            sys.exit(-1)
+
+    def get_window_size(self, window_size: str):
+        re_min = re.compile("^[1-9]+[0-9]*m$")
+        min_full_match = re_min.fullmatch(window_size)
+
+        re_hour = re.compile("^[1-9]+[0-9]*h$")
+        hour_full_match = re_hour.fullmatch(window_size)
+        if min_full_match is not None:
+            minutes = self.__parse_window_size_num(window_size)
+            if minutes > 0 and minutes <= 60:
+                return minutes * 60 * 1000
+            else:
+                print("minutes should be in [1, 60]")
+        elif hour_full_match is not None:
+            hours = self.__parse_window_size_num(window_size)
+            if hours > 0 and hours <= 24:
+                return hours * 60 * 60 * 1000
+            else:
+                print("hours should be in [1, 24]")
+        else:
+            print(f"{window_size} for --window-size is not supported")
+            sys.exit(-1)
+
+        # got an error when retrieve test summary list failed, status code: 400
+        # {"code":400,"message":"'synthetic.metricsStatus' metric: the granularity in relation to the windowSize provides too many values"}
+        # remove days support temporarily
+        # re_day = re.compile("^[1-9]+[0-9]*d$")
+        # day_full_match = re_day.fullmatch(window_size)
+        # if day_full_match is not None:
+        #     days = self.__parse_window_size_num(window_size)
+        #     if days > 0 and days <= 7:
+        #         return days * 24 * 60 * 60 * 1000
+        #     else:
+        #         print("days should be in [1, 7]")
+
+    def __get_test_summary_list(self, page=1, test_id=None, page_size=200, window_size=60*60*1000):
+        # https://instana.github.io/openapi/#section/Get-Synthetic-test-playback-results
+        # curl --request POST 'http://{host}/api/synthetics/results/testsummarylist' \
+        #  --header "Authorization: apiToken <YourToken>" -i \
+        #  --header "Content-Type: application/json" \
+        #  -d '{
+        #      "syntheticMetrics":["synthetic.metricsStatus"],
+        #      "metrics": [
+        #       {
+        #          "aggregation": "SUM",
+        #          "granularity": 60,
+        #          "metric": "synthetic.metricsStatus"
+        #       }],
+        #       "timeFrame": {
+        #         "to": 0,
+        #         "windowSize": 3600000
+        #      }
+        # }'
+        # granularity
+        #     If it is not set you will get an aggregated value for the selected timeframe
+        #     If the granularity is set you will get data points with the specified granularity in seconds
+        #     The granularity should not be greater than the windowSize (important: windowSize is expressed in milliseconds)
+        #     The granularity should not be set too small relative to the windowSize to avoid creating an excessively large number of data points (max 600)
+        #     The granularity values are the same for all metrics
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        summary_config = {
+            "syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"],
+            "metrics": [{
+                "aggregation": "SUM",
+                "granularity": 600,
+                "metric": "synthetic.metricsStatus"
+            }, {
+                "aggregation": "MEAN",
+                "granularity": 600,  # granularity max 600
+                "metric": "synthetic.metricsResponseTime"
+            }],
+            "timeFrame": {
+                "to": 0,
+                "windowSize": window_size
+            },
+            "pagination": {
+                "page": page,
+                "pageSize": page_size
+            }
+        }
+
+        if test_id is not None and len(test_id) > 0:
+            summary_config["tagFilters"] = [{
+                "stringValue": test_id,
+                "name": "synthetic.testId",
+                "operator": "EQUALS"
+            }]
+
+        test_summary_list_url = f"{host}/api/synthetics/results/testsummarylist"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        summary_res = requests.post(test_summary_list_url,
+                                    headers=headers,
+                                    data=json.dumps(summary_config),
+                                    timeout=60,
+                                    verify=self.insecure)
+
+        if summary_res.status_code == 200:
+            # extracting data in json format
+            data = summary_res.json()
+            return data
+        elif summary_res.status_code == 400:
+            print(f'Bad Request: status code: {summary_res.status_code}')
+            if summary_res.text:
+                print("Error Message:", summary_res.text)
+            sys.exit(-1)
+        else:
+            print('retrieve test summary list failed, status code:',
+                  summary_res.status_code)
+            if summary_res.text:
+                print("Error Message:", summary_res.text)
+            sys.exit(-1)
+
+    def convert_summary_list_dict(self, summary_result, metrics_summary):
+        if summary_result is None or not isinstance(summary_result, dict):
+            return
+        for item in summary_result["items"]:
+            metrics_summary[item["testResultCommonProperties"]["testId"]] = {
+                "success_rate": "N/A",  # default N/A
+                "response_time": "N/A"  # default N/A
+            }
+            total_test_runs, successful_test_runs, response_time = None, None, None
+            if "total_test_runs" in item["metrics"]:
+                total_test_runs = item["metrics"]["total_test_runs"][0][1]
+            if "successful_test_runs" in item["metrics"]:
+                successful_test_runs = item["metrics"]["successful_test_runs"][0][1]
+            if "response_time" in item["metrics"]:
+                response_time = item["metrics"]["response_time"][0][1]
+
+            if total_test_runs is not None and successful_test_runs is not None:
+                metrics_summary[item["testResultCommonProperties"]["testId"]]["success_rate"] = str(
+                    f"{successful_test_runs}/{total_test_runs}")
+
+            if response_time is not None:
+                metrics_summary[item["testResultCommonProperties"]["testId"]
+                                ]["response_time"] = str(round(response_time, 2))
+
+    def get_summary_list(self, window_size, test_id=None):
+        """convert summary list to a dict"""
+        metrics_summary = {}
+        window_size_ms = self.get_window_size(window_size)
+        summary_result = self.__get_test_summary_list(page=1,
+                                                      page_size=self.default_page_size,
+                                                      window_size=window_size_ms,
+                                                      test_id=test_id)
+        self.convert_summary_list_dict(summary_result, metrics_summary)
+
+        page = summary_result["page"] if "page" in summary_result else 1
+        page_size = summary_result["pageSize"] if "pageSize" in summary_result else 200
+        if "totalHits" in summary_result:
+            total_hits = summary_result["totalHits"]
+
+        if page_size >= total_hits:
+            return metrics_summary
+        else:
+            total_pages = total_hits/page_size
+            if (total_pages - round(total_pages)) > 0:
+                total_pages += 1
+            for x in range(1, round(total_pages)):
+                summary_result = self.__get_test_summary_list(page=x+1,
+                                                              page_size=self.default_page_size,
+                                                              window_size=window_size_ms,
+                                                              test_id=test_id)
+                self.convert_summary_list_dict(summary_result, metrics_summary)
+            return metrics_summary
+
+
+class Application(Base):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.default_page_size = 200
+        self.name_filter = None
+        self.to = 0
+        self.window_size = 60*60*1000
+
+    def set_name_filter(self, name_filter):
+        if name_filter is not None:
+            self.name_filter = name_filter
+
+    def set_to(self, to):
+        if to > 0:
+            self.to = to
+
+    def set_window_size(self, window_size):
+        if window_size > 0:
+            self.window_size = window_size
+
+    def __get_application_list(self,
+                               name_filter=None,
+                               to=0,
+                               page=1,
+                               page_size=200,
+                               window_size=60*60*1000,
+                               application_boundary_scope=None):
+        # API link https://instana.github.io/openapi/#operation/getApplications
+        # curl --request GET 'https://<host>/api/application-monitoring/applications?nameFilter=<app-name>' \
+        # --header "Authorization: apiToken <YourToken>" \
+        # --header "Content-Type: application/json"
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        application_list_url = f"{host}/api/application-monitoring/applications"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        params_list = {
+            # "nameFilter": "",  # Name of application
+            "windowSize": window_size,  # Size of time window in milliseconds
+            "to": to,  # Timestamp since Unix Epoch in milliseconds of the end of the time window
+            "page": page,  # Page number from results
+            "pageSize": self.default_page_size,  # Number of items per page
+            "applicationBoundaryScope": "ALL"  # Enum: "ALL" "INBOUND"
+        }
+        if self.name_filter is not None:
+            params_list["nameFilter"] = self.name_filter
+        if application_boundary_scope is not None:
+            params_list["applicationBoundaryScope"] = application_boundary_scope
+
+        app_res = requests.get(application_list_url,
+                               headers=headers,
+                               params=params_list,
+                               timeout=60,
+                               verify=False)
+
+        if app_res.status_code == 200:
+            # extracting data in json format
+            data = app_res.json()
+            return data
+        else:
+            print('retrieve test summary list failed, status code:',
+                  app_res.status_code)
+            if app_res.text:
+                print(app_res.text)
+            sys.exit(-1)
+
+    def __get_all_application(self,
+                              name_filter=None,
+                              to=0,
+                              page=1,
+                              window_size=60*60*1000,
+                              application_boundary_scope=None):
+        """get all application list more than one pages"""
+        total_hits = 0
+        app_result = self.__get_application_list(to=to,
+                                                 page=page,
+                                                 window_size=window_size,
+                                                 application_boundary_scope=application_boundary_scope)
+
+        page = app_result["page"] if "page" in app_result else 1
+        page_size = app_result["pageSize"] if "pageSize" in app_result else 200
+        if "totalHits" in app_result:
+            total_hits = app_result["totalHits"]
+
+        if page_size >= total_hits:
+            yield app_result
+        else:
+            total_pages = total_hits/page_size
+            if (total_pages - round(total_pages)) > 0:
+                total_pages += 1
+            for page_x in range(0, round(total_pages)):
+                if page_x == 0:  # first page
+                    yield app_result
+                else:
+                    app_result = self.__get_application_list(page=page_x+1,
+                                                             window_size=60*60*1000)
+                    yield app_result
+
+    def print_app_list(self, name_filter=None, to=0, window_size=60*60*1000):
+        """show all applications, synctl get app"""
+        id_length = 24
+        label_length = 60
+        app_count = 0  # count total application number
+        print("id".upper().ljust(id_length),
+              "label".upper().ljust(label_length),
+              'Type'.upper())
+        for app_res_gen in self.__get_all_application():
+            if "items" in app_res_gen and len(app_res_gen["items"]) > 0:
+                for i in app_res_gen["items"]:
+                    print(i["id"].ljust(id_length),
+                          i["label"].ljust(label_length),
+                          i["entityType"], flush=True)
+                    app_count += 1
+        print(f"total app: {app_count}")
+
+
+class Synctl:
+    def __init__(self, args) -> None:
+        self.args_list = args
+
+        self.syn_instanace = None
+        self.pop_instanace = None
+        self.con_instanace = None
+        self.syn_con_insta = None
+
+    def get_all_args(self):
+        return self.args_list
+
+    def set_syn_instanace(self, ins):
+        self.syn_instanace = ins
+
+    def set_con_instanace(self, ins):
+        self.syn_instanace = ins
+
+    def set_pop_instanace(self, ins):
+        self.pop_instanace = ins
+
+    def set_syn_conf_instanace(self, ins):
+        self.pop_instanace = ins
+
+    def synctl_config(self):
+        pass
+
+    def synctl_create(self):
+        pass
+
+    def synctl_delete(self):
+        pass
+
+    def synctl_get(self):
+        pass
+
+
+class ParseParameter:
+
+    def __init__(self) -> None:
+        self.parser = argparse.ArgumentParser(
+            prog='synctl', epilog='Use "synctl [command] --help" for more information about a command.')
+        self.parser._positionals.title = 'Positional xx arguments'
+        self.parser._optionals.title = 'Optional arguments'
+
+        sub_parsers = self.parser.add_subparsers(
+            dest="sub_command",
+            title="sub commands",
+            help='[command] --help to show help')
+
+        self.subparsers = sub_parsers
+
+        self.parser_config = sub_parsers.add_parser(
+            'config', help='Modify config file', usage=CONFIG_USAGE)
+        self.parser_config._positionals.title = POSITION_PARAMS
+        self.parser_config._optionals.title = OPTIONS_PARAMS
+
+        self.parser_create = sub_parsers.add_parser(
+            'create', help='create a synthetic test', add_help=True, usage=CREATE_USAGE)
+        self.parser_create._positionals.title = POSITION_PARAMS
+        self.parser_create._optionals.title = OPTIONS_PARAMS
+
+        self.parser_get = sub_parsers.add_parser(
+            'get', help='get synthetic test or location', usage=GET_USAGE)
+        self.parser_get._positionals.title = POSITION_PARAMS
+        self.parser_get._optionals.title = OPTIONS_PARAMS
+
+        self.parser_patch = sub_parsers.add_parser(
+            'patch', help='patch a synthetic test', usage=PATCH_USAGE)
+        self.parser_patch._positionals.title = POSITION_PARAMS
+        self.parser_patch._optionals.title = OPTIONS_PARAMS
+
+        self.parser_update = sub_parsers.add_parser(
+            'update', help='update a synthetic test', usage=UPDATE_USAGE)
+        self.parser_update._positionals.title = POSITION_PARAMS
+        self.parser_update._optionals.title = OPTIONS_PARAMS
+
+        self.parser_delete = sub_parsers.add_parser(
+            'delete', help='delete a synthetic test or location', usage=DELETE_USAGE)
+        self.parser_delete._positionals.title = POSITION_PARAMS
+        self.parser_delete._optionals.title = OPTIONS_PARAMS
+
+    def global_options(self):
+        self.parser.add_argument(
+            '--version', '-v', action="store_true", default=True, help="show version")
+        self.parser.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
+
+    def config_command_options(self):
+        self.parser_config.add_argument(
+            'config_type', choices=["set", "list", "use", "remove"], help='supported command')
+        self.parser_config.add_argument(
+            '--host', type=str, help='set hostname')
+        self.parser_config.add_argument(
+            '--token', '-t', type=str, help='set token')
+        self.parser_config.add_argument(
+            '--env', '--name', type=str, help='specify which config to use')
+        self.parser_config.add_argument(
+            '--default', action="store_true", help='set as default')
+
+    def create_command_options(self):
+        self.parser_create.add_argument(
+            'syn_type', type=str, choices=["test"], metavar="test", help="specify test")
+
+        self.parser_create.add_argument(
+            '-t', '--type', type=int, choices=[0, 1, 2, 3], required=True, help="test type: "
+            + "0 HTTPAction,"
+            + " 1 HTTPScript,"
+            + " 2 BrowserScript,"
+            + " 3 WebpageScript")
+
+        # support multiple locations
+        # --location location_id_1 location_id_2 location_id_3
+        # location cannot set required to True, due to --from-json can support location from json file
+        self.parser_create.add_argument(
+            '--location', type=str, nargs='+', required=False, help="location id, support multiple locations id")
+        self.parser_create.add_argument(
+            '--label', type=str, help="test label")
+        self.parser_create.add_argument(
+            '--description', '-d', type=str, help="description of synthetic test")
+        self.parser_create.add_argument(
+            '--frequency', type=int, default=15, help="The range is from 1 to 120min, default is 15")
+        self.parser_create.add_argument(
+            '--app-id', '--application-id', type=str, metavar="<application-id>", help="set application id")
+
+        # options for ping, url
+        self.parser_create.add_argument(
+            '--url', type=str, help='HTTP Request URL')
+        self.parser_create.add_argument(
+            '--operation', type=str, help='HTTP Request Method, GET, POST, HEAD, PUT, etc.')
+        self.parser_create.add_argument(
+            '--headers', type=str, help="HTTP Headers")
+
+        self.parser_create.add_argument(
+            '--body', type=str, help='HTTP Body')
+
+        # options for api script
+        self.parser_create.add_argument(
+            '--from-file', type=str, help='synthetic script, specify a file name')
+
+        # options for bundle script
+        self.parser_create.add_argument(
+            '--bundle', type=str, help='synthetic script encoded with base64')
+        self.parser_create.add_argument(
+            '--script-file', type=str, help='bundle script entry file, e.g, myscript.js')
+        # [0, 2]
+        self.parser_create.add_argument(
+            '--retries', type=int, choices=range(0, 3), help='retry times, value is from [0, 2]')
+        self.parser_create.add_argument(
+            '--retry-interval', type=int, default=1, choices=range(1, 11), help="retryInvertal")
+        self.parser_create.add_argument(
+            '--follow-redirect', type=str, default="true", choices=["true", "false", "True", "False"], help='followRedirect default True')
+
+        # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
+        self.parser_create.add_argument(
+            '--expect-status', type=int, help='expectStatus default 200')
+        self.parser_create.add_argument(
+            '--expect-json', type=str, help='expectJson')
+        self.parser_create.add_argument(
+            '--expect-match', type=str, help='expectMatch')
+        self.parser_create.add_argument(
+            '--expect-exists', type=str, help='expectExists')
+        self.parser_create.add_argument(
+            '--expect-not-empty', type=str, help='expectNotEmpty')
+        self.parser_create.add_argument(
+            '--allow-insecure', type=str, default='true', choices=['false', 'true'], help='allowInsecure')
+        self.parser_create.add_argument(
+            '--custom-properties', type=str, help="set customProperties")
+
+        # browser type
+        self.parser_create.add_argument(
+            '--browser', type=str, choices=["chrome", "firefox"], default="chrome", help="set browser type")
+
+        # not implemented
+        # self.parser_create.add_argument(
+        #     '--from-zip', type=str, help="""read bundle script a zip file,\n--from-zip synthetic-bundle.zip""")
+
+        # full payload in json file
+        self.parser_create.add_argument(
+            '--from-json', type=str, help='full synthetic test payload, specify a json file')
+
+        # set auth
+        self.parser_create.add_argument(
+            '--use-env', type=str, default=None, help='use a specified configuration')
+        self.parser_create.add_argument(
+            '--host', type=str, help='set hostname')
+        self.parser_create.add_argument(
+            '--token', type=str, help='set token')
+
+    def get_command_options(self):
+        self.parser_get.add_argument(
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app'],
+            help="command list")
+        # parser_get.add_argument('type_id', type=str,
+        #                         required=False, help='test id or location id')
+        self.parser_get.add_argument(
+            '--type', '-t', type=int, metavar='synthetic type', help='specify synthetic type')
+        self.parser_get.add_argument(
+            'id', type=str, nargs="?", help='synthetic id')
+        self.parser_get.add_argument(
+            '--window-size', type=str, default="1h", help="set synthetic result window size, support [1,60]m, [1-24]h"
+        )
+
+        # todo
+        # parser_get.add_argument(
+        #     '--save-script', type=str, default="synthetic-test.js", metavar="script-label.js", help='save script to local, default is test label')
+        self.parser_get.add_argument(
+            '--save-script', action="store_true", help='save script to local, default is test label')
+
+        self.parser_get.add_argument(
+            "--show-script", action='store_true', help="output test script to terminal")
+        self.parser_get.add_argument(
+            "--show-details", action='store_true', help="output test script details to terminal")
+        self.parser_get.add_argument(
+            "--show-json", action='store_true', help="output test json to terminal")
+
+        # application
+        application_group = self.parser_get.add_argument_group()
+        application_group.add_argument(
+            '--name-filter', type=str, help="filter application by name")
+        # application_group
+
+        host_token_group = self.parser_get.add_argument_group()
+        # self.parser_get.add_argument(
+        #     '--use-env', type=str, default=None, help='use a specified config')
+        # self.parser_get.add_argument(
+        #     '--host', type=str, help='set hostname')
+        # self.parser_get.add_argument(
+        #     '--token', type=str, help='set token')
+        host_token_group.add_argument(
+            '--use-env', type=str, default=None, help='use a specified config')
+        host_token_group.add_argument(
+            '--host', type=str, help='set hostname')
+        host_token_group.add_argument(
+            '--token', type=str, help='set token')
+
+    def patch_command_options(self):
+        self.parser_patch.add_argument(
+            'syn_type', type=str, choices=["test"], help="synthetic type, only test support")
+
+        self.parser_patch.add_argument(
+            'id', type=str, help="specify synthetic test id")
+
+        # parser_update.add_argument(
+        #     '--from-json', type=str, help='new json payload')
+        patch_exclusive_group = self.parser_patch.add_mutually_exclusive_group()
+        patch_exclusive_group.add_argument(
+            '--active', type=str, choices=["false", "true"], help='set active')
+        patch_exclusive_group.add_argument(
+            '--frequency', type=int, help='set frequency')
+        patch_exclusive_group.add_argument(
+            '--location', nargs="+", help="set location")
+        patch_exclusive_group.add_argument(
+            '--description', type=str, help="set description")
+        patch_exclusive_group.add_argument(
+            '--label', type=str, help='set label')
+        patch_exclusive_group.add_argument(
+            '--retries', type=int, help="set retries")
+        patch_exclusive_group.add_argument(
+            '--retry-interval', type=int, help="set retry-interval")
+
+        # timeout Expected <number>(ms|s|m)
+        patch_exclusive_group.add_argument(
+            '--timeout', type=str, help='set timeout, accept <number>(ms|s|m)')
+        patch_exclusive_group.add_argument(
+            '--script-file', type=str, help="script file name")
+
+        # parser_patch.add_mutually_exclusive_group
+        self.parser_patch.add_argument(
+            '--use-env', type=str, default=None, help='use a config hostname')
+        self.parser_patch.add_argument(
+            '--host', type=str, help='set hostname')
+        self.parser_patch.add_argument(
+            '--token', type=str, help='set token')
+
+    def update_command_options(self):
+        self.parser_update.add_argument(
+            'syn_type', type=str, choices=["test"], help="synthetic type, only test is supported")
+        self.parser_update.add_argument(
+            'id', type=str, help="synthetic id")
+
+        # parser_update.add_argument(
+        #     '--from-json', type=str, help='new json payload')
+        self.parser_update.add_argument(
+            '--from-data', type=str, help='new json payload')
+
+        self.parser_update.add_argument(
+            '--use-env', type=str, default=None, help='use a config hostname')
+        self.parser_update.add_argument(
+            '--host', type=str, help='set hostname')
+        self.parser_update.add_argument(
+            '--token', type=str, help='set token')
+
+    def delete_command_options(self):
+        self.parser_delete.add_argument(
+            'delete_type', choices=['location', 'lo', 'test'], help='specify synthetic type: location/test')
+        self.parser_delete.add_argument(
+            'id', type=str, nargs="*", help='synthetic test id, location id')
+
+        # other options
+        self.parser_delete.add_argument(
+            '--match-regex', type=str, default=None, help='use a regex to match synthetic label')
+        # only deletes tests full match location, if a test has two locations, include this, will
+        # not be deleted
+        self.parser_delete.add_argument(
+            '--match-location', type=str, default=None, help='delete tests match this location id')
+        self.parser_delete.add_argument(
+            '--no-locations', action="store_true", help="delete test with no locations")
+
+        self.parser_delete.add_argument(
+            '--use-env', type=str, default=None, help='use a config hostname')
+        self.parser_delete.add_argument(
+            '--host', type=str, help='set hostname')
+        self.parser_delete.add_argument(
+            '--token', type=str, help='set token')
+
+    def set_options(self):
+        self.global_options()
+        self.config_command_options()
+        self.create_command_options()
+        self.get_command_options()
+        self.patch_command_options()
+        self.update_command_options()
+        self.delete_command_options()
+
+    def get_parser(self):
+        return self.parser
+
+
+def main():
+    """main function"""
+    para_instanace = ParseParameter()
+    para_instanace.set_options()
+    get_args = para_instanace.get_parser().parse_args()
+
+    sys_args = sys.argv
+
+    if len(sys_args) <= 1:
+        general_helper()
+        sys.exit(0)
+
+    # show synctl version
+    if '-v' in sys_args or '--version' in sys_args:
+        show_version()
+        return
+
+    auth_instance = Authentication()
+
+    syn_instance = SyntheticTest()
+    patch_instance = PatchSyntheticTest()
+    pop_instance = SyntheticPoP()
+
+    summary_instance = SyntheticResult()
+    app_instance = Application()
+
+    # set --verify-tls
+    if get_args.verify_tls is not None:
+        syn_instance.set_insecure(get_args.verify_tls)
+        patch_instance.set_insecure(get_args.verify_tls)
+        pop_instance.set_insecure(get_args.verify_tls)
+        app_instance.set_insecure(get_args.verify_tls)
+
+    # both host and token are required when using in command line
+    if get_args.host is not None and get_args.token is not None:
+        syn_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
+        pop_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
+        patch_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
+        summary_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
+        app_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
+
+    else:
+        if COMMAND_CONFIG != get_args.sub_command:
+            auth = auth_instance.get_auth(get_args.use_env)
+            syn_instance.set_auth(auth)
+            pop_instance.set_auth(auth)
+            patch_instance.set_auth(auth)
+            summary_instance.set_auth(auth)
+            app_instance.set_auth(auth)
+
+    if COMMAND_CONFIG == get_args.sub_command:
+        if get_args.config_type == "list":
+            if get_args.env is None:
+                auth_instance.print_config_file()
+            else:
+                auth_instance.print_config_file(name=get_args.env)
+        elif get_args.config_type == "set":
+            if get_args.host is None or get_args.token is None or get_args.env is None:
+                print("--env, --host, and --token are required")
+            else:
+                set_as_default = False
+                if get_args.default is True:
+                    set_as_default = True
+                auth_instance.add_an_item_to_config(
+                    name=get_args.env,
+                    host=get_args.host,
+                    token=get_args.token,
+                    set_default=set_as_default
+                )
+        elif get_args.config_type == "use":
+            if get_args.env is None:
+                print('--env is required when set it as default')
+            else:
+                auth_instance.set_env_to_default(get_args.env)
+        elif get_args.config_type == "remove":
+            if get_args.env is None:
+                print('--env is required when remove a config')
+            else:
+                auth_instance.remove_an_item_from_config(get_args.env)
+
+    elif COMMAND_GET == get_args.sub_command:
+
+        if get_args.op_type == SYN_TEST:
+            # synctl_instanace.synctl_get()
+            # deal test
+            syn_type_t = None
+            syn_window_size = get_args.window_size
+            if get_args.type is not None:
+                syn_type_t = synthetic_type[get_args.type]
+
+            if get_args.id is None:
+                out_list = syn_instance.retrieve_all_synthetic_tests(
+                    syn_type_t)
+                summary_result = summary_instance.get_summary_list(syn_window_size,
+                                                                   test_id=get_args.id)
+                syn_instance.print_synthetic_test(out_list=out_list,
+                                                  summary_list=summary_result)
+            else:
+                summary_result = summary_instance.get_summary_list(syn_window_size,
+                                                                   test_id=get_args.id)
+                # if get_args.id is not None:
+                # a_single_payload type: list
+                a_single_payload = syn_instance.retrieve_a_synthetic_test(
+                    get_args.id)
+                if get_args.show_script is True:
+                    syn_instance.print_a_synthetic_details(
+                        a_single_payload, show_script=True)
+                elif get_args.show_json is True:
+                    syn_instance.print_a_synthetic_details(
+                        a_single_payload, show_json=True)
+                elif get_args.save_script is True:
+                    syn_instance.save_api_script_to_local(a_single_payload[0])
+                elif get_args.show_details is True:
+                    syn_instance.print_a_synthetic_details(
+                        a_single_payload, show_details=True)
+                else:
+                    syn_instance.print_synthetic_test(out_list=a_single_payload,
+                                                      test_type=syn_type_t,
+                                                      summary_list=summary_result)
+        elif get_args.op_type in (SYN_LOCATION, SYN_LO):
+            # deal pop
+            pop_locations_json = []
+            if get_args.id is None:
+                pop_locations_json = pop_instance.retrieve_synthetic_locations()
+            else:
+                pop_locations_json = pop_instance.retrieve_synthetic_locations(
+                    location_id=get_args.id)
+            pop_instance.print_synthetic_locations(pop_locations_json)
+        elif get_args.op_type in (SYN_APPLICATION, SYN_APP):
+            if get_args.name_filter is not None:
+                app_instance.set_name_filter(get_args.name_filter)
+            app_instance.print_app_list()
+    elif COMMAND_CREATE == get_args.sub_command:
+        syn_type_t = synthetic_type[get_args.type]
+        payload = SyntheticConfiguration(syn_type_t)
+
+        # --from-json options
+        # create from a json file
+        # if use a json file, all options should config in json
+        # not support provide other options from command-line
+        if get_args.from_json is not None:
+            json_file = get_args.from_json
+            payload.loads_from_json_file(json_file_name=json_file)
+            syn_instance.set_synthetic_payload(payload=payload.get_json())
+            syn_instance.create_a_synthetic_test()
+            return
+
+        # create test and get option from command line
+        # PING, create simple ping
+        if get_args.type == 0 or get_args.type is None:
+            # request url is required
+            if get_args.url is not None:
+                payload.set_ping_url(get_args.url)
+            else:
+                print("url is required")
+                sys.exit(-1)
+            if get_args.operation is not None:
+                payload.set_ping_operation(get_args.operation)
+            if get_args.headers is not None:
+                headers_str = get_args.headers
+                headers_json = json.loads(headers_str)
+                payload.set_ping_headers(headers_json)
+            if get_args.body is not None:
+                payload.set_ping_body(get_args.body)
+
+            # followRedirect
+            if get_args.follow_redirect is not None:
+                payload.set_follow_redirect(get_args.follow_redirect)
+            # expectStatus
+            if get_args.expect_status is not None:
+                payload.set_expect_status(get_args.expect_status)
+            # expectJson, str -> dict
+            # an example: --expect-json '{"name": "John","age": 30,"city": "New York"}'
+            if get_args.expect_json is not None:
+                expect_json_str = get_args.expect_json
+                expect_json_json = json.loads(expect_json_str)
+                payload.set_expect_json(expect_json=expect_json_json)
+            # expectMatch
+            # an example: --expect-match "ibm"
+            if get_args.expect_match is not None:
+                payload.set_expect_match(expect_match=get_args.expect_match)
+            # expectExists
+            # an example: --expect-exists '["slideshow"]'
+            if get_args.expect_exists is not None:
+                expect_exists_str = get_args.expect_exists
+                expect_exists_list = json.loads(expect_exists_str)
+                payload.set_expect_exists(expect_exists_list)
+            # expectNotEmpty
+            # an example: --expect-not-empty '["slideshow"]'
+            if get_args.expect_not_empty is not None:
+                expect_not_empty_str = get_args.expect_not_empty
+                expect_not_empty_list = json.loads(expect_not_empty_str)
+                payload.set_expect_not_empty(expect_not_empty_list)
+            if get_args.allow_insecure is not None:
+                payload.set_allow_insecure(get_args.allow_insecure)
+
+        # basic type HTTPScript and WebpageScript
+        elif get_args.type in (1, 3) and get_args.bundle is None:
+            syn_type_t = synthetic_type[get_args.type]
+            payload = SyntheticConfiguration(syn_type=syn_type_t)
+            if get_args.from_file is not None:
+                script_content = payload.read_js_file(get_args.from_file)
+                payload.set_api_script_script(script_str=script_content)
+            if payload.get_api_script_script() == "":
+                print("script should not be empty")
+                sys.exit(-1)
+
+        # bundle script
+        elif get_args.type in (1, 2) and get_args.bundle is not None:
+            syn_type_t = synthetic_type[get_args.type]
+            payload = SyntheticConfiguration(syn_type_t, bundle_type=True)
+
+            # entry file
+            if get_args.script_file is not None:
+                payload.set_api_bundle_script(
+                    get_args.bundle, script_file=get_args.script_file)
+            else:
+                # script file use index.js
+                payload.set_api_bundle_script(get_args.bundle)
+        # BrowserScript 2, WebpageScript 3
+        if get_args.type in (2, 3):
+            payload.set_browser_type(get_args.browser)
+
+        # global operation, add label, location, description, frequency, etc.
+        if get_args.label is not None:
+            payload.set_label(get_args.label)
+        if get_args.location is not None:
+            payload.set_locations(get_args.location)
+        if get_args.description is not None:
+            payload.set_description(get_args.description)
+        if get_args.frequency is not None:
+            payload.set_frequency(get_args.frequency)
+        if get_args.app_id is not None:
+            payload.set_application_id(get_args.app_id)
+
+        if get_args.custom_properties is not None:
+            payload.set_custom_properties(
+                json.loads(get_args.custom_properties))
+
+        # configuration
+        # retries [0, 2]
+        if get_args.retries is not None:
+            payload.set_retries(get_args.retries)
+        # retryInterval [0, 10]
+        if get_args.retry_interval is not None:
+            payload.set_retry_interval(get_args.retry_interval)
+
+        syn_payload = payload.get_json()
+        syn_instance.set_synthetic_payload(payload=syn_payload)
+
+        syn_instance.create_a_synthetic_test()
+    elif COMMAND_PATCH == get_args.sub_command:
+        if get_args.id is not None:
+            patch_instance.set_test_id(get_args.id)
+        if get_args.active is not None:
+            patch_instance.patch_active(get_args.active)
+        elif get_args.timeout is not None:
+            # timeout Expected <number>(ms|s|m)
+            patch_instance.patch_config_timeout(get_args.timeout)
+        elif get_args.retries is not None:
+            patch_instance.patch_retries(get_args.retries)
+        elif get_args.frequency is not None:
+            patch_instance.patch_frequency(get_args.frequency)
+        elif get_args.retry_interval is not None:
+            patch_instance.patch_retry_interval(get_args.retry_interval)
+        elif get_args.script_file is not None:
+            patch_instance.patch_config_script_file(get_args.script_file)
+        elif get_args.description is not None:
+            patch_instance.patch_description(get_args.description)
+        elif get_args.label is not None:
+            patch_instance.patch_label(get_args.label)
+        elif get_args.location is not None:
+            patch_instance.patch_locations(get_args.location)
+    elif COMMAND_UPDATE == get_args.sub_command:
+        syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
+    elif COMMAND_DELETE == get_args.sub_command:
+        if get_args.delete_type == SYN_TEST:
+            if get_args.id is not None and len(get_args.id) > 0:
+                syn_instance.delete_multiple_synthetic_tests(
+                    get_args.id)
+            elif get_args.match_regex is not None:
+                syn_instance.delete_tests_label_match_regex(
+                    label_regex=get_args.match_regex)
+            elif get_args.match_location is not None:
+                syn_instance.delete_tests_match_location(
+                    match_location=get_args.match_location)
+            elif get_args.no_locations is True:
+                syn_instance.delete_tests_without_location()
+
+        if get_args.delete_type in (SYN_LOCATION, SYN_LO):
+            if get_args.id is not None:
+                pop_instance.delete_synthetic_locations(get_args.id)
+    else:
+        print('unknown sub command:', get_args.sub_command)
+
+
+if __name__ == "__main__":
+    main()

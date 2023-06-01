@@ -1,0 +1,21 @@
+{
+  "label": "BrowserTesting_Selenium_SIDE",
+  "description": "browser webpage script test",
+  "active": true,
+  "testFrequency": 10,
+  "playbackMode": "Simultaneous",
+  "locations": ["location-id"],
+  "configuration": {
+    "script": "{\r\n    \"id\": \"04e7ae01-927d-4937-acbd-f35f5f8de715\",\r\n    \"version\": \"2.0\",\r\n    \"name\": \"search-engine\",\r\n    \"url\": \"https://www.bing.com\",\r\n    \"tests\": [{\r\n        \"id\": \"868fa683-e289-47bb-82de-c347c99d9ba8\",\r\n        \"name\": \"search instana\",\r\n        \"commands\": [{\r\n        \"id\": \"71ac6b1c-fbeb-48d1-80d1-3960862fc577\",\r\n        \"comment\": \"\",\r\n        \"command\": \"open\",\r\n        \"target\": \"/\",\r\n        \"targets\": [],\r\n        \"value\": \"\"\r\n        }, {\r\n        \"id\": \"81c56c10-a722-4506-98d9-09b7068a149b\",\r\n        \"comment\": \"\",\r\n        \"command\": \"setWindowSize\",\r\n        \"target\": \"1385x817\",\r\n        \"targets\": [],\r\n        \"value\": \"\"\r\n        }, {\r\n        \"id\": \"236151d1-c036-43f8-9892-e73ef9167528\",\r\n        \"comment\": \"\",\r\n        \"command\": \"click\",\r\n        \"target\": \"id=sb_form_q\",\r\n        \"targets\": [\r\n            [\"id=sb_form_q\", \"id\"],\r\n            [\"name=q\", \"name\"],\r\n            [\"css=#sb_form_q\", \"css:finder\"],\r\n            [\"xpath=//input[@id='sb_form_q']\", \"xpath:attributes\"],\r\n            [\"xpath=//div[@id='sb_form_c']/input\", \"xpath:idRelative\"],\r\n            [\"xpath=//input\", \"xpath:position\"]\r\n        ],\r\n        \"value\": \"\"\r\n        }, {\r\n        \"id\": \"b55d340e-04c6-4457-9639-7d818f6a55b7\",\r\n        \"comment\": \"\",\r\n        \"command\": \"type\",\r\n        \"target\": \"id=sb_form_q\",\r\n        \"targets\": [\r\n            [\"id=sb_form_q\", \"id\"],\r\n            [\"name=q\", \"name\"],\r\n            [\"css=#sb_form_q\", \"css:finder\"],\r\n            [\"xpath=//input[@id='sb_form_q']\", \"xpath:attributes\"],\r\n            [\"xpath=//div[@id='sb_form_c']/input\", \"xpath:idRelative\"],\r\n            [\"xpath=//input\", \"xpath:position\"]\r\n        ],\r\n        \"value\": \"instana\"\r\n        }, {\r\n        \"id\": \"cd27ca03-8909-4267-b72b-6ddce0aab677\",\r\n        \"comment\": \"\",\r\n        \"command\": \"click\",\r\n        \"target\": \"css=#search_icon > svg\",\r\n        \"targets\": [\r\n            [\"css=#search_icon > svg\", \"css:finder\"]\r\n        ],\r\n        \"value\": \"\"\r\n        }, {\r\n        \"id\": \"46eb59c2-5fd6-4481-b3e8-eaaddab79a69\",\r\n        \"comment\": \"\",\r\n        \"command\": \"assertTitle\",\r\n        \"target\": \"instana - Search\",\r\n        \"targets\": [],\r\n        \"value\": \"\"\r\n        }, {\r\n\t\t\"id\": \"da853ea2-7253-4938-ad2d-9272f4c6d3e2\",\r\n\t\t\"comment\": \"\",\r\n\t\t\"command\": \"echo\",\r\n\t\t\"target\": \"tag1's value is ${$synthetic.tag1}\",\r\n\t\t\"targets\": [],\r\n\t\t\"value\": \"\"\r\n\t\t}]\r\n    }],\r\n    \"suites\": [{\r\n        \"id\": \"a4b81281-f8cf-4870-b802-668af4ee5f04\",\r\n        \"name\": \"Default Suite\",\r\n        \"persistSession\": false,\r\n        \"parallel\": false,\r\n        \"timeout\": 300,\r\n        \"tests\": [\"868fa683-e289-47bb-82de-c347c99d9ba8\"]\r\n    }],\r\n    \"urls\": [\"https://www.bing.com/\"],\r\n    \"plugins\": []\r\n}",
+    "syntheticType": "WebpageScript",
+    "browser": "chrome",
+    "timeout": "5m",
+    "retries": 0,
+    "retryInterval": 10,
+    "recordVideo": true
+  },
+  "customProperties": {
+    "tag1": "value1",
+    "tag2": "value2"
+  }
+}

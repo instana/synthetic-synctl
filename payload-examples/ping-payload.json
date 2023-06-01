@@ -1,0 +1,16 @@
+{
+  "tenantId": "instanalocal",
+  "active": true,
+  "label": "simple-ping-test",
+  "testFrequency": "15",
+  "locations": ["location-id"],
+  "playbackMode": "Simultaneous",
+  "configuration": {
+    "syntheticType": "HTTPAction",
+    "url": "https://httpbin.org/get",
+    "timeout": "1m",
+    "retries": 0,
+    "retryInterval": 5,
+    "expectStatus": 300
+  }
+}

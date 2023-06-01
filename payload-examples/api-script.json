@@ -1,0 +1,16 @@
+{
+  "tenantId": "instanalocal",
+  "active": true,
+  "label": "api-script-test",
+  "testFrequency": 15,
+  "locations": ["location-id"],
+  "playbackMode": "Simultaneous",
+  "configuration": {
+    "syntheticType": "HTTPScript",
+    "script": "var assert = require('assert');\n\nconst requestURL = 'https://httpbin.org/get';\n\n$http.get(requestURL, {\n  strictSSL: false, /*false for self signed certificate */ }, function(err, response, body) {\n  if (err) throw err;\n  assert.equal(response.statusCode, 200, 'Expected a 200 OK response');\n  console.log('Request URL %s, statusCode: %d', requestURL, response.statusCode);\n});\n",
+    "timeout": "1m",
+    "retries": 0,
+    "retryInterval": 1,
+    "scriptType": "Basic"
+  }
+}
