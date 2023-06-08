@@ -1286,8 +1286,8 @@ class SyntheticTest(Base):
         # tests = self.test_lists
         output_lists = []
         for t in tests:
-            success_rate_value = "Not Defined"
-            current_response_time = "Not Defined"
+            success_rate_value = "No Data"
+            current_response_time = "No Data"
             if t["id"] in summary_list:
                 success_rate_value = summary_list[t["id"]]["success_rate"]
                 # current_response_time = summary_list[""]
