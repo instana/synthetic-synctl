@@ -20,7 +20,7 @@ import time
 import requests
 import urllib3
 
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 # disable warning when certificate is self signed
 # InsecureRequestWarning: Unverified HTTPS request is being made to host 'some url'.
@@ -98,10 +98,22 @@ CREATE_USAGE = """synctl create test [options]
 
 examples:
 # create a simple ping
-synctl create test -t 0 --label simple-ping-test --location <location-id> --url <url> --frequency 5
+synctl create test -t 0 --label simple-ping-test --url <url> --location <id> --frequency 5
 
 # create an API script
-synctl create test -t 1 --label script-test --location <location-id> --from-file script-name.js"""
+synctl create test -t 1 --label script-test --from-file script-name.js --location <id>
+
+# create an API script bundle type
+synctl create test -t 1 --label script-bundle-test --bundle <base64> --script-file index.js --location <id>
+
+# create browserscript
+synctl create test -t 2 --label browserscript-test --from-file api-sample.js --browser firefox --location <id>
+
+# create browserscript bundle
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "base64" --script-file mytest.js --browser chrome --location <id>
+
+# create webpagescript
+synctl create test -t 3 --label "webpagescript-test" --from-file side/browser.side --browser chrome --location <id>"""
 
 GET_USAGE = """synctl get {location,lo,test,application,app} [id] [options]
 
@@ -525,15 +537,32 @@ class SyntheticConfiguration(Base):
             "scriptType": "Basic"
         }
 
-        # syntheticType BrowserScript
-        self.browser_script_conf = {
+        browser_script_conf = {
+            "syntheticType": BrowserScript_TYPE,
+            "script": "",  # api script
+            "retries": 0,  # [0,2]
+            "retryInterval": 5,
+            "scriptType": "Basic"
+        }
+
+        browser_bundle_conf = {
+            "syntheticType": "BrowserScript",
             "scripts": {
                 "scriptFile": "index.js",
                 "bundle": ""
             },
-            "syntheticType": "BrowserScript",
             "browser": "firefox",
         }
+
+        # syntheticType BrowserScript
+        # self.browser_script_conf = {
+        #     "scripts": {
+        #         "scriptFile": "index.js",
+        #         "bundle": ""
+        #     },
+        #     "syntheticType": "BrowserScript",
+        #     "browser": "firefox",
+        # }
 
         # syntheticType WebpageScript
         self.webpage_script_conf = {
@@ -542,7 +571,7 @@ class SyntheticConfiguration(Base):
             "browser": "chrome",
         }
 
-        self.webpage_action_conf = {}
+        # self.webpage_action_conf = {}
 
         self.script_type = [HTTPScript_TYPE, BrowserScript_TYPE]
         if syn_type in [HTTPAction_TYPE, HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE]:
@@ -552,19 +581,22 @@ class SyntheticConfiguration(Base):
         if syn_type == HTTPAction_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], http_action_con)
+
         if bundle_type is True and syn_type == HTTPScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], http_bundle_con)
-        if bundle_type is False and syn_type == HTTPScript_TYPE:
+        elif bundle_type is False and syn_type == HTTPScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], http_script_con)
 
-        if syn_type == BrowserScript_TYPE:
+        # BrowserScript support simple script and bundle type
+        if bundle_type is True and syn_type == BrowserScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
-                self.syn_test_config["configuration"], self.browser_script_conf)
-        # if syn_type == WebpageAction_TYPE:
-        #     self.syn_test_config["configuration"] = self.merge_json(
-        #         self.syn_test_config["configuration"], self.webpage_action_conf)
+                self.syn_test_config["configuration"], browser_bundle_conf)
+        elif bundle_type is False and syn_type == BrowserScript_TYPE:
+            self.syn_test_config["configuration"] = self.merge_json(
+                self.syn_test_config["configuration"], browser_script_conf)
+
         if syn_type == WebpageScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], self.webpage_script_conf)
@@ -657,11 +689,11 @@ class SyntheticConfiguration(Base):
             print(f"script content: {script_str}")
             sys.exit(-1)
 
-        if self.syn_type == HTTPScript_TYPE and script_str != "":
+        if self.syn_type in (HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE) and script_str != "":
             self.syn_test_config["configuration"]["script"] = script_str
 
-        if self.syn_type == WebpageScript_TYPE and script_str != "":
-            self.syn_test_config["configuration"]["script"] = script_str
+        # if self.syn_type == WebpageScript_TYPE and script_str != "":
+        #     self.syn_test_config["configuration"]["script"] = script_str
 
     def get_api_script_script(self) -> str:
         """return script"""
@@ -822,8 +854,12 @@ class SyntheticPoP(Base):
                 return [data]
             else:
                 return data
+        elif retrieve_res.status_code == 429:
+            self.exit_synctl(-1, "Too Many Request")
         else:
-            return []
+            print(
+                f"Failed to get locations, status code {retrieve_res.status_code}")
+            sys.exit(-1)
 
     def delete_a_synthetic_pop(self, pop_id=""):
         if pop_id != "":
@@ -848,9 +884,11 @@ class SyntheticPoP(Base):
                             timeout=60, verify=self.insecure)
 
         if r.status_code == 204:
-            print(f'{location_id} is deleted')
+            print(f'location \"{location_id}\" deleted')
         elif r.status_code == 404:
             print(f"{location_id} not found")
+        elif r.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
         else:
             print(f"Fail to delete {location_id}, status code {r.status_code}")
 
@@ -941,7 +979,9 @@ class SyntheticTest(Base):
             data = create_res.json()
             test_id = data["id"]
             test_label = data["label"]
-            print(f"{test_id} {test_label} is created")
+            print(f"test \"{test_id}\" \"{test_label}\" created")
+        elif create_res.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
         else:
             print('create test failed, status code:', create_res.status_code)
             if create_res.text:
@@ -1006,9 +1046,13 @@ class SyntheticTest(Base):
         elif result.status_code == 404:
             self.exit_synctl(error_code=-1,
                              message=f'test {test_id} not found')
+        elif result.status_code == 429:
+            self.exit_synctl(error_code=-1,
+                             message='Too Many Requests')
         else:
             print(
                 f'get test {test_id} failed, status code: {result.status_code}')
+            sys.exit(-1)
 
     def retrieve_all_synthetic_tests(self, syn_type=None):
         # API doc: https://instana.github.io/openapi/#operation/getSyntheticTests
@@ -1045,18 +1089,17 @@ class SyntheticTest(Base):
                 return []
             else:
                 print(f'unknown data: {data}')
+                sys.exit(-1)
         elif query_result.status_code == 403:
             print('Insufficient access rights for resource')
             sys.exit(-1)
         elif query_result.status_code == 404:
-            print('test not found')
-            sys.exit(-1)
+            self.exit_synctl(-1, 'test not found')
+        elif query_result.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
         else:
             print(f'get test failed, status code: {query_result.status_code}')
             sys.exit(-1)
-
-    def patch_synthetic_test(self, test_id):
-        pass
 
     def update_a_synthetic_test(self, test_id, new_payload):
         """API https://instana.github.io/openapi/#operation/updateSyntheticTest"""
@@ -1088,6 +1131,8 @@ class SyntheticTest(Base):
             print(f"{test_id} updated")
         elif update_result.status_code == 400:
             print(f'Error: {update_result}', update_result.content)
+        elif update_result.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
         else:
             print(
                 f'update test {test_id} failed, status code: {update_result.status_code}')
@@ -1113,7 +1158,9 @@ class SyntheticTest(Base):
                                      timeout=60, verify=self.insecure)
 
         if del_result.status_code == 204:
-            print(f'{test_id} is deleted')
+            print(f'test \"{test_id}\" deleted')
+        elif del_result.status_code == 429:
+            print("Too Many Requests")
         else:
             print(
                 f"Fail to delete {test_id}, status code {del_result.status_code}")
@@ -1212,7 +1259,7 @@ class SyntheticTest(Base):
         if label_len > 60:
             return 60
         else:
-            return label_len
+            return label_len if label_len > 10 else 10
 
     def __output_tests_to_terminal(self, tests: list, test_type="", summary_list=None):
         id_length = 22
@@ -1239,8 +1286,8 @@ class SyntheticTest(Base):
         # tests = self.test_lists
         output_lists = []
         for t in tests:
-            success_rate_value = "Not Defined"
-            current_response_time = "Not Defined"
+            success_rate_value = "No Data"
+            current_response_time = "No Data"
             if t["id"] in summary_list:
                 success_rate_value = summary_list[t["id"]]["success_rate"]
                 # current_response_time = summary_list[""]
@@ -1288,7 +1335,7 @@ class SyntheticTest(Base):
                                           response_time_length),
                           self.fill_space(str(t["active"]), active_length),
                           self.fill_space(location_str),
-                          "None URL")
+                          "N/A")  # None URL => N/A
                     output_lists.append(t)
         print('total:', len(output_lists))
 
@@ -1438,6 +1485,8 @@ class PatchSyntheticTest(SyntheticTest):
             print(f"{test_id} updated")
         elif patch_result.status_code == 400:
             print(f'Patch Error: {patch_result}', patch_result.json())
+        elif patch_result.status_code == 429:
+            print('Too Many Requests')
         else:
             print(
                 f'patch test {test_id} failed, status code: {patch_result.status_code}')
@@ -1669,12 +1718,15 @@ class SyntheticResult(Base):
         if summary_res.status_code == 200:
             # extracting data in json format
             data = summary_res.json()
+            # print("summary data:", data)
             return data
         elif summary_res.status_code == 400:
             print(f'Bad Request: status code: {summary_res.status_code}')
             if summary_res.text:
                 print("Error Message:", summary_res.text)
             sys.exit(-1)
+        elif summary_res.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
         else:
             print('retrieve test summary list failed, status code:',
                   summary_res.status_code)
@@ -1802,6 +1854,8 @@ class Application(Base):
             # extracting data in json format
             data = app_res.json()
             return data
+        elif app_res.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
         else:
             print('retrieve test summary list failed, status code:',
                   app_res.status_code)
@@ -1901,12 +1955,12 @@ class ParseParameter:
     def __init__(self) -> None:
         self.parser = argparse.ArgumentParser(
             prog='synctl', epilog='Use "synctl [command] --help" for more information about a command.')
-        self.parser._positionals.title = 'Positional xx arguments'
-        self.parser._optionals.title = 'Optional arguments'
+        self.parser._positionals.title = 'commands'
+        self.parser._optionals.title = 'options'
 
         sub_parsers = self.parser.add_subparsers(
             dest="sub_command",
-            title="sub commands",
+            title="commands",
             help='[command] --help to show help')
 
         self.subparsers = sub_parsers
@@ -1997,7 +2051,7 @@ class ParseParameter:
 
         # options for api script
         self.parser_create.add_argument(
-            '--from-file', type=str, help='synthetic script, specify a file name')
+            '-f', '--from-file', type=str, metavar="<script-name>", help='synthetic script, specify a file name')
 
         # options for bundle script
         self.parser_create.add_argument(
@@ -2010,7 +2064,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--retry-interval', type=int, default=1, choices=range(1, 11), help="retryInvertal")
         self.parser_create.add_argument(
-            '--follow-redirect', type=str, default="true", choices=["true", "false", "True", "False"], help='followRedirect default True')
+            '--follow-redirect', type=str, default="true", choices=["true", "false"], help='followRedirect default True')
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
@@ -2390,7 +2444,7 @@ def main():
                 payload.set_allow_insecure(get_args.allow_insecure)
 
         # basic type HTTPScript and WebpageScript
-        elif get_args.type in (1, 3) and get_args.bundle is None:
+        elif get_args.type in (1, 2, 3) and get_args.bundle is None:
             syn_type_t = synthetic_type[get_args.type]
             payload = SyntheticConfiguration(syn_type=syn_type_t)
             if get_args.from_file is not None:
