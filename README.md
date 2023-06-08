@@ -16,7 +16,7 @@ pip3 install requests
 /usr/bin/python3 -m pip install requests
 
 # clone code and copy it to /usr/local/bin/
-git clone git@github.ibm.com:instana/synthetic-synctl.git
+git clone https://github.com/instana/synthetic-synctl.git
 
 cd synthetic-synctl
 chmod +x synctl && cp synctl /usr/local/bin/synctl
