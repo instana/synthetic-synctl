@@ -20,7 +20,7 @@ import time
 import requests
 import urllib3
 
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 # disable warning when certificate is self signed
 # InsecureRequestWarning: Unverified HTTPS request is being made to host 'some url'.
@@ -98,10 +98,22 @@ CREATE_USAGE = """synctl create test [options]
 
 examples:
 # create a simple ping
-synctl create test -t 0 --label simple-ping-test --location <location-id> --url <url> --frequency 5
+synctl create test -t 0 --label simple-ping-test --url <url> --location <id> --frequency 5
 
 # create an API script
-synctl create test -t 1 --label script-test --location <location-id> --from-file script-name.js"""
+synctl create test -t 1 --label script-test --from-file script-name.js --location <id>
+
+# create an API script bundle type
+synctl create test -t 1 --label script-bundle-test --bundle <base64> --script-file index.js --location <id>
+
+# create browserscript
+synctl create test -t 2 --label browserscript-test --from-file api-sample.js --browser firefox --location <id>
+
+# create browserscript bundle
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "base64" --script-file mytest.js --browser chrome --location <id>
+
+# create webpagescript
+synctl create test -t 3 --label "webpagescript-test" --from-file side/browser.side --browser chrome --location <id>"""
 
 GET_USAGE = """synctl get {location,lo,test,application,app} [id] [options]
 
@@ -525,15 +537,32 @@ class SyntheticConfiguration(Base):
             "scriptType": "Basic"
         }
 
-        # syntheticType BrowserScript
-        self.browser_script_conf = {
+        browser_script_conf = {
+            "syntheticType": BrowserScript_TYPE,
+            "script": "",  # api script
+            "retries": 0,  # [0,2]
+            "retryInterval": 5,
+            "scriptType": "Basic"
+        }
+
+        browser_bundle_conf = {
+            "syntheticType": "BrowserScript",
             "scripts": {
                 "scriptFile": "index.js",
                 "bundle": ""
             },
-            "syntheticType": "BrowserScript",
             "browser": "firefox",
         }
+
+        # syntheticType BrowserScript
+        # self.browser_script_conf = {
+        #     "scripts": {
+        #         "scriptFile": "index.js",
+        #         "bundle": ""
+        #     },
+        #     "syntheticType": "BrowserScript",
+        #     "browser": "firefox",
+        # }
 
         # syntheticType WebpageScript
         self.webpage_script_conf = {
@@ -542,7 +571,7 @@ class SyntheticConfiguration(Base):
             "browser": "chrome",
         }
 
-        self.webpage_action_conf = {}
+        # self.webpage_action_conf = {}
 
         self.script_type = [HTTPScript_TYPE, BrowserScript_TYPE]
         if syn_type in [HTTPAction_TYPE, HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE]:
@@ -552,19 +581,22 @@ class SyntheticConfiguration(Base):
         if syn_type == HTTPAction_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], http_action_con)
+
         if bundle_type is True and syn_type == HTTPScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], http_bundle_con)
-        if bundle_type is False and syn_type == HTTPScript_TYPE:
+        elif bundle_type is False and syn_type == HTTPScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], http_script_con)
 
-        if syn_type == BrowserScript_TYPE:
+        # BrowserScript support simple script and bundle type
+        if bundle_type is True and syn_type == BrowserScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
-                self.syn_test_config["configuration"], self.browser_script_conf)
-        # if syn_type == WebpageAction_TYPE:
-        #     self.syn_test_config["configuration"] = self.merge_json(
-        #         self.syn_test_config["configuration"], self.webpage_action_conf)
+                self.syn_test_config["configuration"], browser_bundle_conf)
+        elif bundle_type is False and syn_type == BrowserScript_TYPE:
+            self.syn_test_config["configuration"] = self.merge_json(
+                self.syn_test_config["configuration"], browser_script_conf)
+
         if syn_type == WebpageScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], self.webpage_script_conf)
@@ -657,11 +689,11 @@ class SyntheticConfiguration(Base):
             print(f"script content: {script_str}")
             sys.exit(-1)
 
-        if self.syn_type == HTTPScript_TYPE and script_str != "":
+        if self.syn_type in (HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE) and script_str != "":
             self.syn_test_config["configuration"]["script"] = script_str
 
-        if self.syn_type == WebpageScript_TYPE and script_str != "":
-            self.syn_test_config["configuration"]["script"] = script_str
+        # if self.syn_type == WebpageScript_TYPE and script_str != "":
+        #     self.syn_test_config["configuration"]["script"] = script_str
 
     def get_api_script_script(self) -> str:
         """return script"""
@@ -2412,7 +2444,7 @@ def main():
                 payload.set_allow_insecure(get_args.allow_insecure)
 
         # basic type HTTPScript and WebpageScript
-        elif get_args.type in (1, 3) and get_args.bundle is None:
+        elif get_args.type in (1, 2, 3) and get_args.bundle is None:
             syn_type_t = synthetic_type[get_args.type]
             payload = SyntheticConfiguration(syn_type=syn_type_t)
             if get_args.from_file is not None:
