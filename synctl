@@ -1335,7 +1335,7 @@ class SyntheticTest(Base):
                                           response_time_length),
                           self.fill_space(str(t["active"]), active_length),
                           self.fill_space(location_str),
-                          "None URL")
+                          "N/A")  # None URL => N/A
                     output_lists.append(t)
         print('total:', len(output_lists))
 
@@ -1678,11 +1678,11 @@ class SyntheticResult(Base):
             "syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"],
             "metrics": [{
                 "aggregation": "SUM",
-                "granularity": 60,
+                "granularity": 600,
                 "metric": "synthetic.metricsStatus"
             }, {
                 "aggregation": "MEAN",
-                "granularity": 60,  # granularity max 600
+                "granularity": 600,  # granularity max 600
                 "metric": "synthetic.metricsResponseTime"
             }],
             "timeFrame": {
