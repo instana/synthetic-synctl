@@ -861,6 +861,60 @@ class SyntheticPoP(Base):
                 f"Failed to get locations, status code {retrieve_res.status_code}")
             sys.exit(-1)
 
+    def get_location_summary_list(self):
+        """ --request POST 'http://{host}/api/synthetics/results/locationsummarylist'
+        --header "Authorization: apiToken <YourToken>" -i
+        --header "Content-Type: application/json"
+        -d '{
+             "pagincurlation": {
+             "page": 1,
+             "pageSize": 200
+            },
+             "timeFrame": {
+             "to": 0,
+             "windowSize": 3600000
+            }
+         }'
+         """
+
+        host = self.auth["host"]
+        token = self.auth["token"]
+        self.check_host_and_token(host, token)
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        summary_config = {
+            "pagination": {
+                "page": 1,
+                "pageSize": 200
+            },
+            "timeFrame": {
+                "to": 0,
+                "windowSize": 3600000
+            }
+        }
+        request_url = f"{host}/api/synthetics/results/locationsummarylist"
+        retrieve_res = requests.post(request_url,
+                                     headers=headers,
+                                     data=json.dumps(summary_config),
+                                     timeout=60,
+                                     verify=self.insecure)
+
+        if retrieve_res.status_code == 200:
+            data = retrieve_res.json()
+
+            if isinstance(data, dict):
+                return [data]
+            else:
+                return data
+        else:
+            return []
+
+
+
     def delete_a_synthetic_pop(self, pop_id=""):
         if pop_id != "":
             self.__delete_a_synthetic_location(location_id=pop_id)
@@ -903,27 +957,39 @@ class SyntheticPoP(Base):
         for l in locations_list:
             self.__delete_a_synthetic_location(l)
 
-    def print_synthetic_locations(self, locations):
+    def print_synthetic_locations(self, locations, locations_summary):
         if locations is None:
             locations = []
-        self.__print_pop(locations)
+        self.__print_pop(locations, locations_summary)
 
-    def __print_pop(self, pop_data: list):
-        display_label_length = 30
+    def __print_pop(self, pop_data: list, pop_locations_summary):
+
+        display_label_length = 50
         status_length = 15
-        print(self.fill_space("ID".upper()),
-              self.fill_space("Label".upper()),
+        no_of_tests_length = 15
+        a = -1
+        print(self.fill_space("ID".upper(),27),
+              self.fill_space("Label".upper(),35),
               self.fill_space("DisplayLabel".upper(), display_label_length),
               self.fill_space("Status".upper(), status_length),
+              self.fill_space("No. of tests".upper(), no_of_tests_length),
               "Description".upper())
         if len(pop_data) > 0:
             for pop in pop_data:
-                print(self.fill_space(pop["id"]),
-                      self.fill_space(pop['label']),
-                      self.fill_space(pop['displayLabel'],
-                                      display_label_length),
-                      self.fill_space(pop['status'], status_length),
-                      pop["description"])
+                for POP in pop_locations_summary:
+                    for x in range(a, len(pop_data)):
+                        if pop["id"] == POP['items'][x]['id']:
+                            print(self.fill_space(pop["id"], 27),
+                                  self.fill_space(pop['label'], 35),
+                                  self.fill_space(pop['displayLabel'],
+                                                  display_label_length),
+                                  self.fill_space(pop['status'], status_length),
+                                  self.fill_space(str(POP['items'][x]['linkedTests']), no_of_tests_length),
+                                  pop["description"])
+                            a = a+1
+                            break
+                        else:
+                            continue
         else:
             print('no location')
         print('total:', len(pop_data))
@@ -2374,7 +2440,8 @@ def main():
             else:
                 pop_locations_json = pop_instance.retrieve_synthetic_locations(
                     location_id=get_args.id)
-            pop_instance.print_synthetic_locations(pop_locations_json)
+            pop_locations_summary_result = pop_instance.get_location_summary_list()
+            pop_instance.print_synthetic_locations(pop_locations_json, pop_locations_summary_result)
         elif get_args.op_type in (SYN_APPLICATION, SYN_APP):
             if get_args.name_filter is not None:
                 app_instance.set_name_filter(get_args.name_filter)
