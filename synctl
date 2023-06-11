@@ -54,6 +54,8 @@ SYN_APP = "app"  # short for application
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
 
+NOT_APPLICABLE = "N/A"
+
 
 def show_version():
     """show synctl version"""
@@ -1269,7 +1271,7 @@ class SyntheticTest(Base):
         active_length = 6
         success_rate_length = 12
         response_time_length = 12
-        location_str = "no locations"
+        location_str = NOT_APPLICABLE
 
         test_type = "" if test_type is None else test_type
         # show title
@@ -1301,7 +1303,7 @@ class SyntheticTest(Base):
                     # locations,
                     location_str = ','.join(t['locationDisplayLabels'])
                 else:
-                    location_str = "no locations"
+                    location_str = NOT_APPLICABLE
                 if test_type == "" or (test_type != "" and current_type == test_type):
                     print(self.fill_space(t["id"], id_length),
                           self.fill_space(t['label'], max_label_length),
@@ -1321,7 +1323,7 @@ class SyntheticTest(Base):
                 if len(t['locations']) > 0:
                     location_str = ','.join(t['locationDisplayLabels'])
                 else:
-                    location_str = "no locations"
+                    location_str = NOT_APPLICABLE
                 if test_type == "" or (test_type != "" and current_type == test_type):
                     print(self.fill_space(t["id"], id_length),
                           self.fill_space(t['label'], max_label_length),
@@ -2096,7 +2098,7 @@ class ParseParameter:
 
         # set auth
         self.parser_create.add_argument(
-            '--use-env', type=str, default=None, help='use a specified configuration')
+            '--use-env', '-e', type=str, default=None, help='use a specified configuration')
         self.parser_create.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_create.add_argument(
@@ -2109,7 +2111,7 @@ class ParseParameter:
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
         self.parser_get.add_argument(
-            '--type', '-t', type=int, metavar='synthetic type', help='specify synthetic type')
+            '--type', '-t', type=int, choices=[0, 1, 2, 3], metavar='synthetic type', help='specify synthetic type')
         self.parser_get.add_argument(
             'id', type=str, nargs="?", help='synthetic id')
         self.parser_get.add_argument(
@@ -2143,7 +2145,7 @@ class ParseParameter:
         # self.parser_get.add_argument(
         #     '--token', type=str, help='set token')
         host_token_group.add_argument(
-            '--use-env', type=str, default=None, help='use a specified config')
+            '--use-env', '-e', type=str, default=None, help='use a specified config')
         host_token_group.add_argument(
             '--host', type=str, help='set hostname')
         host_token_group.add_argument(
@@ -2182,7 +2184,7 @@ class ParseParameter:
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
-            '--use-env', type=str, default=None, help='use a config hostname')
+            '--use-env', '-e', type=str, default=None, help='use a config hostname')
         self.parser_patch.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_patch.add_argument(
@@ -2200,7 +2202,7 @@ class ParseParameter:
             '--from-data', type=str, help='new json payload')
 
         self.parser_update.add_argument(
-            '--use-env', type=str, default=None, help='use a config hostname')
+            '--use-env', '-e', type=str, default=None, help='use a config hostname')
         self.parser_update.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_update.add_argument(
@@ -2223,7 +2225,7 @@ class ParseParameter:
             '--no-locations', action="store_true", help="delete test with no locations")
 
         self.parser_delete.add_argument(
-            '--use-env', type=str, default=None, help='use a config hostname')
+            '--use-env', '-e', type=str, default=None, help='use a config hostname')
         self.parser_delete.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_delete.add_argument(
@@ -2335,7 +2337,10 @@ def main():
             syn_type_t = None
             syn_window_size = get_args.window_size
             if get_args.type is not None:
-                syn_type_t = synthetic_type[get_args.type]
+                try:
+                    syn_type_t = synthetic_type[get_args.type]
+                except IndexError:
+                    print("synthetic type only support 0 1 2 3", syn_type_t)
 
             if get_args.id is None:
                 out_list = syn_instance.retrieve_all_synthetic_tests(
