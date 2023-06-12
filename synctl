@@ -183,7 +183,7 @@ class Base:
 
     def set_host_token(self, new_host=None, new_token=None):
         if new_host is not None and new_token is not None:
-            self.auth["host"] = new_host
+            self.auth["host"] = new_host.rstrip('/')
             self.auth["token"] = new_token
         else:
             print("both --host and --token are required")
@@ -308,6 +308,10 @@ class ConfigurationFile(Base):
 
         return False
 
+    def __remove_right_slash(self, host_name):
+        """remove right slash of a host"""
+        return host_name.rstrip('/')
+
     def add_an_item_to_config(self, name, host, token, set_default=False):
         """add a new config"""
         if name is None or host is None or token is None:
@@ -316,11 +320,12 @@ class ConfigurationFile(Base):
             print("name, host, and token must not be none")
         elif self.__check_if_already_in_config(name):
             # update it
-            self.update_an_item(name, host, token, set_default=set_default)
+            self.update_an_item(name, self.__remove_right_slash(
+                host), token, set_default=set_default)
         else:
             self.config_json.append({
                 "name": name,
-                "host": host,
+                "host": self.__remove_right_slash(host),
                 "token": token,
                 "default": False
             })
@@ -378,12 +383,12 @@ class ConfigurationFile(Base):
         for item in self.config_json:
             if item["default"] is True:
                 return {
-                    "host": item["host"],
+                    "host": self.__remove_right_slash(item["host"]),
                     "token": item["token"]
                 }
         if len(self.config_json) > 0:
             return {
-                "host": self.config_json[0]["host"],
+                "host": self.__remove_right_slash(self.config_json[0]["host"]),
                 "token": self.config_json[0]["token"]
             }
         else:
@@ -395,7 +400,7 @@ class ConfigurationFile(Base):
             for item in self.config_json:
                 if item["name"] == name:
                     return {
-                        "host": item["host"],
+                        "host": self.__remove_right_slash(item["host"]),
                         "token": item["token"]
                     }
             raise ValueError(f"no config named {name}")
