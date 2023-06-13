@@ -1725,7 +1725,6 @@ class SyntheticResult(Base):
         if summary_res.status_code == 200:
             # extracting data in json format
             data = summary_res.json()
-            # print("summary data:", data)
             return data
         elif summary_res.status_code == 400:
             print(f'Bad Request: status code: {summary_res.status_code}')
