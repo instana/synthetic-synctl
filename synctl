@@ -1813,7 +1813,6 @@ class SyntheticResult(Base):
                 "success_rate": "N/A",  # default N/A
                 "response_time": "N/A"  # default N/A
             }
-            print(metrics_summary)
             total_test_runs, successful_test_runs, response_time = None, None, None
             if "total_test_runs" in item["metrics"]:
                 total_test_runs = item["metrics"]["total_test_runs"][0][1]
