@@ -861,7 +861,7 @@ class SyntheticPoP(Base):
                 f"Failed to get locations, status code {retrieve_res.status_code}")
             sys.exit(-1)
 
-    def get_location_summary_list(self,  page=1, page_size=200, window_size=60*60*1000 ):
+    def get_location_summary_list(self,  page=1, page_size=200, window_size=60*60*1000):
         """curl --request POST 'http://{host}/api/synthetics/results/locationsummarylist'
         --header "Authorization: apiToken <YourToken>" -i
         --header "Content-Type: application/json"
@@ -960,12 +960,13 @@ class SyntheticPoP(Base):
 
     def __print_pop(self, pop_data: list, pop_locations_summary):
 
+        id_length = 30
+        label_length = 35
         display_label_length = 50
         status_length = 15
         no_of_tests_length = 15
-        a = -1
-        print(self.fill_space("ID".upper(),27),
-              self.fill_space("Label".upper(),35),
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("Label".upper(), label_length),
               self.fill_space("DisplayLabel".upper(), display_label_length),
               self.fill_space("Status".upper(), status_length),
               self.fill_space("No. of tests".upper(), no_of_tests_length),
@@ -974,8 +975,8 @@ class SyntheticPoP(Base):
             for pop in pop_data:
                 for _, POP in enumerate(pop_locations_summary['items']):
                     if pop["id"] == POP['id']:
-                        print(self.fill_space(pop["id"], 27),
-                              self.fill_space(pop['label'], 35),
+                        print(self.fill_space(pop["id"], id_length),
+                              self.fill_space(pop['label'], label_length),
                               self.fill_space(pop['displayLabel'],
                                               display_label_length),
                               self.fill_space(
@@ -983,6 +984,17 @@ class SyntheticPoP(Base):
                               self.fill_space(
                                   str(POP['linkedTests']), no_of_tests_length),
                               pop["description"])
+        elif pop_locations_summary is None:
+            for pop in pop_data:
+                print(self.fill_space(pop["id"], id_length),
+                      self.fill_space(pop['label'], label_length),
+                      self.fill_space(pop['displayLabel'],
+                                      display_label_length),
+                      self.fill_space(
+                          pop['status'], status_length),
+                      self.fill_space(
+                          "N/A", no_of_tests_length),
+                      pop["description"])
         else:
             print('no location')
         print('total:', len(pop_data))
@@ -1801,6 +1813,7 @@ class SyntheticResult(Base):
                 "success_rate": "N/A",  # default N/A
                 "response_time": "N/A"  # default N/A
             }
+            print(metrics_summary)
             total_test_runs, successful_test_runs, response_time = None, None, None
             if "total_test_runs" in item["metrics"]:
                 total_test_runs = item["metrics"]["total_test_runs"][0][1]
