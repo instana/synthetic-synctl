@@ -861,6 +861,77 @@ class SyntheticPoP(Base):
                 f"Failed to get locations, status code {retrieve_res.status_code}")
             sys.exit(-1)
 
+    def get_location_summary_list(self,  page=1, page_size=200, window_size=60*60*1000):
+        """curl --request POST 'http://{host}/api/synthetics/results/locationsummarylist'
+        --header "Authorization: apiToken <YourToken>" -i
+        --header "Content-Type: application/json"
+        -d '{
+             "pagincurlation": {
+             "page": 1,
+             "pageSize": 200
+            },
+             "timeFrame": {
+             "to": 0,
+             "windowSize": 3600000
+            }
+         }'
+         """
+
+        host = self.auth["host"]
+        token = self.auth["token"]
+        self.check_host_and_token(host, token)
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        summary_config = {
+            "pagination": {
+                "page": page,
+                "pageSize": page_size
+            },
+            "timeFrame": {
+                "to": 0,
+                "windowSize": window_size
+            }
+        }
+        request_url = f"{host}/api/synthetics/results/locationsummarylist"
+        retrieve_res = requests.post(request_url,
+                                     headers=headers,
+                                     data=json.dumps(summary_config),
+                                     timeout=60,
+                                     verify=self.insecure)
+
+        if retrieve_res.status_code == 200:
+            data = retrieve_res.json()
+            return data
+        else:
+            print('retrieve location summary list failed, status code:',
+                  retrieve_res.status_code)
+            return None
+
+    def get_all_location_summary_list(self,  page=1):
+        total_hits = 0
+        summary_result = self.get_location_summary_list()
+        if summary_result is not None:
+            page = summary_result["page"] if page in summary_result else 1
+            page_size = summary_result["pageSize"] if "pageSize" in summary_result else 200
+            if "totalHits" in summary_result:
+                total_hits = summary_result["totalHits"]
+
+            if page_size >= total_hits:
+                return summary_result
+            else:
+                total_pages = total_hits/page_size
+                if (total_pages - round(total_pages)) > 0:
+                    total_pages += 1
+                for x in range(1, round(total_pages)):
+                    summary_result = self.get_location_summary_list(page=x+1)
+                return summary_result
+        else:
+            return None
+
     def delete_a_synthetic_pop(self, pop_id=""):
         if pop_id != "":
             self.__delete_a_synthetic_location(location_id=pop_id)
@@ -903,26 +974,47 @@ class SyntheticPoP(Base):
         for l in locations_list:
             self.__delete_a_synthetic_location(l)
 
-    def print_synthetic_locations(self, locations):
+    def print_synthetic_locations(self, locations, locations_summary):
         if locations is None:
             locations = []
-        self.__print_pop(locations)
+        self.__print_pop(locations, locations_summary)
 
-    def __print_pop(self, pop_data: list):
-        display_label_length = 30
+    def __print_pop(self, pop_data: list, pop_locations_summary):
+
+        id_length = 30
+        label_length = 35
+        display_label_length = 50
         status_length = 15
-        print(self.fill_space("ID".upper()),
-              self.fill_space("Label".upper()),
+        no_of_tests_length = 15
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("Label".upper(), label_length),
               self.fill_space("DisplayLabel".upper(), display_label_length),
               self.fill_space("Status".upper(), status_length),
+              self.fill_space("No. of tests".upper(), no_of_tests_length),
               "Description".upper())
-        if len(pop_data) > 0:
+        if len(pop_data) > 0 and pop_locations_summary is not None:
             for pop in pop_data:
-                print(self.fill_space(pop["id"]),
-                      self.fill_space(pop['label']),
+                for _, POP in enumerate(pop_locations_summary['items']):
+                    if pop["id"] == POP['id']:
+                        print(self.fill_space(pop["id"], id_length),
+                              self.fill_space(pop['label'], label_length),
+                              self.fill_space(pop['displayLabel'],
+                                              display_label_length),
+                              self.fill_space(
+                                  pop['status'], status_length),
+                              self.fill_space(
+                                  str(POP['linkedTests']), no_of_tests_length),
+                              pop["description"])
+        elif pop_locations_summary is None:
+            for pop in pop_data:
+                print(self.fill_space(pop["id"], id_length),
+                      self.fill_space(pop['label'], label_length),
                       self.fill_space(pop['displayLabel'],
                                       display_label_length),
-                      self.fill_space(pop['status'], status_length),
+                      self.fill_space(
+                          pop['status'], status_length),
+                      self.fill_space(
+                          "N/A", no_of_tests_length),
                       pop["description"])
         else:
             print('no location')
@@ -2374,7 +2466,8 @@ def main():
             else:
                 pop_locations_json = pop_instance.retrieve_synthetic_locations(
                     location_id=get_args.id)
-            pop_instance.print_synthetic_locations(pop_locations_json)
+            pop_locations_summary_result = pop_instance.get_all_location_summary_list()
+            pop_instance.print_synthetic_locations(pop_locations_json, pop_locations_summary_result)
         elif get_args.op_type in (SYN_APPLICATION, SYN_APP):
             if get_args.name_filter is not None:
                 app_instance.set_name_filter(get_args.name_filter)
