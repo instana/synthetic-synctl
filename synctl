@@ -1021,12 +1021,10 @@ class SyntheticPoP(Base):
             print('no location')
         print('total:', len(pop_data))
 
-
-def print_credentials(credentials):
-    print("CREDENTIALS")
-    for t in credentials:
-        print(t)
-
+    def print_credentials(self, credentials):
+        print("CREDENTIALS")
+        for t in credentials:
+            print(t)
 
 class SyntheticTest(Base):
     """create, query, update and delete synthetic test"""
@@ -2504,7 +2502,7 @@ def main():
             app_instance.print_app_list()
         elif get_args.op_type == SYN_CRED:
             credentials = syn_instance.retrieve_credentials()
-            print_credentials(credentials)
+            pop_instance.print_credentials(credentials)
     elif COMMAND_CREATE == get_args.sub_command:
         syn_type_t = synthetic_type[get_args.type]
         payload = SyntheticConfiguration(syn_type_t)
