@@ -2379,6 +2379,8 @@ class ParseParameter:
         self.parser_delete.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_delete.add_argument(
+            '--token', type=str, help='set token')
+        self.parser_delete.add_argument(
             '--key', type=str, help='delete credential with credential name')
 
     def set_options(self):
