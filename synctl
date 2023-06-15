@@ -106,13 +106,15 @@ synctl create test -t 0 --label simple-ping-test --url <url> --location <id> --f
 synctl create test -t 1 --label script-test --from-file script-name.js --location <id>
 
 # create an API script bundle type
+synctl create test -t 1 --label script-bundle-test --bundle file.zip --script-file index.js --location <id>
 synctl create test -t 1 --label script-bundle-test --bundle <base64> --script-file index.js --location <id>
 
 # create browserscript
 synctl create test -t 2 --label browserscript-test --from-file api-sample.js --browser firefox --location <id>
 
 # create browserscript bundle
-synctl create test -t 2 --label "browserscript-bundle-test" --bundle "base64" --script-file mytest.js --browser chrome --location <id>
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --script-file mytest.js --browser chrome --location <id>
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --script-file mytest.js --browser chrome --location <id>
 
 # create webpagescript
 synctl create test -t 3 --label "webpagescript-test" --from-file side/browser.side --browser chrome --location <id>"""
@@ -809,12 +811,19 @@ class SyntheticConfiguration(Base):
             print(not_found_e)
             sys.exit(-1)
 
-    def read_zip_file(self, file_name):
+    def is_zip_file(self, file_name):
+        """check zip file name"""
+        if file_name is not None and isinstance(file_name, str):
+            return file_name.endswith('.zip')
+
+    def read_zip_file_to_base64(self, file_name):
+        """read zip file and encode with base64"""
         with open(file_name, 'rb') as file1:
             zip_content_byte = file1.read()
             zip_content_byte_base64 = b64encode(zip_content_byte)
-            self.set_api_bundle_script(zip_content_byte_base64)
-            return zip_content_byte_base64
+            zip_content_base64_str = zip_content_byte_base64.decode('utf-8')
+            # self.set_api_bundle_script(zip_content_base64_str)
+            return zip_content_base64_str
 
     def get_json(self):
         """return payload as json"""
@@ -2061,7 +2070,7 @@ class ParseParameter:
 
         # options for bundle script
         self.parser_create.add_argument(
-            '--bundle', type=str, help='synthetic script encoded with base64')
+            '--bundle', type=str, help='specify a zip file or use synthetic script encoded with base64')
         self.parser_create.add_argument(
             '--script-file', type=str, help='bundle script entry file, e.g, myscript.js')
         # [0, 2]
@@ -2468,13 +2477,18 @@ def main():
             syn_type_t = synthetic_type[get_args.type]
             payload = SyntheticConfiguration(syn_type_t, bundle_type=True)
 
+            if payload.is_zip_file(get_args.bundle):
+                bundle_base64_str = payload.read_zip_file_to_base64(
+                    get_args.bundle)
+            else:
+                bundle_base64_str = get_args.bundle
             # entry file
             if get_args.script_file is not None:
                 payload.set_api_bundle_script(
-                    get_args.bundle, script_file=get_args.script_file)
+                    bundle_base64_str, script_file=get_args.script_file)
             else:
                 # script file use index.js
-                payload.set_api_bundle_script(get_args.bundle)
+                payload.set_api_bundle_script(bundle_base64_str)
         # BrowserScript 2, WebpageScript 3
         if get_args.type in (2, 3):
             payload.set_browser_type(get_args.browser)
