@@ -1354,6 +1354,38 @@ class SyntheticTest(Base):
         if self.ask_answer("are you sure to delete these tests?"):
             self.delete_multiple_synthetic_tests(delete_syn_id_lists)
 
+    def delete_credential(self, key):
+        """Delete a credential"""
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        if key is None:
+            print("key should not be empty")
+            return
+
+        creds = self.retrieve_credentials()
+
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        delete_url = f"{host}/api/synthetics/settings/credentials/{key}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        delete_res = requests.delete(delete_url, headers=headers,
+                                     timeout=60, verify=self.insecure)
+
+        if key in creds:
+            if delete_res.status_code == 204:
+                print(f'credential \"{key}\" deleted')
+            elif delete_res.status_code == 429:
+                print("Too Many Requests")
+            else:
+                print(
+                    f"Fail to delete {key}, status code {delete_res.status_code}")
+        else:
+            print(f"No credential {key} ")
+
     def __sort_synthetic_tests(self, syn_list):
         """sort synthetic list by locationDisplayLabels"""
         new_list = sorted(
@@ -2328,9 +2360,9 @@ class ParseParameter:
 
     def delete_command_options(self):
         self.parser_delete.add_argument(
-            'delete_type', choices=['location', 'lo', 'test'], help='specify synthetic type: location/test')
+            'delete_type', choices=['location', 'lo', 'test', 'cred'], help='specify synthetic type: location/test/credential')
         self.parser_delete.add_argument(
-            'id', type=str, nargs="*", help='synthetic test id, location id')
+            'id', type=str, nargs="*", help='synthetic test id, location id, credential name')
 
         # other options
         self.parser_delete.add_argument(
@@ -2347,7 +2379,7 @@ class ParseParameter:
         self.parser_delete.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_delete.add_argument(
-            '--token', type=str, help='set token')
+            '--key', type=str, help='delete credential with credential name')
 
     def set_options(self):
         self.global_options()
@@ -2663,6 +2695,10 @@ def main():
         if get_args.delete_type in (SYN_LOCATION, SYN_LO):
             if get_args.id is not None:
                 pop_instance.delete_synthetic_locations(get_args.id)
+        if get_args.delete_type == SYN_CRED:
+            if get_args.key is not None:
+                syn_instance.delete_credential(key=get_args.key)
+
     else:
         print('unknown sub command:', get_args.sub_command)
 
