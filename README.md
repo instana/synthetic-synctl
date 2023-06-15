@@ -306,7 +306,7 @@ synctl delete location <location-id>
 synctl delete location <location-id-1> <location-id-2> <location-id-3> ...
 ```
 
-## Query Credentials
+## Manage Credentials
 
 ### Display all credentials
 
