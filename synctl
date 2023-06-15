@@ -1022,7 +1022,7 @@ class SyntheticPoP(Base):
         print('total:', len(pop_data))
 
     def print_credentials(self, credentials):
-        print("CREDENTIALS")
+        credentials.sort()
         for t in credentials:
             print(t)
 
