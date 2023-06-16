@@ -1389,7 +1389,7 @@ class SyntheticTest(Base):
             cred_list = []
 
         if len(cred_list) == 0:
-            print("no location to delete")
+            print("no credential to delete")
             return
 
         for cred in cred_list:
