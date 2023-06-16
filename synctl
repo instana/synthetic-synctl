@@ -54,6 +54,8 @@ SYN_APP = "app"  # short for application
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
 
+NOT_APPLICABLE = "N/A"
+
 
 def show_version():
     """show synctl version"""
@@ -104,13 +106,15 @@ synctl create test -t 0 --label simple-ping-test --url <url> --location <id> --f
 synctl create test -t 1 --label script-test --from-file script-name.js --location <id>
 
 # create an API script bundle type
+synctl create test -t 1 --label script-bundle-test --bundle file.zip --script-file index.js --location <id>
 synctl create test -t 1 --label script-bundle-test --bundle <base64> --script-file index.js --location <id>
 
 # create browserscript
 synctl create test -t 2 --label browserscript-test --from-file api-sample.js --browser firefox --location <id>
 
 # create browserscript bundle
-synctl create test -t 2 --label "browserscript-bundle-test" --bundle "base64" --script-file mytest.js --browser chrome --location <id>
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --script-file mytest.js --browser chrome --location <id>
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --script-file mytest.js --browser chrome --location <id>
 
 # create webpagescript
 synctl create test -t 3 --label "webpagescript-test" --from-file side/browser.side --browser chrome --location <id>"""
@@ -181,7 +185,7 @@ class Base:
 
     def set_host_token(self, new_host=None, new_token=None):
         if new_host is not None and new_token is not None:
-            self.auth["host"] = new_host
+            self.auth["host"] = new_host.rstrip('/')
             self.auth["token"] = new_token
         else:
             print("both --host and --token are required")
@@ -306,6 +310,10 @@ class ConfigurationFile(Base):
 
         return False
 
+    def __remove_right_slash(self, host_name):
+        """remove right slash of a host"""
+        return host_name.rstrip('/')
+
     def add_an_item_to_config(self, name, host, token, set_default=False):
         """add a new config"""
         if name is None or host is None or token is None:
@@ -314,11 +322,12 @@ class ConfigurationFile(Base):
             print("name, host, and token must not be none")
         elif self.__check_if_already_in_config(name):
             # update it
-            self.update_an_item(name, host, token, set_default=set_default)
+            self.update_an_item(name, self.__remove_right_slash(
+                host), token, set_default=set_default)
         else:
             self.config_json.append({
                 "name": name,
-                "host": host,
+                "host": self.__remove_right_slash(host),
                 "token": token,
                 "default": False
             })
@@ -376,12 +385,12 @@ class ConfigurationFile(Base):
         for item in self.config_json:
             if item["default"] is True:
                 return {
-                    "host": item["host"],
+                    "host": self.__remove_right_slash(item["host"]),
                     "token": item["token"]
                 }
         if len(self.config_json) > 0:
             return {
-                "host": self.config_json[0]["host"],
+                "host": self.__remove_right_slash(self.config_json[0]["host"]),
                 "token": self.config_json[0]["token"]
             }
         else:
@@ -393,7 +402,7 @@ class ConfigurationFile(Base):
             for item in self.config_json:
                 if item["name"] == name:
                     return {
-                        "host": item["host"],
+                        "host": self.__remove_right_slash(item["host"]),
                         "token": item["token"]
                     }
             raise ValueError(f"no config named {name}")
@@ -802,12 +811,19 @@ class SyntheticConfiguration(Base):
             print(not_found_e)
             sys.exit(-1)
 
-    def read_zip_file(self, file_name):
+    def is_zip_file(self, file_name):
+        """check zip file name"""
+        if file_name is not None and isinstance(file_name, str):
+            return file_name.endswith('.zip')
+
+    def read_zip_file_to_base64(self, file_name):
+        """read zip file and encode with base64"""
         with open(file_name, 'rb') as file1:
             zip_content_byte = file1.read()
             zip_content_byte_base64 = b64encode(zip_content_byte)
-            self.set_api_bundle_script(zip_content_byte_base64)
-            return zip_content_byte_base64
+            zip_content_base64_str = zip_content_byte_base64.decode('utf-8')
+            # self.set_api_bundle_script(zip_content_base64_str)
+            return zip_content_base64_str
 
     def get_json(self):
         """return payload as json"""
@@ -1361,7 +1377,7 @@ class SyntheticTest(Base):
         active_length = 6
         success_rate_length = 12
         response_time_length = 12
-        location_str = "no locations"
+        location_str = NOT_APPLICABLE
 
         test_type = "" if test_type is None else test_type
         # show title
@@ -1393,7 +1409,7 @@ class SyntheticTest(Base):
                     # locations,
                     location_str = ','.join(t['locationDisplayLabels'])
                 else:
-                    location_str = "no locations"
+                    location_str = NOT_APPLICABLE
                 if test_type == "" or (test_type != "" and current_type == test_type):
                     print(self.fill_space(t["id"], id_length),
                           self.fill_space(t['label'], max_label_length),
@@ -1413,7 +1429,7 @@ class SyntheticTest(Base):
                 if len(t['locations']) > 0:
                     location_str = ','.join(t['locationDisplayLabels'])
                 else:
-                    location_str = "no locations"
+                    location_str = NOT_APPLICABLE
                 if test_type == "" or (test_type != "" and current_type == test_type):
                     print(self.fill_space(t["id"], id_length),
                           self.fill_space(t['label'], max_label_length),
@@ -1810,7 +1826,6 @@ class SyntheticResult(Base):
         if summary_res.status_code == 200:
             # extracting data in json format
             data = summary_res.json()
-            # print("summary data:", data)
             return data
         elif summary_res.status_code == 400:
             print(f'Bad Request: status code: {summary_res.status_code}')
@@ -2147,7 +2162,7 @@ class ParseParameter:
 
         # options for bundle script
         self.parser_create.add_argument(
-            '--bundle', type=str, help='synthetic script encoded with base64')
+            '--bundle', type=str, help='specify a zip file or use synthetic script encoded with base64')
         self.parser_create.add_argument(
             '--script-file', type=str, help='bundle script entry file, e.g, myscript.js')
         # [0, 2]
@@ -2188,7 +2203,7 @@ class ParseParameter:
 
         # set auth
         self.parser_create.add_argument(
-            '--use-env', type=str, default=None, help='use a specified configuration')
+            '--use-env', '-e', type=str, default=None, help='use a specified configuration')
         self.parser_create.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_create.add_argument(
@@ -2201,7 +2216,7 @@ class ParseParameter:
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
         self.parser_get.add_argument(
-            '--type', '-t', type=int, metavar='synthetic type', help='specify synthetic type')
+            '--type', '-t', type=int, choices=[0, 1, 2, 3], metavar='synthetic type', help='specify synthetic type')
         self.parser_get.add_argument(
             'id', type=str, nargs="?", help='synthetic id')
         self.parser_get.add_argument(
@@ -2235,7 +2250,7 @@ class ParseParameter:
         # self.parser_get.add_argument(
         #     '--token', type=str, help='set token')
         host_token_group.add_argument(
-            '--use-env', type=str, default=None, help='use a specified config')
+            '--use-env', '-e', type=str, default=None, help='use a specified config')
         host_token_group.add_argument(
             '--host', type=str, help='set hostname')
         host_token_group.add_argument(
@@ -2274,7 +2289,7 @@ class ParseParameter:
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
-            '--use-env', type=str, default=None, help='use a config hostname')
+            '--use-env', '-e', type=str, default=None, help='use a config hostname')
         self.parser_patch.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_patch.add_argument(
@@ -2292,7 +2307,7 @@ class ParseParameter:
             '--from-data', type=str, help='new json payload')
 
         self.parser_update.add_argument(
-            '--use-env', type=str, default=None, help='use a config hostname')
+            '--use-env', '-e', type=str, default=None, help='use a config hostname')
         self.parser_update.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_update.add_argument(
@@ -2315,7 +2330,7 @@ class ParseParameter:
             '--no-locations', action="store_true", help="delete test with no locations")
 
         self.parser_delete.add_argument(
-            '--use-env', type=str, default=None, help='use a config hostname')
+            '--use-env', '-e', type=str, default=None, help='use a config hostname')
         self.parser_delete.add_argument(
             '--host', type=str, help='set hostname')
         self.parser_delete.add_argument(
@@ -2427,7 +2442,10 @@ def main():
             syn_type_t = None
             syn_window_size = get_args.window_size
             if get_args.type is not None:
-                syn_type_t = synthetic_type[get_args.type]
+                try:
+                    syn_type_t = synthetic_type[get_args.type]
+                except IndexError:
+                    print("synthetic type only support 0 1 2 3", syn_type_t)
 
             if get_args.id is None:
                 out_list = syn_instance.retrieve_all_synthetic_tests(
@@ -2552,13 +2570,18 @@ def main():
             syn_type_t = synthetic_type[get_args.type]
             payload = SyntheticConfiguration(syn_type_t, bundle_type=True)
 
+            if payload.is_zip_file(get_args.bundle):
+                bundle_base64_str = payload.read_zip_file_to_base64(
+                    get_args.bundle)
+            else:
+                bundle_base64_str = get_args.bundle
             # entry file
             if get_args.script_file is not None:
                 payload.set_api_bundle_script(
-                    get_args.bundle, script_file=get_args.script_file)
+                    bundle_base64_str, script_file=get_args.script_file)
             else:
                 # script file use index.js
-                payload.set_api_bundle_script(get_args.bundle)
+                payload.set_api_bundle_script(bundle_base64_str)
         # BrowserScript 2, WebpageScript 3
         if get_args.type in (2, 3):
             payload.set_browser_type(get_args.browser)
