@@ -825,6 +825,32 @@ class SyntheticConfiguration(Base):
         return result
 
 
+class CredentialConfiguration(Base):
+    def __init__(self):
+        Base.__init__(self)
+        self.credential_config = {
+            "credentialName": "",
+            "credentialValue": ""
+        }
+
+    def set_credential_name(self, key):
+        self.credential_config["credentialName"] = key
+
+    def set_credential_value(self, value):
+        self.credential_config["credentialValue"] = value
+
+    def get_json(self):
+        """return payload as json"""
+        if len(self.credential_config["credentialName"]) == 0:
+            print("Error: no credential name, set --key <credential-name>")
+            sys.exit(-1)
+        elif len(self.credential_config["credentialValue"]) == 0:
+            print("Error: no credential value, set --value <credential-value> ")
+            sys.exit(-1)
+
+        result = json.dumps(self.credential_config)
+        return result
+
 class SyntheticPoP(Base):
     def __init__(self) -> None:
         Base.__init__(self)
@@ -1083,6 +1109,37 @@ class SyntheticTest(Base):
             print('create test failed, status code:', create_res.status_code)
             if create_res.text:
                 print(create_res.text)
+
+    def create_credential(self):
+        """create credential"""
+        cred_payload = self.payload
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        credential = self.retrieve_credentials()
+
+        create_url = f"{host}/api/synthetics/settings/credentials/"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        create_cred_res = requests.post(create_url,
+                                        headers=headers,
+                                        data=cred_payload,
+                                        timeout=60,
+                                        verify=self.insecure)
+
+        if create_cred_res.status_code == 201:
+            data = json.loads(cred_payload)
+            cred_key = data["credentialName"]
+            print(f"credential \"{cred_key}\" created")
+        elif create_cred_res.status_code == 400:
+            print(f'Create Error: {create_cred_res}\n', create_cred_res.json())
+        else:
+            print('Create credential failed, status code:', create_cred_res.status_code)
 
     def __generate_random_str(self, num=5):
         # using random.choices()
@@ -2176,10 +2233,10 @@ class ParseParameter:
 
     def create_command_options(self):
         self.parser_create.add_argument(
-            'syn_type', type=str, choices=["test"], metavar="test", help="specify test")
+            'syn_type', type=str, choices=["test", "cred"], help="specify test/cred")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3], required=True, help="test type: "
+            '-t', '--type', type=int, choices=[0, 1, 2, 3], required=False, help="test type: "
             + "0 HTTPAction,"
             + " 1 HTTPScript,"
             + " 2 BrowserScript,"
@@ -2262,6 +2319,11 @@ class ParseParameter:
             '--host', type=str, help='set hostname')
         self.parser_create.add_argument(
             '--token', type=str, help='set token')
+
+        self.parser_create.add_argument(
+            '--key', type=str, help='set credential name')
+        self.parser_create.add_argument(
+            '--value', type=str, help='set credential value')
 
     def get_command_options(self):
         self.parser_get.add_argument(
@@ -2545,124 +2607,140 @@ def main():
             credentials = syn_instance.retrieve_credentials()
             pop_instance.print_credentials(credentials)
     elif COMMAND_CREATE == get_args.sub_command:
-        syn_type_t = synthetic_type[get_args.type]
-        payload = SyntheticConfiguration(syn_type_t)
+        if get_args.syn_type == SYN_CRED:
+            cred_payload = CredentialConfiguration()
+            if get_args.key is not None:
+                cred_payload.set_credential_name(get_args.key)
+            if get_args.value is not None:
+                cred_payload.set_credential_value(get_args.value)
 
-        # --from-json options
-        # create from a json file
-        # if use a json file, all options should config in json
-        # not support provide other options from command-line
-        if get_args.from_json is not None:
-            json_file = get_args.from_json
-            payload.loads_from_json_file(json_file_name=json_file)
-            syn_instance.set_synthetic_payload(payload=payload.get_json())
-            syn_instance.create_a_synthetic_test()
+            syn_instance.set_synthetic_payload(payload=cred_payload.get_json())
+            syn_instance.create_credential()
             return
+        elif get_args.syn_type == SYN_TEST:
+            if get_args.type is not None and get_args.type in [0, 1, 2, 3]:
+                syn_type_t = synthetic_type[get_args.type]
+                payload = SyntheticConfiguration(syn_type_t)
 
-        # create test and get option from command line
-        # PING, create simple ping
-        if get_args.type == 0 or get_args.type is None:
-            # request url is required
-            if get_args.url is not None:
-                payload.set_ping_url(get_args.url)
+                # --from-json options
+                # create from a json file
+                # if use a json file, all options should config in json
+                # not support provide other options from command-line
+                if get_args.from_json is not None:
+                    json_file = get_args.from_json
+                    payload.loads_from_json_file(json_file_name=json_file)
+                    syn_instance.set_synthetic_payload(payload=payload.get_json())
+                    syn_instance.create_a_synthetic_test()
+                    return
+
+                # create test and get option from command line
+                # PING, create simple ping
+                if get_args.type == 0 or get_args.type is None:
+                    # request url is required
+                    if get_args.url is not None:
+                        payload.set_ping_url(get_args.url)
+                    else:
+                        print("url is required")
+                        sys.exit(-1)
+                    if get_args.operation is not None:
+                        payload.set_ping_operation(get_args.operation)
+                    if get_args.headers is not None:
+                        headers_str = get_args.headers
+                        headers_json = json.loads(headers_str)
+                        payload.set_ping_headers(headers_json)
+                    if get_args.body is not None:
+                        payload.set_ping_body(get_args.body)
+
+                    # followRedirect
+                    if get_args.follow_redirect is not None:
+                        payload.set_follow_redirect(get_args.follow_redirect)
+                    # expectStatus
+                    if get_args.expect_status is not None:
+                        payload.set_expect_status(get_args.expect_status)
+                    # expectJson, str -> dict
+                    # an example: --expect-json '{"name": "John","age": 30,"city": "New York"}'
+                    if get_args.expect_json is not None:
+                        expect_json_str = get_args.expect_json
+                        expect_json_json = json.loads(expect_json_str)
+                        payload.set_expect_json(expect_json=expect_json_json)
+                    # expectMatch
+                    # an example: --expect-match "ibm"
+                    if get_args.expect_match is not None:
+                        payload.set_expect_match(expect_match=get_args.expect_match)
+                    # expectExists
+                    # an example: --expect-exists '["slideshow"]'
+                    if get_args.expect_exists is not None:
+                        expect_exists_str = get_args.expect_exists
+                        expect_exists_list = json.loads(expect_exists_str)
+                        payload.set_expect_exists(expect_exists_list)
+                    # expectNotEmpty
+                    # an example: --expect-not-empty '["slideshow"]'
+                    if get_args.expect_not_empty is not None:
+                        expect_not_empty_str = get_args.expect_not_empty
+                        expect_not_empty_list = json.loads(expect_not_empty_str)
+                        payload.set_expect_not_empty(expect_not_empty_list)
+                    if get_args.allow_insecure is not None:
+                        payload.set_allow_insecure(get_args.allow_insecure)
+
+                # basic type HTTPScript and WebpageScript
+                elif get_args.type in (1, 2, 3) and get_args.bundle is None:
+                    syn_type_t = synthetic_type[get_args.type]
+                    payload = SyntheticConfiguration(syn_type=syn_type_t)
+                    if get_args.from_file is not None:
+                        script_content = payload.read_js_file(get_args.from_file)
+                        payload.set_api_script_script(script_str=script_content)
+                    if payload.get_api_script_script() == "":
+                        print("script should not be empty")
+                        sys.exit(-1)
+
+                # bundle script
+                elif get_args.type in (1, 2) and get_args.bundle is not None:
+                    syn_type_t = synthetic_type[get_args.type]
+                    payload = SyntheticConfiguration(syn_type_t, bundle_type=True)
+
+                    # entry file
+                    if get_args.script_file is not None:
+                        payload.set_api_bundle_script(
+                            get_args.bundle, script_file=get_args.script_file)
+                    else:
+                        # script file use index.js
+                        payload.set_api_bundle_script(get_args.bundle)
+                # BrowserScript 2, WebpageScript 3
+                if get_args.type in (2, 3):
+                    payload.set_browser_type(get_args.browser)
+
+                # global operation, add label, location, description, frequency, etc.
+                if get_args.label is not None:
+                    payload.set_label(get_args.label)
+                if get_args.location is not None:
+                    payload.set_locations(get_args.location)
+                if get_args.description is not None:
+                    payload.set_description(get_args.description)
+                if get_args.frequency is not None:
+                    payload.set_frequency(get_args.frequency)
+                if get_args.app_id is not None:
+                    payload.set_application_id(get_args.app_id)
+
+                if get_args.custom_properties is not None:
+                    payload.set_custom_properties(
+                        json.loads(get_args.custom_properties))
+
+                # configuration
+                # retries [0, 2]
+                if get_args.retries is not None:
+                    payload.set_retries(get_args.retries)
+                # retryInterval [0, 10]
+                if get_args.retry_interval is not None:
+                    payload.set_retry_interval(get_args.retry_interval)
+
+                syn_payload = payload.get_json()
+                syn_instance.set_synthetic_payload(payload=syn_payload)
+
+                syn_instance.create_a_synthetic_test()
+
             else:
-                print("url is required")
-                sys.exit(-1)
-            if get_args.operation is not None:
-                payload.set_ping_operation(get_args.operation)
-            if get_args.headers is not None:
-                headers_str = get_args.headers
-                headers_json = json.loads(headers_str)
-                payload.set_ping_headers(headers_json)
-            if get_args.body is not None:
-                payload.set_ping_body(get_args.body)
-
-            # followRedirect
-            if get_args.follow_redirect is not None:
-                payload.set_follow_redirect(get_args.follow_redirect)
-            # expectStatus
-            if get_args.expect_status is not None:
-                payload.set_expect_status(get_args.expect_status)
-            # expectJson, str -> dict
-            # an example: --expect-json '{"name": "John","age": 30,"city": "New York"}'
-            if get_args.expect_json is not None:
-                expect_json_str = get_args.expect_json
-                expect_json_json = json.loads(expect_json_str)
-                payload.set_expect_json(expect_json=expect_json_json)
-            # expectMatch
-            # an example: --expect-match "ibm"
-            if get_args.expect_match is not None:
-                payload.set_expect_match(expect_match=get_args.expect_match)
-            # expectExists
-            # an example: --expect-exists '["slideshow"]'
-            if get_args.expect_exists is not None:
-                expect_exists_str = get_args.expect_exists
-                expect_exists_list = json.loads(expect_exists_str)
-                payload.set_expect_exists(expect_exists_list)
-            # expectNotEmpty
-            # an example: --expect-not-empty '["slideshow"]'
-            if get_args.expect_not_empty is not None:
-                expect_not_empty_str = get_args.expect_not_empty
-                expect_not_empty_list = json.loads(expect_not_empty_str)
-                payload.set_expect_not_empty(expect_not_empty_list)
-            if get_args.allow_insecure is not None:
-                payload.set_allow_insecure(get_args.allow_insecure)
-
-        # basic type HTTPScript and WebpageScript
-        elif get_args.type in (1, 2, 3) and get_args.bundle is None:
-            syn_type_t = synthetic_type[get_args.type]
-            payload = SyntheticConfiguration(syn_type=syn_type_t)
-            if get_args.from_file is not None:
-                script_content = payload.read_js_file(get_args.from_file)
-                payload.set_api_script_script(script_str=script_content)
-            if payload.get_api_script_script() == "":
-                print("script should not be empty")
-                sys.exit(-1)
-
-        # bundle script
-        elif get_args.type in (1, 2) and get_args.bundle is not None:
-            syn_type_t = synthetic_type[get_args.type]
-            payload = SyntheticConfiguration(syn_type_t, bundle_type=True)
-
-            # entry file
-            if get_args.script_file is not None:
-                payload.set_api_bundle_script(
-                    get_args.bundle, script_file=get_args.script_file)
-            else:
-                # script file use index.js
-                payload.set_api_bundle_script(get_args.bundle)
-        # BrowserScript 2, WebpageScript 3
-        if get_args.type in (2, 3):
-            payload.set_browser_type(get_args.browser)
-
-        # global operation, add label, location, description, frequency, etc.
-        if get_args.label is not None:
-            payload.set_label(get_args.label)
-        if get_args.location is not None:
-            payload.set_locations(get_args.location)
-        if get_args.description is not None:
-            payload.set_description(get_args.description)
-        if get_args.frequency is not None:
-            payload.set_frequency(get_args.frequency)
-        if get_args.app_id is not None:
-            payload.set_application_id(get_args.app_id)
-
-        if get_args.custom_properties is not None:
-            payload.set_custom_properties(
-                json.loads(get_args.custom_properties))
-
-        # configuration
-        # retries [0, 2]
-        if get_args.retries is not None:
-            payload.set_retries(get_args.retries)
-        # retryInterval [0, 10]
-        if get_args.retry_interval is not None:
-            payload.set_retry_interval(get_args.retry_interval)
-
-        syn_payload = payload.get_json()
-        syn_instance.set_synthetic_payload(payload=syn_payload)
-
-        syn_instance.create_a_synthetic_test()
+                print('The following arguments are required: -t/--type')
+                sys.exit(1)
     elif COMMAND_PATCH == get_args.sub_command:
         if get_args.id is not None:
             patch_instance.set_test_id(get_args.id)
