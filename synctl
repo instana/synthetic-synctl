@@ -95,7 +95,7 @@ examples:
 # set a default instana backend to connect
 synctl config set --host <host> --token <token> --name <name>"""
 
-CREATE_USAGE = """synctl create test [options]
+CREATE_USAGE = """synctl create test/cred [options]
 
 examples:
 # create a simple ping
@@ -114,9 +114,12 @@ synctl create test -t 2 --label browserscript-test --from-file api-sample.js --b
 synctl create test -t 2 --label "browserscript-bundle-test" --bundle "base64" --script-file mytest.js --browser chrome --location <id>
 
 # create webpagescript
-synctl create test -t 3 --label "webpagescript-test" --from-file side/browser.side --browser chrome --location <id>"""
+synctl create test -t 3 --label "webpagescript-test" --from-file side/browser.side --browser chrome --location <id>
 
-GET_USAGE = """synctl get {location,lo,test,application,app} [id] [options]
+# create a credential
+synctl create cred --key MY_PASS --value password123"""
+
+GET_USAGE = """synctl get {location,lo,test,application,app,cred} [id] [options]
 
 examples:
 # display all tests
@@ -127,7 +130,10 @@ synctl get location
 synctl get lo
 
 # show test details
-synctl get test <id> --show-details"""
+synctl get test <id> --show-details
+
+# display all credentials
+synctl get cred"""
 
 PATCH_USAGE = """synctl patch test id [options]
 
@@ -145,7 +151,7 @@ examples:
 synctl update test <id> --from-data '{}'
 """
 
-DELETE_USAGE = """synctl delete {location,lo,test} [id...] [options]
+DELETE_USAGE = """synctl delete {location,lo,test,cred} [id...] [options]
 
 examples:
 # delete a test
@@ -161,7 +167,10 @@ synctl delete test --match-regex "^simple-ping-"
 synctl delete test --no-locations
 
 # delete all tests on a location
-synctl delete test --match-location <location-id>"""
+synctl delete test --match-location <location-id>
+
+# delete credential
+synctl delete cred <credential-name>"""
 
 
 class Base:
@@ -2189,12 +2198,12 @@ class ParseParameter:
         self.parser_config._optionals.title = OPTIONS_PARAMS
 
         self.parser_create = sub_parsers.add_parser(
-            'create', help='create a synthetic test', add_help=True, usage=CREATE_USAGE)
+            'create', help='create a synthetic test or credential', add_help=True, usage=CREATE_USAGE)
         self.parser_create._positionals.title = POSITION_PARAMS
         self.parser_create._optionals.title = OPTIONS_PARAMS
 
         self.parser_get = sub_parsers.add_parser(
-            'get', help='get synthetic test or location', usage=GET_USAGE)
+            'get', help='get synthetic test, location or credential', usage=GET_USAGE)
         self.parser_get._positionals.title = POSITION_PARAMS
         self.parser_get._optionals.title = OPTIONS_PARAMS
 
@@ -2209,7 +2218,7 @@ class ParseParameter:
         self.parser_update._optionals.title = OPTIONS_PARAMS
 
         self.parser_delete = sub_parsers.add_parser(
-            'delete', help='delete a synthetic test or location', usage=DELETE_USAGE)
+            'delete', help='delete a synthetic test, location or credential', usage=DELETE_USAGE)
         self.parser_delete._positionals.title = POSITION_PARAMS
         self.parser_delete._optionals.title = OPTIONS_PARAMS
 
