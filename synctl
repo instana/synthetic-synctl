@@ -1122,6 +1122,9 @@ class SyntheticTest(Base):
     def create_credential(self):
         """create credential"""
         cred_payload = self.payload
+        data = json.loads(cred_payload)
+        cred_key = data["credentialName"]
+
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
@@ -1135,20 +1138,20 @@ class SyntheticTest(Base):
             "Authorization": f"apiToken {token}"
         }
 
-        create_cred_res = requests.post(create_url,
-                                        headers=headers,
-                                        data=cred_payload,
-                                        timeout=60,
-                                        verify=self.insecure)
-
-        if create_cred_res.status_code == 201:
-            data = json.loads(cred_payload)
-            cred_key = data["credentialName"]
-            print(f"credential \"{cred_key}\" created")
-        elif create_cred_res.status_code == 400:
-            print(f'Create Error: {create_cred_res}\n', create_cred_res.json())
+        if cred_key not in credential:
+            create_cred_res = requests.post(create_url,
+                                            headers=headers,
+                                            data=cred_payload,
+                                            timeout=60,
+                                            verify=self.insecure)
+            if create_cred_res.status_code == 201:
+                print(f"credential \"{cred_key}\" created")
+            elif create_cred_res.status_code == 400:
+                print(f'Create Error: {create_cred_res}\n', create_cred_res.json())
+            else:
+                print('Create credential failed, status code:', create_cred_res.status_code)
         else:
-            print('Create credential failed, status code:', create_cred_res.status_code)
+            print("Credential already exists")
 
     def __generate_random_str(self, num=5):
         # using random.choices()
@@ -1438,9 +1441,9 @@ class SyntheticTest(Base):
             "Authorization": f"apiToken {token}"
         }
 
-        delete_res = requests.delete(delete_url, headers=headers,
-                                     timeout=60, verify=self.insecure)
         if cred in credential:
+            delete_res = requests.delete(delete_url, headers=headers,
+                                         timeout=60, verify=self.insecure)
             if delete_res.status_code == 204:
                 print(f'credential \"{cred}\" deleted')
             elif delete_res.status_code == 429:
@@ -1449,6 +1452,7 @@ class SyntheticTest(Base):
                 print(f"Fail to delete {cred}, status code {delete_res.status_code}")
         else:
             print(f"no credential {cred}")
+            sys.exit(1)
 
     def delete_credentials(self, cred_list):
         if cred_list is None:
