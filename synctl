@@ -1057,8 +1057,8 @@ class SyntheticPoP(Base):
         print('total:', len(pop_data))
 
     def print_credentials(self, credentials):
-        credentials.sort()
-        for t in credentials:
+        sorted_cred = sorted(credentials, key=str.lower)
+        for t in sorted_cred:
             print(t)
 
 class SyntheticTest(Base):
