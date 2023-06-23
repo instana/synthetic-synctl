@@ -216,6 +216,18 @@ synctl create test -t <type> --from-json payload-examples/api-script.json
 ### Patch a Synthetic Test
 
 ```
+# set label to simple-ping
+synctl patch test <synthetic-id> --label simple-ping
+
+# set description to "This is a synthetic test"
+synctl patch test <synthetic-id> --description "This is a synthetic test"
+
+# set retries to 2
+synctl patch test <synthetic-id> --retries 2
+
+# set retry-interval to 5
+synctl patch test <synthetic-id> --retry-interval 5
+ 
 # set frequency to 5
 synctl patch test <synthetic-id> --frequency 5
 
@@ -224,6 +236,9 @@ synctl patch test <synthetic-id> --timeout 120s
 
 # disable synthetic test
 synctl patch test <synthetic-id> --active false
+
+# set operation to POST
+synctl patch test <synthetic-id> --opertaion POST
 
 # update synthetic script
 # save script to local, script name is test <label>.js 
