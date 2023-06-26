@@ -1589,6 +1589,15 @@ class PatchSyntheticTest(SyntheticTest):
             print(f"{method} is not allowed")
             return
 
+    def patch_mark_synthetic_call(self, markSyntheticCall):
+        """mark synthetic call"""
+        payload = {"configuration": {"markSyntheticCall": ""}}
+        if markSyntheticCall is not None:
+            payload["configuration"]["markSyntheticCall"] = markSyntheticCall
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("markSyntheticCall cannot be none")
+
     def patch_config_script(self, script):
         """update script content"""
         payload = {"configuration": {"script": ""}}
@@ -2187,6 +2196,8 @@ class ParseParameter:
             '--retry-interval', type=int, help="set retry-interval")
         patch_exclusive_group.add_argument(
             '--operation', type=str, help="HTTP Request Method, GET, POST, HEAD, PUT, etc.")
+        patch_exclusive_group.add_argument(
+            '--mark-synthetic-call', type=str, help='set markSyntheticCall')
 
         # timeout Expected <number>(ms|s|m)
         patch_exclusive_group.add_argument(
@@ -2536,6 +2547,8 @@ def main():
             patch_instance.patch_label(get_args.label)
         elif get_args.location is not None:
             patch_instance.patch_locations(get_args.location)
+        elif get_args.mark_synthetic_call:
+            patch_instance.patch_mark_synthetic_call(get_args.mark_synthetic_call)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
