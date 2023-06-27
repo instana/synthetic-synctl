@@ -227,6 +227,9 @@ synctl patch test <synthetic-id> --retries 2
 
 # set retry-interval to 5
 synctl patch test <synthetic-id> --retry-interval 5
+
+# set mark-synthetic-call to TRUE
+synctl patch test <synthetic-id> --mark-synthetic-call True
  
 # set frequency to 5
 synctl patch test <synthetic-id> --frequency 5
