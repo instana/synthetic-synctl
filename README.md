@@ -184,23 +184,24 @@ synctl create test -t 1 --label "syn-bundle-test" \
 # create a browser script test
 synctl create test -t 2 \
     --label browser-script-test \
-    --from-file browser.side \
+    --from-file browserscripts/api-sample.js \
     --location "$LOCATION" \
     --frequency 15
 
 
 # create browser bundle test using a zip file
 synctl create test -t 2 \
-    --label browser-script-zip-test \
-    --bundle browserscript.zip \
+    --label browser-script-test-zip \
+    --bundle browserscript-bundle.zip \
     --script-file mytest.js \
     --location "$LOCATION" \
     --frequency 15
 
 # create browser bundle test using base64 string
 synctl create test -t 2 \
-    --label "browserscript-test" \
-    --location "$LOCATION" --frequency 15 \
+    --label "browser-script-test-bundle" \
+    --location "$LOCATION" \
+    --frequency 15 \
     --browser firefox \
     --script-file mytest.js \
     --bundle "UEsDBAoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABwAbGliL1VUCQADlRcDY2izBGN1eAsAAQToAwAABOgDAABQSwMEFAAIAAgA1FkYVQAAAAAAAAAAVAMAAA8AHABsaWIvbXlzY3JpcHQuanNVVAkAA6CXBWOglwVjdXgLAAEE6AMAAAToAwAAlVPBbuIwEL3zFSOLQ5C65t5qVwIpB9RuVbW5R8YMidVgp56hWYT67zsOoUuLkFifEue9N2/eTGzwxLAHQ4SR4QN+QsS3rYuYKVsbpyZ3I0M7b2G99ZZd8MBIPHe+yiawH41AznQK3ry7yjACB+i6Ti8FoG3Y9N+tFAkN6iZUmfp1ftQNqJm1SASJB62pMBVOXNMZxzBextCJQ10hZ6pmbm+n09M6CX700mJch7gBQhNtDaa3/R9GEpwgrAeBC07GmdK0LFOl8u0C5lCasokm9Kt73FGmJEyukZ1VJ7fjVXTvQpAXnT8W+fNED11kJ40NQ0rxADtuEJY7kESK9CzjMK3roQ0eQP29TPQ8w4ExmO5ltYzdNCf+4Ae8HAK4+ac2UK4J8unT5i18kzg2xOYVgWxE9FQHvlq6EN7LJ+1C+PwFdGx2vGXXaOfJVTWTTED2qVg8lcXzYp6Xj7Pfefkwm+cPqQyFDXItG9Zv18fdaBNWW7GGf9oQmSTZfa95/CMSRM5fUEsHCJkl42ODAQAAVAMAAFBLAwQUAAgACAB5bRZVAAAAAAAAAAARAQAACQAcAG15dGVzdC5qc1VUCQADlRcDYxC7BGN1eAsAAQToAwAABOgDAABdjzEOwjAMRfeewooYgoTSHcTCFdjY2mAVozQOiRkK4u6kVEjgzXp+/0u/CSjwBMEiB4oDvGAPGW93ymiNawP17TgVnymJuxaz3jWN51g4oAs8WJM4bc0GVmWKckEh7yqp1p90xqWBOCr556NDQiM+OKJKzPhUsdZD12MoSl6gVo/SZQHhz+p50ne9rfcbUEsHCA5zkg+OAAAAEQEAAFBLAQIeAwoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABgAAAAAAAAAEAD/QQAAAABsaWIvVVQFAAOVFwNjdXgLAAEE6AMAAAToAwAAUEsBAh4DFAAIAAgA1FkYVZkl42ODAQAAVAMAAA8AGAAAAAAAAQAAAP+BPgAAAGxpYi9teXNjcmlwdC5qc1VUBQADoJcFY3V4CwABBOgDAAAE6AMAAFBLAQIeAxQACAAIAHltFlUOc5IPjgAAABEBAAAJABgAAAAAAAEAAAD/gRoCAABteXRlc3QuanNVVAUAA5UXA2N1eAsAAQToAwAABOgDAABQSwUGAAAAAAMAAwDuAAAA+wIAAAAA" 
@@ -211,16 +212,16 @@ synctl create test -t 2 \
 
 ```
 synctl create test -t 3 \
-    --label "webpagescript-test" \
+    --label "webpage-script-test" \
     --location "$LOCATION" --frequency 15 \
-    --from-file browser-scripts/browser.json  \
+    --from-file side/webpage-script.side  \
     --browser chrome
 ```
 
 - Create Synthetic Test using json payload  
 
 ```
-synctl create test -t <type> --from-json payload-examples/api-script.json
+synctl create test -t <type> --from-json payload/api-script.json
 ```
 
 
