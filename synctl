@@ -1577,27 +1577,6 @@ class PatchSyntheticTest(SyntheticTest):
             return
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
-    def patch_ping_operation(self, method: str = "GET"):
-        """operation"""
-        valid_methods = ["GET", "HEAD", "POST", "PUT", "DELETE",
-                         "CONNECT", "OPTIONS", "TRACE", "PATCH"]
-        payload = {"configuration": {"operation": ""}}
-        if method is not None and method.upper() in valid_methods:
-            payload["configuration"]["operation"] = method.upper()
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-        else:
-            print(f"{method} is not allowed")
-            return
-
-    def patch_mark_synthetic_call(self, markSyntheticCall):
-        """mark synthetic call"""
-        payload = {"configuration": {"markSyntheticCall": ""}}
-        if markSyntheticCall is not None:
-            payload["configuration"]["markSyntheticCall"] = markSyntheticCall
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-        else:
-            print("markSyntheticCall cannot be none")
-
     def patch_config_script(self, script):
         """update script content"""
         payload = {"configuration": {"script": ""}}
@@ -1618,6 +1597,28 @@ class PatchSyntheticTest(SyntheticTest):
             print(not_found_e)
             sys.exit(-1)
 
+    def patch_script_file(self, script_file, test_id):
+        """--entry-file update scriptFile """
+        test_result = self.retrieve_a_synthetic_test(test_id)
+        try:
+            test_bundle = test_result[0]["configuration"]["scripts"]["bundle"]
+            payload = {
+                "configuration":
+                    {
+                        "syntheticType": "HTTPScript",
+                        "scripts": {
+                            "bundle": test_bundle,  # required
+                            "scriptFile": ""  # required
+                        }
+                    }
+            }
+            if script_file is None:
+                print("script_file should not be None")
+            else:
+                payload["configuration"]["scripts"]["scriptFile"] = script_file
+                self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        except:
+            print(f"Error: Test {test_id} not found")
 
 class SyntheticResult(Base):
 
@@ -2194,10 +2195,6 @@ class ParseParameter:
             '--retries', type=int, help="set retries")
         patch_exclusive_group.add_argument(
             '--retry-interval', type=int, help="set retry-interval")
-        patch_exclusive_group.add_argument(
-            '--operation', type=str, help="HTTP Request Method, GET, POST, HEAD, PUT, etc.")
-        patch_exclusive_group.add_argument(
-            '--mark-synthetic-call', type=str, help='set markSyntheticCall')
 
         # timeout Expected <number>(ms|s|m)
         patch_exclusive_group.add_argument(
@@ -2212,6 +2209,8 @@ class ParseParameter:
             '--host', type=str, help='set hostname')
         self.parser_patch.add_argument(
             '--token', type=str, help='set token')
+        patch_exclusive_group.add_argument(
+            '--entry-file', type=str, help="script file name")
 
     def update_command_options(self):
         self.parser_update.add_argument(
@@ -2537,8 +2536,6 @@ def main():
             patch_instance.patch_frequency(get_args.frequency)
         elif get_args.retry_interval is not None:
             patch_instance.patch_retry_interval(get_args.retry_interval)
-        elif get_args.operation is not None:
-            patch_instance.patch_ping_operation(get_args.operation)
         elif get_args.script_file is not None:
             patch_instance.patch_config_script_file(get_args.script_file)
         elif get_args.description is not None:
@@ -2547,8 +2544,8 @@ def main():
             patch_instance.patch_label(get_args.label)
         elif get_args.location is not None:
             patch_instance.patch_locations(get_args.location)
-        elif get_args.mark_synthetic_call:
-            patch_instance.patch_mark_synthetic_call(get_args.mark_synthetic_call)
+        elif get_args.entry_file is not None:
+            patch_instance.patch_script_file(get_args.entry_file, get_args.id)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
