@@ -484,7 +484,7 @@ class SyntheticConfiguration(Base):
                 # The timeout to be used by the PoP playback engines running the test.
                 # Values in integer followed by time unit (ms, s, m).
                 # If timeout is not provided the playback engine will use its own timeout value.
-                "timeout": "1m",
+                "timeout": "",
             }
         }
 
@@ -2485,7 +2485,8 @@ def main():
                 pop_locations_json = pop_instance.retrieve_synthetic_locations(
                     location_id=get_args.id)
             pop_locations_summary_result = pop_instance.get_all_location_summary_list()
-            pop_instance.print_synthetic_locations(pop_locations_json, pop_locations_summary_result)
+            pop_instance.print_synthetic_locations(
+                pop_locations_json, pop_locations_summary_result)
         elif get_args.op_type in (SYN_APPLICATION, SYN_APP):
             if get_args.name_filter is not None:
                 app_instance.set_name_filter(get_args.name_filter)
