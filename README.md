@@ -322,3 +322,22 @@ synctl delete location <location-id>
 synctl delete location <location-id-1> <location-id-2> <location-id-3> ...
 ```
 
+## Manage Credentials
+
+### Display all credentials
+
+```
+synctl get cred
+```
+
+### Create credential
+
+```
+synctl create cred --key <key-name> --value <value>
+```
+
+### Delete credential
+
+```
+synctl delete cred <key-name>
+```
