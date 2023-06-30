@@ -2741,13 +2741,18 @@ def main():
                     payload = SyntheticConfiguration(
                         syn_type_t, bundle_type=True)
 
+                    if payload.is_zip_file(get_args.bundle):
+                        bundle_base64_str = payload.read_zip_file_to_base64(
+                            get_args.bundle)
+                    else:
+                        bundle_base64_str = get_args.bundle
                     # entry file
                     if get_args.script_file is not None:
                         payload.set_api_bundle_script(
-                            get_args.bundle, script_file=get_args.script_file)
+                            bundle_base64_str, script_file=get_args.script_file)
                     else:
                         # script file use index.js
-                        payload.set_api_bundle_script(get_args.bundle)
+                        payload.set_api_bundle_script(bundle_base64_str)
                 # BrowserScript 2, WebpageScript 3
                 if get_args.type in (2, 3):
                     payload.set_browser_type(get_args.browser)
