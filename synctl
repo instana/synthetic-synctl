@@ -118,8 +118,7 @@ synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" 
 synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --script-file mytest.js --browser chrome --location <id>
 
 # create webpagescript
-synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-script.side --browser chrome --location <id>"""
-
+synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-script.side --browser chrome --location <id>
 
 # create a credential
 synctl create cred --key MY_PASS --value password123"""
@@ -877,6 +876,7 @@ class CredentialConfiguration(Base):
         result = json.dumps(self.credential_config)
         return result
 
+
 class SyntheticPoP(Base):
     def __init__(self) -> None:
         Base.__init__(self)
@@ -1078,6 +1078,7 @@ class SyntheticPoP(Base):
         for t in sorted_cred:
             print(t)
 
+
 class SyntheticTest(Base):
     """create, query, update and delete synthetic test"""
 
@@ -1164,9 +1165,11 @@ class SyntheticTest(Base):
             if create_cred_res.status_code == 201:
                 print(f"credential \"{cred_key}\" created")
             elif create_cred_res.status_code == 400:
-                print(f'Create Error: {create_cred_res}\n', create_cred_res.json())
+                print(f'Create Error: {create_cred_res}\n',
+                      create_cred_res.json())
             else:
-                print('Create credential failed, status code:', create_cred_res.status_code)
+                print('Create credential failed, status code:',
+                      create_cred_res.status_code)
         else:
             print("Credential already exists")
 
@@ -1466,7 +1469,8 @@ class SyntheticTest(Base):
             elif delete_res.status_code == 429:
                 print("Too Many Requests")
             else:
-                print(f"Fail to delete {cred}, status code {delete_res.status_code}")
+                print(
+                    f"Fail to delete {cred}, status code {delete_res.status_code}")
         else:
             print(f"no credential {cred}")
             sys.exit(1)
@@ -2662,7 +2666,8 @@ def main():
                 if get_args.from_json is not None:
                     json_file = get_args.from_json
                     payload.loads_from_json_file(json_file_name=json_file)
-                    syn_instance.set_synthetic_payload(payload=payload.get_json())
+                    syn_instance.set_synthetic_payload(
+                        payload=payload.get_json())
                     syn_instance.create_a_synthetic_test()
                     return
 
@@ -2699,7 +2704,8 @@ def main():
                     # expectMatch
                     # an example: --expect-match "ibm"
                     if get_args.expect_match is not None:
-                        payload.set_expect_match(expect_match=get_args.expect_match)
+                        payload.set_expect_match(
+                            expect_match=get_args.expect_match)
                     # expectExists
                     # an example: --expect-exists '["slideshow"]'
                     if get_args.expect_exists is not None:
@@ -2710,7 +2716,8 @@ def main():
                     # an example: --expect-not-empty '["slideshow"]'
                     if get_args.expect_not_empty is not None:
                         expect_not_empty_str = get_args.expect_not_empty
-                        expect_not_empty_list = json.loads(expect_not_empty_str)
+                        expect_not_empty_list = json.loads(
+                            expect_not_empty_str)
                         payload.set_expect_not_empty(expect_not_empty_list)
                     if get_args.allow_insecure is not None:
                         payload.set_allow_insecure(get_args.allow_insecure)
@@ -2720,8 +2727,10 @@ def main():
                     syn_type_t = synthetic_type[get_args.type]
                     payload = SyntheticConfiguration(syn_type=syn_type_t)
                     if get_args.from_file is not None:
-                        script_content = payload.read_js_file(get_args.from_file)
-                        payload.set_api_script_script(script_str=script_content)
+                        script_content = payload.read_js_file(
+                            get_args.from_file)
+                        payload.set_api_script_script(
+                            script_str=script_content)
                     if payload.get_api_script_script() == "":
                         print("script should not be empty")
                         sys.exit(-1)
@@ -2729,7 +2738,8 @@ def main():
                 # bundle script
                 elif get_args.type in (1, 2) and get_args.bundle is not None:
                     syn_type_t = synthetic_type[get_args.type]
-                    payload = SyntheticConfiguration(syn_type_t, bundle_type=True)
+                    payload = SyntheticConfiguration(
+                        syn_type_t, bundle_type=True)
 
                     # entry file
                     if get_args.script_file is not None:
