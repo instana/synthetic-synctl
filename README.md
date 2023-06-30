@@ -110,45 +110,36 @@ synctl get test <id> --show-json
 ## Create a synthetic test
 
 ```
-synctl create test -t <type> --label <label> ...
+synctl create test [options]
 
 options:
-    -t <type>: synthetic type
-               0 HTTPAction
-               1 HTTPScript
-               2 BrowserScript
-               3 WebpageScript
-    --label <label> test name
-    --location [LOCATION ...]   location id, support multiple locations id
-    --description DESCRIPTION, -d DESCRIPTION
-                                description of synthetic test
-    --frequency FREQUENCY       The range is from 1 to 120min, default is 15
-    --app-id, --application-id APP_ID
-                                set application id
-    --url URL                   HTTP Request URL
-    --operation OPERATION       HTTP Request Method, GET, POST, HEAD, PUT, etc.
-    --headers HEADERS           HTTP Headers
-    --body BODY                 HTTP Body
-    --from-file FROM_FILE       synthetic script, specify a file name
-    --bundle BUNDLE             synthetic script encoded with base64
-    --script-file SCRIPT_FILE   bundle script entry file, e.g, myscript.js
-    --retries {0,1,2}           retry times, value is from [0, 2]
-    --retry-interval {1,2,3,4,5,6,7,8,9,10} retryInvertal
-    --follow-redirect {true,false,True,False} 
-                                followRedirect default True
-    --expect-status EXPECT_STATUS
-                                expectStatus default 200
-    --expect-json EXPECT_JSON
-                                expectJson
-    --expect-match EXPECT_MATCH expectMatch
-    --expect-exists EXPECT_EXISTS
-                                expectExists
-    --expect-not-empty EXPECT_NOT_EMPTY
-                                expectNotEmpty
-    --allow-insecure {false,true}
-                                allowInsecure
-    --browser {chrome,firefox}
-                                set browser type
+    -t int synthetic type
+           0 HTTPAction
+           1 HTTPScript
+           2 BrowserScript
+           3 WebpageScript
+    --label <label>                     test name
+    --location [id,...]                 location id, support multiple locations id
+    --description string, -d string     description of synthetic test
+    --frequency int                     The range is [1, 120], unit is min, default is 15
+    --app-id, --application-id <app-id> set application id
+    --url URL                           HTTP Request URL
+    --operation OPERATION               HTTP Request Method, GET, POST, HEAD, PUT, etc.
+    --headers HEADERS                   HTTP Headers
+    --body BODY                         HTTP Body
+    --from-file, -f <file>              specify synthetic script file name
+    --bundle <BASE64>, zip file         synthetic script encoded with base64, or use a zip file instead
+    --script-file <entry-name>          bundle script entry file, e.g, myscript.js
+    --retries {0,1,2}                   retry times, value is from [0, 2]
+    --retry-interval [1, 10]            retryInvertal
+    --follow-redirect {true,false}      followRedirect, default true
+    --expect-status int                 expectStatus, expected status code, default 200
+    --expect-json <json>                expectJson
+    --expect-match string               expectMatch
+    --expect-exists string              expectExists
+    --expect-not-empty string           expectNotEmpty
+    --allow-insecure {false,true}       allowInsecure
+    --browser {chrome,firefox}          set browser type
 ```
 
 Examples:  
@@ -171,6 +162,13 @@ synctl create test -t 0 --label "simple-ping" --url "https://httpbin.org/get" --
 # a simple API script
 synctl create test -t 1 --label "simple-api-script" --from-file http-scripts/http-get.js --location "$LOCATION" --frequency 5
 
+# create bundle test with a zip file
+synctl create test -t 1 --label syn-bundle-zip-test \
+    --bundle synthetic.zip \
+    --script-file index.js \
+    --location "$LOCATION" \
+    --frequency 5
+
 # create bundle test
 synctl create test -t 1 --label "syn-bundle-test" \
     --bundle "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" \
@@ -183,9 +181,27 @@ synctl create test -t 1 --label "syn-bundle-test" \
 
 
 ```
+# create a browser script test
 synctl create test -t 2 \
-    --label "browserscript-test" \
-    --location "$LOCATION" --frequency 15 \
+    --label browser-script-test \
+    --from-file browserscripts/api-sample.js \
+    --location "$LOCATION" \
+    --frequency 15
+
+
+# create browser bundle test using a zip file
+synctl create test -t 2 \
+    --label browser-script-test-zip \
+    --bundle browserscript-bundle.zip \
+    --script-file mytest.js \
+    --location "$LOCATION" \
+    --frequency 15
+
+# create browser bundle test using base64 string
+synctl create test -t 2 \
+    --label "browser-script-test-bundle" \
+    --location "$LOCATION" \
+    --frequency 15 \
     --browser firefox \
     --script-file mytest.js \
     --bundle "UEsDBAoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABwAbGliL1VUCQADlRcDY2izBGN1eAsAAQToAwAABOgDAABQSwMEFAAIAAgA1FkYVQAAAAAAAAAAVAMAAA8AHABsaWIvbXlzY3JpcHQuanNVVAkAA6CXBWOglwVjdXgLAAEE6AMAAAToAwAAlVPBbuIwEL3zFSOLQ5C65t5qVwIpB9RuVbW5R8YMidVgp56hWYT67zsOoUuLkFifEue9N2/eTGzwxLAHQ4SR4QN+QsS3rYuYKVsbpyZ3I0M7b2G99ZZd8MBIPHe+yiawH41AznQK3ry7yjACB+i6Ti8FoG3Y9N+tFAkN6iZUmfp1ftQNqJm1SASJB62pMBVOXNMZxzBextCJQ10hZ6pmbm+n09M6CX700mJch7gBQhNtDaa3/R9GEpwgrAeBC07GmdK0LFOl8u0C5lCasokm9Kt73FGmJEyukZ1VJ7fjVXTvQpAXnT8W+fNED11kJ40NQ0rxADtuEJY7kESK9CzjMK3roQ0eQP29TPQ8w4ExmO5ltYzdNCf+4Ae8HAK4+ac2UK4J8unT5i18kzg2xOYVgWxE9FQHvlq6EN7LJ+1C+PwFdGx2vGXXaOfJVTWTTED2qVg8lcXzYp6Xj7Pfefkwm+cPqQyFDXItG9Zv18fdaBNWW7GGf9oQmSTZfa95/CMSRM5fUEsHCJkl42ODAQAAVAMAAFBLAwQUAAgACAB5bRZVAAAAAAAAAAARAQAACQAcAG15dGVzdC5qc1VUCQADlRcDYxC7BGN1eAsAAQToAwAABOgDAABdjzEOwjAMRfeewooYgoTSHcTCFdjY2mAVozQOiRkK4u6kVEjgzXp+/0u/CSjwBMEiB4oDvGAPGW93ymiNawP17TgVnymJuxaz3jWN51g4oAs8WJM4bc0GVmWKckEh7yqp1p90xqWBOCr556NDQiM+OKJKzPhUsdZD12MoSl6gVo/SZQHhz+p50ne9rfcbUEsHCA5zkg+OAAAAEQEAAFBLAQIeAwoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABgAAAAAAAAAEAD/QQAAAABsaWIvVVQFAAOVFwNjdXgLAAEE6AMAAAToAwAAUEsBAh4DFAAIAAgA1FkYVZkl42ODAQAAVAMAAA8AGAAAAAAAAQAAAP+BPgAAAGxpYi9teXNjcmlwdC5qc1VUBQADoJcFY3V4CwABBOgDAAAE6AMAAFBLAQIeAxQACAAIAHltFlUOc5IPjgAAABEBAAAJABgAAAAAAAEAAAD/gRoCAABteXRlc3QuanNVVAUAA5UXA2N1eAsAAQToAwAABOgDAABQSwUGAAAAAAMAAwDuAAAA+wIAAAAA" 
@@ -196,20 +212,20 @@ synctl create test -t 2 \
 
 ```
 synctl create test -t 3 \
-    --label "webpagescript-test" \
+    --label "webpage-script-test" \
     --location "$LOCATION" --frequency 15 \
-    --from-file browser-scripts/browser.json  \
+    --from-file side/webpage-script.side  \
     --browser chrome
 ```
 
 - Create Synthetic Test using json payload  
 
 ```
-synctl create test -t <type> --from-json payload-examples/api-script.json
+synctl create test -t <type> --from-json payload/api-script.json
 ```
 
 
-**Note:** Support specify appliation id when create synthetic test, get an application id through command `synctl get app`.
+**Note:** Support specify application id when create synthetic test, get an application id through command `synctl get app`.
 
 
 
@@ -288,9 +304,9 @@ synctl get app --name-filter <application-name>
 synctl create test -t 0 --app-id <application-id> ...
 ```
 
-## Query and Delete Synthetic Location
+## Manage Synthetic Locations
 
-### Query synthetic location
+### Display synthetic location
 
 ```
 synctl get location
