@@ -184,7 +184,7 @@ synctl create test -t 1 --label "syn-bundle-test" \
 # create a browser script test
 synctl create test -t 2 \
     --label browser-script-test \
-    --from-file browserscript.js \
+    --from-file browserscripts/api-sample.js \
     --location "$LOCATION" \
     --frequency 15
 
@@ -214,14 +214,14 @@ synctl create test -t 2 \
 synctl create test -t 3 \
     --label "webpage-script-test" \
     --location "$LOCATION" --frequency 15 \
-    --from-file browser-scripts/browser.side  \
+    --from-file side/webpage-script.side  \
     --browser chrome
 ```
 
 - Create Synthetic Test using json payload  
 
 ```
-synctl create test -t <type> --from-json payload-examples/api-script.json
+synctl create test -t <type> --from-json payload/api-script.json
 ```
 
 

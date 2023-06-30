@@ -110,14 +110,14 @@ synctl create test -t 1 --label script-bundle-test --bundle file.zip --script-fi
 synctl create test -t 1 --label script-bundle-test --bundle <base64> --script-file index.js --location <id>
 
 # create browserscript
-synctl create test -t 2 --label browserscript-test --from-file api-sample.js --browser firefox --location <id>
+synctl create test -t 2 --label browserscript-test --from-file browserscripts/api-sample.js --browser firefox --location <id>
 
 # create browserscript bundle
 synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --script-file mytest.js --browser chrome --location <id>
 synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --script-file mytest.js --browser chrome --location <id>
 
 # create webpagescript
-synctl create test -t 3 --label "webpagescript-test" --from-file side/browser.side --browser chrome --location <id>"""
+synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-script.side --browser chrome --location <id>"""
 
 GET_USAGE = """synctl get {location,lo,test,application,app} [id] [options]
 
