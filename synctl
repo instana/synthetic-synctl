@@ -1591,12 +1591,13 @@ class PatchSyntheticTest(SyntheticTest):
 
     def patch_mark_synthetic_call(self, markSyntheticCall):
         """mark synthetic call"""
+        markSyntheticCall_options = ["True", "true", "False", "false"]
         payload = {"configuration": {"markSyntheticCall": ""}}
-        if markSyntheticCall is not None:
+        if markSyntheticCall is not None and markSyntheticCall in markSyntheticCall_options:
             payload["configuration"]["markSyntheticCall"] = markSyntheticCall
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
-            print("markSyntheticCall cannot be none")
+            print("markSyntheticCall should be true or false")
 
     def patch_config_script(self, script):
         """update script content"""
@@ -1633,7 +1634,7 @@ class PatchSyntheticTest(SyntheticTest):
                         }
                     }
             }
-            if script_file is None:
+            if script_file == "" or script_file is None:
                 print("script_file should not be None")
             else:
                 payload["configuration"]["scripts"]["scriptFile"] = script_file
