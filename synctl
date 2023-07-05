@@ -1578,7 +1578,7 @@ class PatchSyntheticTest(SyntheticTest):
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
     def patch_ping_operation(self, method: str = "GET"):
-        """operation"""
+        """update operation"""
         valid_methods = ["GET", "HEAD", "POST", "PUT", "DELETE",
                          "CONNECT", "OPTIONS", "TRACE", "PATCH"]
         payload = {"configuration": {"operation": ""}}
@@ -1590,7 +1590,7 @@ class PatchSyntheticTest(SyntheticTest):
             return
 
     def patch_mark_synthetic_call(self, markSyntheticCall):
-        """mark synthetic call"""
+        """update mark synthetic call"""
         markSyntheticCall_options = ["True", "true", "False", "false"]
         payload = {"configuration": {"markSyntheticCall": ""}}
         if markSyntheticCall is not None and markSyntheticCall in markSyntheticCall_options:
@@ -1642,6 +1642,14 @@ class PatchSyntheticTest(SyntheticTest):
         except:
             print(f"Error: Test {test_id} not found")
 
+    def patch_url(self, url):
+        """update url"""
+        payload = {"configuration": {"url": ""}}
+        if url is not None and url != "":
+            payload["configuration"]["url"] = url
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("url should not be none")
 
 class SyntheticResult(Base):
 
@@ -2238,6 +2246,8 @@ class ParseParameter:
             '--token', type=str, help='set token')
         patch_exclusive_group.add_argument(
             '--entry-file', type=str, help="script file name")
+        patch_exclusive_group.add_argument(
+            '--url', type=str, help="set url")
 
     def update_command_options(self):
         self.parser_update.add_argument(
@@ -2577,6 +2587,8 @@ def main():
             patch_instance.patch_mark_synthetic_call(get_args.mark_synthetic_call)
         elif get_args.entry_file is not None:
             patch_instance.patch_script_file(get_args.entry_file, get_args.id)
+        elif get_args.url is not None:
+            patch_instance.patch_url(get_args.url)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
