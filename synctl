@@ -1661,6 +1661,16 @@ class PatchSyntheticTest(SyntheticTest):
         else:
             print("followRedirect should be true or false")
 
+    def patch_app_id(self, application_id):
+        """update app-id"""
+        payload = {"applicationId": ""}
+        if application_id is not None:
+            payload["applicationId"] = application_id
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("applicationId cannot be none")
+            return
+
 class SyntheticResult(Base):
 
     def __init__(self) -> None:
@@ -2252,6 +2262,9 @@ class ParseParameter:
             '--url', type=str, help="set url")
         patch_exclusive_group.add_argument(
             '--follow-redirect', type=str, help='set follow-redirect')
+        patch_exclusive_group.add_argument(
+            '--app-id', '--application-id', type=str, help='set application id')
+
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -2603,6 +2616,8 @@ def main():
             patch_instance.patch_url(get_args.url)
         elif get_args.follow_redirect is not None:
             patch_instance.patch_follow_redirect(get_args.follow_redirect)
+        elif get_args.app_id is not None:
+            patch_instance.patch_app_id(get_args.app_id)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
