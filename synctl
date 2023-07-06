@@ -1911,7 +1911,7 @@ class PatchSyntheticTest(SyntheticTest):
             payload["configuration"]["followRedirect"] = follow_redirect
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
-            print("followredirect should be true/false ")
+            print("followRedirect should be true/false ")
 
     def patch_expect_status(self, expect_status):
         """update expect status"""
@@ -1920,7 +1920,16 @@ class PatchSyntheticTest(SyntheticTest):
             payload["configuration"]["expectStatus"] = expect_status
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
-            print("expect status should not be none")
+            print("expectStatus should not be none")
+
+    def patch_validation_string(self, validation_string):
+        """update validation string"""
+        payload = {"configuration": {"validationString": ""}}
+        if validation_string is None or validation_string == "":
+            print("validation string should not be none")
+        else:
+            payload["configuration"]["validationString"] = validation_string
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
 class SyntheticResult(Base):
 
@@ -2519,6 +2528,8 @@ class ParseParameter:
             '--follow-redirect', type=str, help='set follow-redirect')
         patch_exclusive_group.add_argument(
             '--expect-status', type=int, help='set expect-status')
+        patch_exclusive_group.add_argument(
+            '--validation-string', type=str, help='set validation-string')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -2907,6 +2918,8 @@ def main():
             patch_instance.patch_follow_redirect(get_args.follow_redirect)
         elif get_args.expect_status is not None:
             patch_instance.patch_expect_status(get_args.expect_status)
+        elif get_args.validation_string is not None:
+            patch_instance.patch_validation_string(get_args.validation_string)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
