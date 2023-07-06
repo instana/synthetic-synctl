@@ -1896,12 +1896,22 @@ class PatchSyntheticTest(SyntheticTest):
 
     def patch_url(self, url):
         """update url"""
-        payload = {"configuration":{"url": ""}}
+        payload = {"configuration": {"url": ""}}
         if url is not None:
             payload["configuration"]["url"] = url
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
             print("url should not be none")
+
+    def patch_follow_redirect(self, follow_redirect):
+        """update follow-redirect"""
+        follow_redirect_options = ["True", "true", "False", "false"]
+        payload = {"configuration": {"followRedirect": ""}}
+        if follow_redirect is not None and follow_redirect in follow_redirect_options:
+            payload["configuration"]["followRedirect"] = follow_redirect
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("followredirect should be true/false ")
 
 
 class SyntheticResult(Base):
@@ -2493,6 +2503,12 @@ class ParseParameter:
             '--timeout', type=str, help='set timeout, accept <number>(ms|s|m)')
         patch_exclusive_group.add_argument(
             '--script-file', type=str, help="script file name")
+        patch_exclusive_group.add_argument(
+            '--entry-file', type=str, help="script file name")
+        patch_exclusive_group.add_argument(
+            '--url', type=str, help="set url")
+        patch_exclusive_group.add_argument(
+            '--follow-redirect', type=str, help='set follow-redirect')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -2501,10 +2517,6 @@ class ParseParameter:
             '--host', type=str, help='set hostname')
         self.parser_patch.add_argument(
             '--token', type=str, help='set token')
-        patch_exclusive_group.add_argument(
-            '--entry-file', type=str, help="script file name")
-        patch_exclusive_group.add_argument(
-            '--url', type=str, help="set url")
 
     def update_command_options(self):
         self.parser_update.add_argument(
@@ -2881,6 +2893,8 @@ def main():
             patch_instance.patch_script_file(get_args.entry_file, get_args.id)
         elif get_args.url is not None:
             patch_instance.patch_url(get_args.url)
+        elif get_args.follow_redirect is not None:
+            patch_instance.patch_follow_redirect(get_args.follow_redirect)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
