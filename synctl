@@ -1913,6 +1913,14 @@ class PatchSyntheticTest(SyntheticTest):
         else:
             print("followredirect should be true/false ")
 
+    def patch_expect_status(self, expect_status):
+        """update expect status"""
+        payload = {"configuration": {"expectStatus": ""}}
+        if expect_status is not None:
+            payload["configuration"]["expectStatus"] = expect_status
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expect status should not be none")
 
 class SyntheticResult(Base):
 
@@ -2509,6 +2517,8 @@ class ParseParameter:
             '--url', type=str, help="set url")
         patch_exclusive_group.add_argument(
             '--follow-redirect', type=str, help='set follow-redirect')
+        patch_exclusive_group.add_argument(
+            '--expect-status', type=int, help='set expect-status')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -2895,6 +2905,8 @@ def main():
             patch_instance.patch_url(get_args.url)
         elif get_args.follow_redirect is not None:
             patch_instance.patch_follow_redirect(get_args.follow_redirect)
+        elif get_args.expect_status is not None:
+            patch_instance.patch_expect_status(get_args.expect_status)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
