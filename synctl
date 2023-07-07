@@ -1931,27 +1931,31 @@ class PatchSyntheticTest(SyntheticTest):
             payload["configuration"]["validationString"] = validation_string
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
-    def patch_bundle(self, bundle):
+    def patch_bundle(self, test_id, bundle):
         """update bundle"""
-        payload = {
-            "configuration":
-                {
-                    "syntheticType": "HTTPScript",
-                    "scripts": {
-                        "bundle": "",  # required
-                        "scriptFile": ""  # required
+        test_result = self.retrieve_a_synthetic_test(test_id)
+        try:
+            script_file = test_result[0]["configuration"]["scripts"]["scriptFile"]
+            payload = {
+                "configuration":
+                    {
+                        "syntheticType": "HTTPScript",
+                        "scripts": {
+                            "bundle": "",  # required
+                            "scriptFile": script_file  # required
+                        }
                     }
-                }
-        }
-        if bundle.endswith('.zip'):
-            with open(bundle, 'rb') as file1:
-                zip_content_byte = file1.read()
-                zip_content_byte_base64 = b64encode(zip_content_byte)
-                payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode('utf-8')
-        else:
-            payload["configuration"]["scripts"]["bundle"] = bundle
-
-        self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+            }
+            if bundle.endswith('.zip'):
+                with open(bundle, 'rb') as file1:
+                    zip_content_byte = file1.read()
+                    zip_content_byte_base64 = b64encode(zip_content_byte)
+                    payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode('utf-8')
+            else:
+                payload["configuration"]["scripts"]["bundle"] = bundle
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        except:
+            print(f"Error: Test {test_id} not found")
 
 class SyntheticResult(Base):
 
@@ -2543,7 +2547,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--script-file', type=str, help="script file name")
         patch_exclusive_group.add_argument(
-            '--entry-file', type=str, help="script file name")
+            '--entry-file', type=str, help="entry file of a bundle test")
         patch_exclusive_group.add_argument(
             '--url', type=str, help="set url")
         patch_exclusive_group.add_argument(
@@ -2945,7 +2949,7 @@ def main():
         elif get_args.validation_string is not None:
             patch_instance.patch_validation_string(get_args.validation_string)
         elif get_args.bundle is not None:
-            patch_instance.patch_bundle(get_args.bundle)
+            patch_instance.patch_bundle(get_args.id, get_args.bundle)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
