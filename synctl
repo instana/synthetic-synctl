@@ -2945,24 +2945,7 @@ def main():
         elif get_args.validation_string is not None:
             patch_instance.patch_validation_string(get_args.validation_string)
         elif get_args.bundle is not None:
-                patch_instance.patch_bundle(get_args.bundle)
-        # elif get_args.type in (1, 2) and get_args.bundle is not None:
-        #     syn_type_t = synthetic_type[get_args.type]
-        #     payload = SyntheticConfiguration(
-        #         syn_type_t, bundle_type=True)
-        #
-        #     if payload.is_zip_file(get_args.bundle):
-        #         bundle_base64_str = payload.read_zip_file_to_base64(
-        #             get_args.bundle)
-        #     else:
-        #         bundle_base64_str = get_args.bundle
-        #     # entry file
-        #     if get_args.script_file is not None:
-        #         payload.set_api_bundle_script(
-        #             bundle_base64_str, script_file=get_args.script_file)
-        #     else:
-        #         # script file use index.js
-        #         payload.set_api_bundle_script(bundle_base64_str)
+            patch_instance.patch_bundle(get_args.bundle)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
