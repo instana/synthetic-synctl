@@ -1,9 +1,10 @@
 # synctl
-Command to manage synthetic test and location easily
+Command to manage synthetic test, location and crdential easily
 
 ## Features
 - query/create/delete/patch/update synthetic test, support simple ping, API script, browser script
 - query/delete synthetic location
+- query/create/delete credential
 - support multiple backend server
 
 ## Installation
@@ -28,7 +29,10 @@ chmod +x synctl && sudo cp synctl /usr/local/bin/synctl
 **Note:** This project was tested with Python 3.9.6, and the code should work on Python versions greater than or equal to 3.6.
 
 ## Config an Instana Backend
-`synctl` support three types of configurations, config file, set `--host` and `--token` and use ENVIRONMENT.
+`synctl` support three types of configurations:
+- Use configurations file
+- Use `--host` and `--token` as options
+- Use ENVIRONMENT Variables, export `SYN_SERVER_HOSTNAME`, `SYN_API_TOKEN`
 
 ### Use a config file (Recommended)
 
