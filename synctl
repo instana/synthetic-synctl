@@ -1894,6 +1894,68 @@ class PatchSyntheticTest(SyntheticTest):
         except:
             print(f"Error: Test {test_id} not found")
 
+    def patch_url(self, url):
+        """update url"""
+        payload = {"configuration": {"url": ""}}
+        if url is not None:
+            payload["configuration"]["url"] = url
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("url should not be none")
+
+    def patch_follow_redirect(self, follow_redirect):
+        """update follow-redirect"""
+        follow_redirect_options = ["True", "true", "False", "false"]
+        payload = {"configuration": {"followRedirect": ""}}
+        if follow_redirect is not None and follow_redirect in follow_redirect_options:
+            payload["configuration"]["followRedirect"] = follow_redirect
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("followRedirect should be true/false ")
+
+    def patch_expect_status(self, expect_status):
+        """update expect status"""
+        payload = {"configuration": {"expectStatus": ""}}
+        if expect_status is not None:
+            payload["configuration"]["expectStatus"] = expect_status
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expectStatus should not be none")
+
+    def patch_validation_string(self, validation_string):
+        """update validation string"""
+        payload = {"configuration": {"validationString": ""}}
+        if validation_string is None or validation_string == "":
+            print("validation string should not be none")
+        else:
+            payload["configuration"]["validationString"] = validation_string
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_bundle(self, test_id, bundle):
+        """update bundle"""
+        test_result = self.retrieve_a_synthetic_test(test_id)
+        try:
+            script_file = test_result[0]["configuration"]["scripts"]["scriptFile"]
+            payload = {
+                "configuration":
+                    {
+                        "syntheticType": "HTTPScript",
+                        "scripts": {
+                            "bundle": "",  # required
+                            "scriptFile": script_file  # required
+                        }
+                    }
+            }
+            if bundle.endswith('.zip'):
+                with open(bundle, 'rb') as file1:
+                    zip_content_byte = file1.read()
+                    zip_content_byte_base64 = b64encode(zip_content_byte)
+                    payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode('utf-8')
+            else:
+                payload["configuration"]["scripts"]["bundle"] = bundle
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        except:
+            print(f"Error: Test {test_id} not found")
 
 class SyntheticResult(Base):
 
@@ -2484,6 +2546,18 @@ class ParseParameter:
             '--timeout', type=str, help='set timeout, accept <number>(ms|s|m)')
         patch_exclusive_group.add_argument(
             '--script-file', type=str, help="script file name")
+        patch_exclusive_group.add_argument(
+            '--entry-file', type=str, help="entry file of a bundle test")
+        patch_exclusive_group.add_argument(
+            '--url', type=str, help="set url")
+        patch_exclusive_group.add_argument(
+            '--follow-redirect', type=str, help='set follow-redirect')
+        patch_exclusive_group.add_argument(
+            '--expect-status', type=int, help='set expect-status')
+        patch_exclusive_group.add_argument(
+            '--validation-string', type=str, help='set validation-string')
+        patch_exclusive_group.add_argument(
+            '--bundle', type=str, help='set bundle')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -2492,8 +2566,6 @@ class ParseParameter:
             '--host', type=str, help='set hostname')
         self.parser_patch.add_argument(
             '--token', type=str, help='set token')
-        patch_exclusive_group.add_argument(
-            '--entry-file', type=str, help="script file name")
 
     def update_command_options(self):
         self.parser_update.add_argument(
@@ -2868,6 +2940,16 @@ def main():
             patch_instance.patch_mark_synthetic_call(get_args.mark_synthetic_call)
         elif get_args.entry_file is not None:
             patch_instance.patch_script_file(get_args.entry_file, get_args.id)
+        elif get_args.url is not None:
+            patch_instance.patch_url(get_args.url)
+        elif get_args.follow_redirect is not None:
+            patch_instance.patch_follow_redirect(get_args.follow_redirect)
+        elif get_args.expect_status is not None:
+            patch_instance.patch_expect_status(get_args.expect_status)
+        elif get_args.validation_string is not None:
+            patch_instance.patch_validation_string(get_args.validation_string)
+        elif get_args.bundle is not None:
+            patch_instance.patch_bundle(get_args.id, get_args.bundle)
     elif COMMAND_UPDATE == get_args.sub_command:
         syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
     elif COMMAND_DELETE == get_args.sub_command:
