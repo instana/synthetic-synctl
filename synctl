@@ -985,9 +985,9 @@ class SyntheticPoP(Base):
         else:
             return None
 
-    def print_a_location_details(self, single_location, show_details=False):
+    def print_a_location_details(self, location_id, single_location, show_details=False):
         """show a synthetic location details data"""
-        if single_location is None or len(single_location) == 0:
+        if single_location is None or len(single_location) == 0 or location_id is None:
             print("no synthetic location")
             return
         if show_details is True:
@@ -2764,7 +2764,7 @@ def main():
             pop_locations_json = []
             if get_args.show_details is True:
                 pop_location = pop_instance.retrieve_synthetic_locations(get_args.id)
-                pop_instance.print_a_location_details(pop_location, show_details=True)
+                pop_instance.print_a_location_details(get_args.id, pop_location, show_details=True)
                 sys.exit(-1)
             if get_args.id is None:
                 pop_locations_json = pop_instance.retrieve_synthetic_locations()
