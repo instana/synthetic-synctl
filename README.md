@@ -136,6 +136,7 @@ options:
     --script-file <entry-name>          bundle script entry file, e.g, myscript.js
     --retries {0,1,2}                   retry times, value is from [0, 2]
     --retry-interval [1, 10]            retryInvertal
+    --timeout <number>(ms|s|m)          timeout, timeout format: <number>(ms|s|m)
     --follow-redirect {true,false}      followRedirect, default true
     --expect-status int                 expectStatus, expected status code, default 200
     --expect-json <json>                expectJson
