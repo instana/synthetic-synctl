@@ -985,6 +985,17 @@ class SyntheticPoP(Base):
         else:
             return None
 
+    def print_a_location_details(self, location_id, single_location, show_details=False):
+        """show a synthetic location details data"""
+        if single_location is None or len(single_location) == 0 or location_id is None:
+            print("no synthetic location")
+            return
+        if show_details is True:
+            a_single_location = single_location[0]
+            print(self.fill_space("Name".upper(), 30), "value".upper())
+            for key, value in a_single_location.items():
+                print(self.fill_space(key, 30), value)
+
     def delete_a_synthetic_pop(self, pop_id=""):
         if pop_id != "":
             self.__delete_a_synthetic_location(location_id=pop_id)
@@ -2751,6 +2762,10 @@ def main():
         elif get_args.op_type in (SYN_LOCATION, SYN_LO):
             # deal pop
             pop_locations_json = []
+            if get_args.show_details is True:
+                pop_location = pop_instance.retrieve_synthetic_locations(get_args.id)
+                pop_instance.print_a_location_details(get_args.id, pop_location, show_details=True)
+                sys.exit(-1)
             if get_args.id is None:
                 pop_locations_json = pop_instance.retrieve_synthetic_locations()
             else:

@@ -350,10 +350,14 @@ synctl create test -t 0 --app-id <application-id> ...
 
 ## Manage Synthetic Locations
 
-### Display synthetic location
+### Query synthetic location
 
 ```
+# Display Synthetic Location
 synctl get location
+
+# Display synthetic location details
+synctl get location <location-id> --show-details
 ```
 
 ### Delete synthetic location
