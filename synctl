@@ -668,8 +668,12 @@ class SyntheticConfiguration(Base):
             self.syn_test_config["locations"] = locations
 
     def set_timeout(self, timeout: int) -> None:
-        """timeout"""
-        self.syn_test_config["configuration"]["timeout"] = timeout
+        """timeout <number>(ms|s|m)"""
+        if str(timeout).endswith(("m", "s", "ms")):
+            self.syn_test_config["configuration"]["timeout"] = timeout
+        else:
+            print("timeout format: <number>(ms|s|m)")
+            sys.exit(1)
 
     def set_frequency(self, frequency: int = 15) -> None:
         """testFrequency"""
@@ -2434,6 +2438,9 @@ class ParseParameter:
             '--retry-interval', type=int, default=1, choices=range(1, 11), help="retryInvertal")
         self.parser_create.add_argument(
             '--follow-redirect', type=str, default="true", choices=["true", "false"], help='followRedirect default True')
+        self.parser_create.add_argument(
+            '--timeout', type=str, help='set timeout, accept <number>(ms|s|m)')
+
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
@@ -2906,6 +2913,8 @@ def main():
                     payload.set_frequency(get_args.frequency)
                 if get_args.app_id is not None:
                     payload.set_application_id(get_args.app_id)
+                if get_args.timeout is not None:
+                    payload.set_timeout(get_args.timeout)
 
                 if get_args.custom_properties is not None:
                     payload.set_custom_properties(
