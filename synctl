@@ -593,10 +593,9 @@ class SyntheticConfiguration(Base):
             "browser": "chrome",
         }
 
-        # syntheticType WebpageAction
+        #syntheticType WebpageAction
         self.webpage_action_conf = {
             "syntheticType": "WebpageAction",
-            "url": "",
             "browser": "chrome",
             "recordVideo": True
         }
@@ -628,6 +627,10 @@ class SyntheticConfiguration(Base):
         if syn_type == WebpageScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], self.webpage_script_conf)
+
+        if syn_type == WebpageAction_TYPE:
+            self.syn_test_config["configuration"] = self.merge_json(
+                self.syn_test_config["configuration"], self.webpage_action_conf)
 
         # set syntheticType
         self.syn_test_config["configuration"]["syntheticType"] = syn_type
@@ -2473,7 +2476,7 @@ class ParseParameter:
             '--browser', type=str, choices=["chrome", "firefox"], default="chrome", help="set browser type")
 
         self.parser_create.add_argument(
-            '--record-video', type=str, required=True, choices=['true', 'false'], help='set record video')
+            '--record-video', type=str, choices=['true', 'false'], help='set record video')
 
         # not implemented
         # self.parser_create.add_argument(
@@ -2918,7 +2921,9 @@ def main():
                 if get_args.type == 4:
                     if get_args.url is not None:
                         payload.set_ping_url(get_args.url)
-                    if get_args.record_video:
+                    else:
+                        print("url is required")
+                    if get_args.record_video is not None:
                         payload.set_record_video(get_args.record_video)
 
                 # global operation, add label, location, description, frequency, etc.
