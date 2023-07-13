@@ -669,11 +669,7 @@ class SyntheticConfiguration(Base):
 
     def set_timeout(self, timeout: int) -> None:
         """timeout <number>(ms|s|m)"""
-        if str(timeout).endswith(("m", "s", "ms")):
-            self.syn_test_config["configuration"]["timeout"] = timeout
-        else:
-            print("timeout format: <number>(ms|s|m)")
-            sys.exit(1)
+        self.syn_test_config["configuration"]["timeout"] = timeout
 
     def set_frequency(self, frequency: int = 15) -> None:
         """testFrequency"""
