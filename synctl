@@ -2400,7 +2400,7 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred"], help="specify test/cred")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3], required=False, help="test type: "
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, help="test type: "
             + "0 HTTPAction,"
             + " 1 HTTPScript,"
             + " 2 BrowserScript,"
