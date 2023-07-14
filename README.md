@@ -223,6 +223,16 @@ synctl create test -t 3 \
     --browser chrome
 ```
 
+- Create WebpageAction
+```
+synctl create test -t 4 \ 
+    --label "browser-test-webpageaction" \
+    --url "https://httpbin.org/get" \
+    --location "$LOCATION" --frequency 5 \
+    --record-video true
+    --browser chrome
+```
+
 - Create Synthetic Test using json payload  
 
 ```
