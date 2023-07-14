@@ -1500,7 +1500,7 @@ class SyntheticTest(Base):
     def __sort_synthetic_tests(self, syn_list):
         """sort synthetic list by locationDisplayLabels"""
         new_list = sorted(
-            syn_list, key=lambda syn: syn["locationDisplayLabels"])
+            syn_list, key=lambda syn: syn["locationDisplayLabels"] if syn is not None else [])
         return new_list
 
     def print_synthetic_test(self, out_list=None, test_id="", test_type="", output_terminal=False, summary_list=None):
@@ -1517,7 +1517,7 @@ class SyntheticTest(Base):
         label_len = 0
         if syn_list is not None and isinstance(syn_list, list):
             for syn in syn_list:
-                if label_len < len(syn["label"]):
+                if syn is not None and label_len < len(syn["label"]):
                     label_len = len(syn["label"])
         if label_len > 60:
             return 60
@@ -1549,6 +1549,8 @@ class SyntheticTest(Base):
         # tests = self.test_lists
         output_lists = []
         for t in tests:
+            if t is None:
+                continue
             success_rate_value = "No Data"
             current_response_time = "No Data"
             if t["id"] in summary_list:
@@ -1961,12 +1963,14 @@ class PatchSyntheticTest(SyntheticTest):
                 with open(bundle, 'rb') as file1:
                     zip_content_byte = file1.read()
                     zip_content_byte_base64 = b64encode(zip_content_byte)
-                    payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode('utf-8')
+                    payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode(
+                        'utf-8')
             else:
                 payload["configuration"]["scripts"]["bundle"] = bundle
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         except:
             print(f"Error: Test {test_id} not found")
+
 
 class SyntheticResult(Base):
 
@@ -2437,7 +2441,6 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--timeout', type=str, help='set timeout, accept <number>(ms|s|m)')
 
-
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
             '--expect-status', type=int, help='expectStatus default 200')
@@ -2766,8 +2769,10 @@ def main():
             # deal pop
             pop_locations_json = []
             if get_args.show_details is True:
-                pop_location = pop_instance.retrieve_synthetic_locations(get_args.id)
-                pop_instance.print_a_location_details(get_args.id, pop_location, show_details=True)
+                pop_location = pop_instance.retrieve_synthetic_locations(
+                    get_args.id)
+                pop_instance.print_a_location_details(
+                    get_args.id, pop_location, show_details=True)
                 sys.exit(-1)
             if get_args.id is None:
                 pop_locations_json = pop_instance.retrieve_synthetic_locations()
@@ -2957,7 +2962,8 @@ def main():
         elif get_args.location is not None:
             patch_instance.patch_locations(get_args.location)
         elif get_args.mark_synthetic_call:
-            patch_instance.patch_mark_synthetic_call(get_args.mark_synthetic_call)
+            patch_instance.patch_mark_synthetic_call(
+                get_args.mark_synthetic_call)
         elif get_args.entry_file is not None:
             patch_instance.patch_script_file(get_args.entry_file, get_args.id)
         elif get_args.url is not None:
