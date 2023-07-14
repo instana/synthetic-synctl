@@ -597,7 +597,7 @@ class SyntheticConfiguration(Base):
         self.webpage_action_conf = {
             "syntheticType": "WebpageAction",
             "browser": "chrome",
-            "recordVideo": True
+            "recordVideo": False
         }
 
         self.script_type = [HTTPScript_TYPE, BrowserScript_TYPE]
