@@ -1289,7 +1289,7 @@ class SyntheticTest(Base):
             if isinstance(data, list):
                 self.test_lists = data
                 for x in data:
-                    if syn_type is not None and x["configuration"]["syntheticType"] == syn_type:
+                    if syn_type is not None and x is not None and x["configuration"]["syntheticType"] == syn_type:
                         syn_type_list.append(x)
                     if syn_type is None:
                         syn_type_list.append(x)
