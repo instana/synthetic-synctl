@@ -1596,7 +1596,7 @@ class SyntheticTest(Base):
                           self.fill_space(location_str),
                           t['configuration']['url'])
                     output_lists.append(t)
-            if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]):
+            if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE, WebpageAction_TYPE]):
                 if len(t['locations']) > 0:
                     location_str = ','.join(t['locationDisplayLabels'])
                 else:
@@ -2506,7 +2506,7 @@ class ParseParameter:
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
         self.parser_get.add_argument(
-            '--type', '-t', type=int, choices=[0, 1, 2, 3], metavar='synthetic type', help='specify synthetic type')
+            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4], metavar='synthetic type', help='specify synthetic type')
         self.parser_get.add_argument(
             'id', type=str, nargs="?", help='synthetic id')
         self.parser_get.add_argument(
@@ -2751,7 +2751,7 @@ def main():
                 try:
                     syn_type_t = synthetic_type[get_args.type]
                 except IndexError:
-                    print("synthetic type only support 0 1 2 3", syn_type_t)
+                    print("synthetic type only support 0 1 2 3 4", syn_type_t)
 
             if get_args.id is None:
                 out_list = syn_instance.retrieve_all_synthetic_tests(
