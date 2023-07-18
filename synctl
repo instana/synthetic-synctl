@@ -593,7 +593,7 @@ class SyntheticConfiguration(Base):
             "browser": "chrome",
         }
 
-        #syntheticType WebpageAction
+        # syntheticType WebpageAction
         self.webpage_action_conf = {
             "syntheticType": "WebpageAction",
             "browser": "chrome",
@@ -1567,6 +1567,8 @@ class SyntheticTest(Base):
         for t in tests:
             success_rate_value = "No Data"
             current_response_time = "No Data"
+            if t is None:
+                continue
             if t["id"] in summary_list:
                 success_rate_value = summary_list[t["id"]]["success_rate"]
                 # current_response_time = summary_list[""]
@@ -1575,7 +1577,7 @@ class SyntheticTest(Base):
             # else:
             #     print(t["id"], "not in summary list")
             current_type = t['configuration']['syntheticType']
-            if (current_type == HTTPAction_TYPE):
+            if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
                 if len(t['locations']) > 0:
                     # locations,
                     location_str = ','.join(t['locationDisplayLabels'])
@@ -1596,7 +1598,7 @@ class SyntheticTest(Base):
                           self.fill_space(location_str),
                           t['configuration']['url'])
                     output_lists.append(t)
-            if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE, WebpageAction_TYPE]):
+            if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]):
                 if len(t['locations']) > 0:
                     location_str = ','.join(t['locationDisplayLabels'])
                 else:
@@ -1983,6 +1985,7 @@ class PatchSyntheticTest(SyntheticTest):
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         except:
             print(f"Error: Test {test_id} not found")
+
 
 class SyntheticResult(Base):
 
@@ -2453,7 +2456,6 @@ class ParseParameter:
             '--follow-redirect', type=str, default="true", choices=["true", "false"], help='followRedirect default True')
         self.parser_create.add_argument(
             '--timeout', type=str, help='set timeout, accept <number>(ms|s|m)')
-
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
