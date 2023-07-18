@@ -34,15 +34,15 @@ HTTPScript_TYPE = "HTTPScript"
 
 BrowserScript_TYPE = "BrowserScript"
 WebpageScript_TYPE = "WebpageScript"
-# WebpageAction_TYPE = "WebpageAction"
+WebpageAction_TYPE = "WebpageAction"
 
 # supported synthetic type
 synthetic_type = (
     HTTPAction_TYPE,     # 0
     HTTPScript_TYPE,     # 1
     BrowserScript_TYPE,  # 2
-    WebpageScript_TYPE   # 3
-    # WebpageAction_TYPE,  # 4
+    WebpageScript_TYPE,   # 3
+    WebpageAction_TYPE   # 4
 )
 
 SYN_TEST = "test"
@@ -119,6 +119,9 @@ synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" 
 
 # create webpagescript
 synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-script.side --browser chrome --location <id>
+
+# create WebpageAction
+synctl create test -t 4 --label "webpageaction-test" --url <url> --location <id> --frequency 5 --record-video true
 
 # create a credential
 synctl create cred --key MY_PASS --value password123"""
@@ -590,10 +593,15 @@ class SyntheticConfiguration(Base):
             "browser": "chrome",
         }
 
-        # self.webpage_action_conf = {}
+        # syntheticType WebpageAction
+        self.webpage_action_conf = {
+            "syntheticType": "WebpageAction",
+            "browser": "chrome",
+            "recordVideo": False
+        }
 
         self.script_type = [HTTPScript_TYPE, BrowserScript_TYPE]
-        if syn_type in [HTTPAction_TYPE, HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE]:
+        if syn_type in [HTTPAction_TYPE, HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
             self.syn_type = syn_type
         if bundle_type is True:
             self.is_bundle = True
@@ -619,6 +627,10 @@ class SyntheticConfiguration(Base):
         if syn_type == WebpageScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
                 self.syn_test_config["configuration"], self.webpage_script_conf)
+
+        if syn_type == WebpageAction_TYPE:
+            self.syn_test_config["configuration"] = self.merge_json(
+                self.syn_test_config["configuration"], self.webpage_action_conf)
 
         # set syntheticType
         self.syn_test_config["configuration"]["syntheticType"] = syn_type
@@ -680,7 +692,7 @@ class SyntheticConfiguration(Base):
 
     def set_ping_url(self, url: str) -> None:
         """url"""
-        if self.syn_type == HTTPAction_TYPE and url != "":
+        if self.syn_type in (HTTPAction_TYPE, WebpageAction_TYPE) and url != "":
             self.syn_test_config["configuration"]["url"] = url
 
     def set_ping_operation(self, method: str = "GET"):
@@ -795,6 +807,10 @@ class SyntheticConfiguration(Base):
         """browser type"""
         if browser:
             self.syn_test_config["configuration"]["browser"] = browser
+
+    def set_record_video(self, record_video):
+        if record_video is not None:
+            self.syn_test_config["configuration"]["recordVideo"] = record_video
 
     def read_js_file(self, file_name: str) -> str:
         """read javascript file"""
@@ -1273,7 +1289,7 @@ class SyntheticTest(Base):
             if isinstance(data, list):
                 self.test_lists = data
                 for x in data:
-                    if syn_type is not None and x["configuration"]["syntheticType"] == syn_type:
+                    if syn_type is not None and x is not None and x["configuration"]["syntheticType"] == syn_type:
                         syn_type_list.append(x)
                     if syn_type is None:
                         syn_type_list.append(x)
@@ -1553,6 +1569,8 @@ class SyntheticTest(Base):
                 continue
             success_rate_value = "No Data"
             current_response_time = "No Data"
+            if t is None:
+                continue
             if t["id"] in summary_list:
                 success_rate_value = summary_list[t["id"]]["success_rate"]
                 # current_response_time = summary_list[""]
@@ -1561,7 +1579,7 @@ class SyntheticTest(Base):
             # else:
             #     print(t["id"], "not in summary list")
             current_type = t['configuration']['syntheticType']
-            if (current_type == HTTPAction_TYPE):
+            if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
                 if len(t['locations']) > 0:
                     # locations,
                     location_str = ','.join(t['locationDisplayLabels'])
@@ -2391,11 +2409,12 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred"], help="specify test/cred")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3], required=False, help="test type: "
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, help="test type: "
             + "0 HTTPAction,"
             + " 1 HTTPScript,"
             + " 2 BrowserScript,"
-            + " 3 WebpageScript")
+            + " 3 WebpageScript,"
+            + " 4 WebpageAction")
 
         # support multiple locations
         # --location location_id_1 location_id_2 location_id_3
@@ -2461,6 +2480,9 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--browser', type=str, choices=["chrome", "firefox"], default="chrome", help="set browser type")
 
+        self.parser_create.add_argument(
+            '--record-video', type=str, choices=['true', 'false'], help='set record video')
+
         # not implemented
         # self.parser_create.add_argument(
         #     '--from-zip', type=str, help="""read bundle script a zip file,\n--from-zip synthetic-bundle.zip""")
@@ -2489,7 +2511,7 @@ class ParseParameter:
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
         self.parser_get.add_argument(
-            '--type', '-t', type=int, choices=[0, 1, 2, 3], metavar='synthetic type', help='specify synthetic type')
+            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4], metavar='synthetic type', help='specify synthetic type')
         self.parser_get.add_argument(
             'id', type=str, nargs="?", help='synthetic id')
         self.parser_get.add_argument(
@@ -2734,7 +2756,7 @@ def main():
                 try:
                     syn_type_t = synthetic_type[get_args.type]
                 except IndexError:
-                    print("synthetic type only support 0 1 2 3", syn_type_t)
+                    print("synthetic type only support 0 1 2 3 4", syn_type_t)
 
             if get_args.id is None:
                 out_list = syn_instance.retrieve_all_synthetic_tests(
@@ -2801,7 +2823,7 @@ def main():
             syn_instance.create_credential()
             return
         elif get_args.syn_type == SYN_TEST:
-            if get_args.type is not None and get_args.type in [0, 1, 2, 3]:
+            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4]:
                 syn_type_t = synthetic_type[get_args.type]
                 payload = SyntheticConfiguration(syn_type_t)
 
@@ -2899,9 +2921,17 @@ def main():
                     else:
                         # script file use index.js
                         payload.set_api_bundle_script(bundle_base64_str)
-                # BrowserScript 2, WebpageScript 3
-                if get_args.type in (2, 3):
+                # BrowserScript 2, WebpageScript 3, WebpageAction 4
+                if get_args.type in (2, 3, 4):
                     payload.set_browser_type(get_args.browser)
+
+                if get_args.type == 4:
+                    if get_args.url is not None:
+                        payload.set_ping_url(get_args.url)
+                    else:
+                        print("url is required")
+                    if get_args.record_video is not None:
+                        payload.set_record_video(get_args.record_video)
 
                 # global operation, add label, location, description, frequency, etc.
                 if get_args.label is not None:
