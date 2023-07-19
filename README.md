@@ -61,8 +61,8 @@ synctl config remove --name pink
 # retrieve all tests with --host and --token
 synctl get test --host "https://test-instana.pink.instana.rocks" --token <Your-Token>
 
-# get all locations with host and token
-synctl get location --host "https://test-instana.pink.instana.rocks" --token <Your-Token>
+# get all pop locations with host and token
+synctl get pop --host "https://test-instana.pink.instana.rocks" --token <Your-Token>
 ```
 
 ### Use environment vars
@@ -76,8 +76,8 @@ export SYN_API_TOKEN="Your Token"
 # retrieve all tests
 synctl get test
 
-# retrieve all location
-synctl get location
+# retrieve all pop locations
+synctl get pop
 ```
 
 
@@ -114,7 +114,7 @@ synctl get test <id> --show-json
 ## Create a synthetic test
 
 ```
-synctl create test [options]
+synctl create [options]
 
 options:
     -t int synthetic type
@@ -154,10 +154,10 @@ Examples:
 ```
 # get location id
 synctl get location
-synctl create test -t 0 --label "simple-ping" --url "https://httpbin.org/get" --location "$LOCATION" --frequency 5
+synctl create -t 0 --label "simple-ping" --url "https://httpbin.org/get" --location "$LOCATION" --frequency 5
 
 # or schedule multiple pops
-synctl create test -t 0 --label "simple-ping" --url "https://httpbin.org/get" --location "$LOCATION1" "$LOCATION2" "$LOCATION3" ...
+synctl create -t 0 --label "simple-ping" --url "https://httpbin.org/get" --location "$LOCATION1" "$LOCATION2" "$LOCATION3" ...
 
 ```
 
@@ -165,17 +165,17 @@ synctl create test -t 0 --label "simple-ping" --url "https://httpbin.org/get" --
 
 ```
 # a simple API script
-synctl create test -t 1 --label "simple-api-script" --from-file http-scripts/http-get.js --location "$LOCATION" --frequency 5
+synctl create -t 1 --label "simple-api-script" --from-file http-scripts/http-get.js --location "$LOCATION" --frequency 5
 
 # create bundle test with a zip file
-synctl create test -t 1 --label syn-bundle-zip-test \
+synctl create -t 1 --label syn-bundle-zip-test \
     --bundle synthetic.zip \
     --script-file index.js \
     --location "$LOCATION" \
     --frequency 5
 
 # create bundle test
-synctl create test -t 1 --label "syn-bundle-test" \
+synctl create -t 1 --label "syn-bundle-test" \
     --bundle "UEsDBAoAAAAAAOiGTFUAAAAAAAAAAAAAAAAOABwAYnVuZGxlLXRlc3QwMS9VVAkAA/SARmP1gEZjdXgLAAEE9QEAAAQUAAAAUEsDBBQAAAAIAOCmTFVLcg0lsQAAAGoBAAAWABwAYnVuZGxlLXRlc3QwMS9pbmRleC5qc1VUCQADJLlGYyS5RmN1eAsAAQT1AQAABBQAAAB9zs0KwjAMB/D7nqKHQStIh/OmyBBPgriLL7DO6Apdq23mx9u7FEF0slPT9PdPWjsbkJ0dztiKebh22oPgMjNaZdTlk2VSR9MgXvIhoisEzD9Qq3Y+dNQlk9BU0RdxHhX0QmeSVoheqw4hyAAoeAPGOD5l/O68OcY0rXAGpLYnJ7ipFJgepOFpsQHU9fsXY6SQsVdIW7Xw3zPrkMFDB1yMRn+yYG/fXu7KzfqwLfe9fQFQSwMECgAAAAAA1aZMVQAAAAAAAAAAAAAAABIAHABidW5kbGUtdGVzdDAxL2xpYi9VVAkAAxG5RmMSuUZjdXgLAAEE9QEAAAQUAAAAUEsDBBQAAAAIAMumTFX5mkDz8QAAAKcBAAAZABwAYnVuZGxlLXRlc3QwMS9saWIvaWJtMy5qc1VUCQAD/bhGYxO5RmN1eAsAAQT1AQAABBQAAABVUEFuwyAQvPOKPVQCSxaO2lutntKeesgbCKxbSzbrwiInqvL3gh27CqdlZnY0O5Z8ZDAxYmB4g4A/qQ+o5IrIqhVNA3YRFQ7jg+oOyUoU2YAMT9/M012SmVZ0yVvuyUMhXlQFvwJWlf5CVrJM8bVp5nnW/XnUlkZZZwnAtqkwhDobxinHwBrO5K6rTXl9B0XwD8ASlwbUGaawkO3OBeQU/Pa/iceN3nekPM7wbhhVVYOM6N1+uSOPcjdbK9KZM4Pa4unIhlM8kstJnw+HbPFxmdAyOjAFgNPnfsvmVWLk8SbESC6V5JeJAsfc49JaK/4AUEsDBBQAAAAIAMamTFUlcJfDtAAAAAQBAAAZABwAYnVuZGxlLXRlc3QwMS9saWIvZ290MS5qc1VUCQAD87hGY/S4RmN1eAsAAQT1AQAABBQAAAAtjkEOgyAQRfecYuIGTBqJW0x7F6pUaShjYYw1hrsXaDcMkP/fvBF9JJiR4ArBvDcbjOD5yduBMR0PP8Jj8yNZ9CXVixZOBjDW2jlp0ik39a5tpXQrRhJ8IVqjkrLMu/Udhllqf9Bi/cwvlQDwjOjV/w6wGOdQAd8xuInXz5TP1HYlJ4rOby060zmcq2WfnePmKDOLSg4BSHm9wdlUXqOgqcAmscTYC6ctt81nxUAxexfEwL5QSwMEFAAAAAgABKZMVfkY0sj6AAAAuwEAAB0AHABidW5kbGUtdGVzdDAxL2xpYi9yZXF1ZXN0Mi5qc1VUCQADiLdGYwm5RmN1eAsAAQT1AQAABBQAAABVUM1OxCAQvvMUczCBJg3d7NHGk+vJg89AYapNWqbCkK4x++5Cu63Kafj+8s1Y8pHBxIiB4QkCfqYhoJIbIqtWiKaBngKMZM0IjJELYldfkWfgr/EOyaqoRmR4+GCe74pM5MA+ecsDeSjMWVXwLWCT6XdkJcsUH5tmWRbdmcElbWmSdRYB7F6FIdQ5M865CNbQkfvagsobeiiCXwDWwjSizjCFlWwPLiCn4Pf/Tfx3DL4n5XGBi2FUVQ1y6KZjdUce5ZG1nU1nzoxqb6cjG07xmVwuej6dcsLLdUbL6MAUAN5ej1X2rNIijzchJnKpFL/OFDjmS65na8UPUEsBAh4DCgAAAAAA6IZMVQAAAAAAAAAAAAAAAA4AGAAAAAAAAAAQAO1BAAAAAGJ1bmRsZS10ZXN0MDEvVVQFAAP0gEZjdXgLAAEE9QEAAAQUAAAAUEsBAh4DFAAAAAgA4KZMVUtyDSWxAAAAagEAABYAGAAAAAAAAQAAAKSBSAAAAGJ1bmRsZS10ZXN0MDEvaW5kZXguanNVVAUAAyS5RmN1eAsAAQT1AQAABBQAAABQSwECHgMKAAAAAADVpkxVAAAAAAAAAAAAAAAAEgAYAAAAAAAAABAA7UFJAQAAYnVuZGxlLXRlc3QwMS9saWIvVVQFAAMRuUZjdXgLAAEE9QEAAAQUAAAAUEsBAh4DFAAAAAgAy6ZMVfmaQPPxAAAApwEAABkAGAAAAAAAAQAAAKSBlQEAAGJ1bmRsZS10ZXN0MDEvbGliL2libTMuanNVVAUAA/24RmN1eAsAAQT1AQAABBQAAABQSwECHgMUAAAACADGpkxVJXCXw7QAAAAEAQAAGQAYAAAAAAABAAAApIHZAgAAYnVuZGxlLXRlc3QwMS9saWIvZ290MS5qc1VUBQAD87hGY3V4CwABBPUBAAAEFAAAAFBLAQIeAxQAAAAIAASmTFX5GNLI+gAAALsBAAAdABgAAAAAAAEAAACkgeADAABidW5kbGUtdGVzdDAxL2xpYi9yZXF1ZXN0Mi5qc1VUBQADiLdGY3V4CwABBPUBAAAEFAAAAFBLBQYAAAAABgAGACkCAAAxBQAAAAA=" \
     --script-file index.js \
     --location "$LOCATION" \
@@ -187,7 +187,7 @@ synctl create test -t 1 --label "syn-bundle-test" \
 
 ```
 # create a browser script test
-synctl create test -t 2 \
+synctl create -t 2 \
     --label browser-script-test \
     --from-file browserscripts/api-sample.js \
     --location "$LOCATION" \
@@ -195,7 +195,7 @@ synctl create test -t 2 \
 
 
 # create browser bundle test using a zip file
-synctl create test -t 2 \
+synctl create -t 2 \
     --label browser-script-test-zip \
     --bundle browserscript-bundle.zip \
     --script-file mytest.js \
@@ -203,7 +203,7 @@ synctl create test -t 2 \
     --frequency 15
 
 # create browser bundle test using base64 string
-synctl create test -t 2 \
+synctl create -t 2 \
     --label "browser-script-test-bundle" \
     --location "$LOCATION" \
     --frequency 15 \
@@ -216,7 +216,7 @@ synctl create test -t 2 \
 
 
 ```
-synctl create test -t 3 \
+synctl create -t 3 \
     --label "webpage-script-test" \
     --location "$LOCATION" --frequency 15 \
     --from-file side/webpage-script.side  \
@@ -225,7 +225,7 @@ synctl create test -t 3 \
 
 - Create WebpageAction
 ```
-synctl create test -t 4 \ 
+synctl create -t 4 \ 
     --label "browser-test-webpageaction" \
     --url "https://httpbin.org/get" \
     --location "$LOCATION" --frequency 5 \
@@ -236,7 +236,7 @@ synctl create test -t 4 \
 - Create Synthetic Test using json payload  
 
 ```
-synctl create test -t <type> --from-json payload/api-script.json
+synctl create -t <type> --from-json payload/api-script.json
 ```
 
 
