@@ -1443,6 +1443,8 @@ class SyntheticTest(Base):
             # get full list of syn_tests
             full_syn_tests = self.retrieve_all_synthetic_tests()
             for syn in full_syn_tests:
+                if syn is None:
+                    continue
                 label_1 = syn["label"]
                 syn_locations = syn["locations"]
                 if syn_locations is not None and len(syn_locations) == 1 and syn_locations[0] == match_location:
