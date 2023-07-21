@@ -12,10 +12,18 @@ Command to manage synthetic test, location and credential easily
     - [Use environment vars](https://github.com/instana/synthetic-synctl#use-environment-vars)
 - [Query Synthetic Test](https://github.com/instana/synthetic-synctl#query-synthetic-test)
 - [Create a synthetic test](https://github.com/instana/synthetic-synctl#create-a-synthetic-test)
+    - [Create command usage]
+    - [Examples](https://github.com/instana/synthetic-synctl#examples)
+        - [Create an API Simple test](https://github.com/instana/synthetic-synctl#create-a-simple-ping-test)
+        - [Create an API Script test](https://github.com/instana/synthetic-synctl#create-an-api-script-test)
+        - [Create BrowserScript](https://github.com/instana/synthetic-synctl#create-browserscript)
+        - [Create WebpageScript](https://github.com/instana/synthetic-synctl#create-webpagescript)
+        - [Create WebpageAction](https://github.com/instana/synthetic-synctl#create-webpageaction)
+        - [Create Synthetic Test using json payload](https://github.com/instana/synthetic-synctl#create-synthetic-test-using-json-payload)
 - [Patch a Synthetic Test](https://github.com/instana/synthetic-synctl#patch-a-synthetic-test)
 - [Update a Synthetic Test](https://github.com/instana/synthetic-synctl#update-a-synthetic-test)
-- [Delete synthetic test](https://github.com/instana/synthetic-synctl#delete-synthetic-test)
-- [Query Application](https://github.com/instana/synthetic-synctl#query-application)
+- [Delete Synthetic test](https://github.com/instana/synthetic-synctl#delete-synthetic-test)
+- [Manage Application](https://github.com/instana/synthetic-synctl#query-application)
     - [Get application list](https://github.com/instana/synthetic-synctl#get-application-list)
 - [Manage Synthetic Locations](https://github.com/instana/synthetic-synctl#manage-synthetic-locations)
     - [Query synthetic location](https://github.com/instana/synthetic-synctl#query-synthetic-location)
@@ -194,7 +202,7 @@ options:
 
 ## Examples  
 
-### Create a simple ping test  
+### Create an API Simple test  
 
 ```
 # get location id
