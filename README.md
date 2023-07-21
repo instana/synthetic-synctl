@@ -12,7 +12,7 @@ Command to manage synthetic test, location and credential easily
     - [Use environment vars](https://github.com/instana/synthetic-synctl#use-environment-vars)
 - [Query Synthetic Test](https://github.com/instana/synthetic-synctl#query-synthetic-test)
 - [Create a synthetic test](https://github.com/instana/synthetic-synctl#create-a-synthetic-test)
-    - [Create command usage]
+    - [Create command usage](https://github.com/instana/synthetic-synctl#create-command-usage)
     - [Examples](https://github.com/instana/synthetic-synctl#examples)
         - [Create an API Simple test](https://github.com/instana/synthetic-synctl#create-a-simple-ping-test)
         - [Create an API Script test](https://github.com/instana/synthetic-synctl#create-an-api-script-test)
