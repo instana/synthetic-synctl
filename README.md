@@ -1,14 +1,43 @@
 # synctl
-Command to manage synthetic test, location and crdential easily
+Command to manage synthetic test, location and credential easily
+
+# Table of Contents
+- [Features](https://github.com/instana/synthetic-synctl#features)
+- [Installation](https://github.com/instana/synthetic-synctl#installation)
+    - [Linux & Mac OS](https://github.com/instana/synthetic-synctl#installation))
+    - [Windows](https://github.com/instana/synthetic-synctl#windows)
+- [Config an Instana Backend](https://github.com/instana/synthetic-synctl#config-an-instana-backend)
+    - [Use a config file (Recommended)](https://github.com/instana/synthetic-synctl#use-a-config-file-recommended)
+    - [Run command with --host and --token](https://github.com/instana/synthetic-synctl#run-command-with---host-and---token-no-need-to-set-a-config-file)
+    - [Use environment vars](https://github.com/instana/synthetic-synctl#use-environment-vars)
+- [Query Synthetic Test](https://github.com/instana/synthetic-synctl#query-synthetic-test)
+- [Create a synthetic test](https://github.com/instana/synthetic-synctl#create-a-synthetic-test)
+- [Patch a Synthetic Test](https://github.com/instana/synthetic-synctl#patch-a-synthetic-test)
+- [Update a Synthetic Test](https://github.com/instana/synthetic-synctl#update-a-synthetic-test)
+- [Delete synthetic test](https://github.com/instana/synthetic-synctl#delete-synthetic-test)
+- [Query Application](https://github.com/instana/synthetic-synctl#query-application)
+    - [Get application list](https://github.com/instana/synthetic-synctl#get-application-list)
+- [Manage Synthetic Locations](https://github.com/instana/synthetic-synctl#manage-synthetic-locations)
+    - [Query synthetic location](https://github.com/instana/synthetic-synctl#query-synthetic-location)
+    - [Delete synthetic location](https://github.com/instana/synthetic-synctl#delete-synthetic-location)
+- [Manage Credentials](https://github.com/instana/synthetic-synctl#manage-credentials)
+    - [Display all credentials](https://github.com/instana/synthetic-synctl#display-all-credentials)
+    - [Create credential](https://github.com/instana/synthetic-synctl#create-credential)
+    - [Delete credential](https://github.com/instana/synthetic-synctl#delete-credential)
 
 ## Features
-- query/create/delete/patch/update synthetic test, support simple ping, API script, browser script
-- query/delete synthetic location
-- query/create/delete credential
+- `query`/`create`/`delete`/`patch`/`update` synthetic test, support API Simple, API Script, Browser script, etc.
+- `query`/`delete` synthetic location
+- `query`/`create`/`delete` credential
 - support multiple backend server
+
+# Prerequisites
+- [Python 3.6+](https://www.python.org/downloads/)
+- [requests 2.28+](https://requests.readthedocs.io/en/latest/)
 
 ## Installation
 
+### Linux & Mac OS
 ```
 # depend on requests https://pypi.org/project/requests/
 # use pip3 to install requests module
@@ -26,7 +55,22 @@ chmod +x synctl && cp synctl /usr/local/bin/synctl
 chmod +x synctl && sudo cp synctl /usr/local/bin/synctl
 ```
 
-**Note:** This project was tested with Python 3.9.6, and the code should work on Python versions greater than or equal to 3.6.
+### Windows
+
+To install python3 on Windows, see [link](https://www.python.org/downloads/windows/). To install git, see [link](https://github.com/git-guides/install-git#install-git-on-windows).
+
+
+```
+# install requests
+python3 -m pip install requests
+
+# clone the code
+git clone https://github.com/instana/synthetic-synctl.git
+
+cd <your-path>/synthetic-synctl
+python3 synctl [options]
+```
+
 
 ## Config an Instana Backend
 `synctl` support three types of configurations:
