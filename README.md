@@ -25,7 +25,7 @@ Command to manage synthetic test, location and credential easily
     - [Create credential](https://github.com/instana/synthetic-synctl#create-credential)
     - [Delete credential](https://github.com/instana/synthetic-synctl#delete-credential)
 
-## Features
+# Features
 - `query`/`create`/`delete`/`patch`/`update` synthetic test, support API Simple, API Script, Browser script, etc.
 - `query`/`delete` synthetic location
 - `query`/`create`/`delete` credential
@@ -35,7 +35,7 @@ Command to manage synthetic test, location and credential easily
 - [Python 3.6+](https://www.python.org/downloads/)
 - [requests 2.28+](https://requests.readthedocs.io/en/latest/)
 
-## Installation
+# Installation
 
 ### Linux & Mac OS
 ```
@@ -72,7 +72,7 @@ python3 synctl [options]
 ```
 
 
-## Config an Instana Backend
+# Config an Instana Backend
 `synctl` support three types of configurations:
 - Use configurations file
 - Use `--host` and `--token` as options
@@ -125,7 +125,7 @@ synctl get location
 ```
 
 
-## Query Synthetic Test
+# Query Synthetic Test
 
 ```
 # Display all tests
@@ -155,8 +155,9 @@ synctl get test <id> --show-script
 synctl get test <id> --show-json
 ```
 
-## Create a synthetic test
+# Create a synthetic test
 
+### Create command usage
 ```
 synctl create test [options]
 
@@ -191,25 +192,36 @@ options:
     --browser {chrome,firefox}          set browser type
 ```
 
-Examples:  
+## Examples  
 
-- Create a simple ping test  
+### Create a simple ping test  
 
 ```
 # get location id
 synctl get location
-synctl create test -t 0 --label "simple-ping" --url "https://httpbin.org/get" --location "$LOCATION" --frequency 5
+synctl create test -t 0 \
+    --label "simple-ping" \
+    --url "https://httpbin.org/get" \
+    --location "$LOCATION" \
+    --frequency 5
 
 # or schedule multiple pops
-synctl create test -t 0 --label "simple-ping" --url "https://httpbin.org/get" --location "$LOCATION1" "$LOCATION2" "$LOCATION3" ...
+synctl create test -t 0 \
+    --label "simple-ping" \
+    --url "https://httpbin.org/get" \
+    --location "$LOCATION1" "$LOCATION2" "$LOCATION3" ...
 
 ```
 
-- Create an API script test  
+### Create an API script test  
 
 ```
 # a simple API script
-synctl create test -t 1 --label "simple-api-script" --from-file http-scripts/http-get.js --location "$LOCATION" --frequency 5
+synctl create test -t 1 \
+    --label "simple-api-script" \
+    --from-file http-scripts/http-get.js \
+    --location "$LOCATION" \
+    --frequency 5
 
 # create bundle test with a zip file
 synctl create test -t 1 --label syn-bundle-zip-test \
@@ -226,7 +238,7 @@ synctl create test -t 1 --label "syn-bundle-test" \
     --frequency 5
 ```
 
-- Create BrowserScript  
+### Create BrowserScript  
 
 
 ```
@@ -256,7 +268,7 @@ synctl create test -t 2 \
     --bundle "UEsDBAoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABwAbGliL1VUCQADlRcDY2izBGN1eAsAAQToAwAABOgDAABQSwMEFAAIAAgA1FkYVQAAAAAAAAAAVAMAAA8AHABsaWIvbXlzY3JpcHQuanNVVAkAA6CXBWOglwVjdXgLAAEE6AMAAAToAwAAlVPBbuIwEL3zFSOLQ5C65t5qVwIpB9RuVbW5R8YMidVgp56hWYT67zsOoUuLkFifEue9N2/eTGzwxLAHQ4SR4QN+QsS3rYuYKVsbpyZ3I0M7b2G99ZZd8MBIPHe+yiawH41AznQK3ry7yjACB+i6Ti8FoG3Y9N+tFAkN6iZUmfp1ftQNqJm1SASJB62pMBVOXNMZxzBextCJQ10hZ6pmbm+n09M6CX700mJch7gBQhNtDaa3/R9GEpwgrAeBC07GmdK0LFOl8u0C5lCasokm9Kt73FGmJEyukZ1VJ7fjVXTvQpAXnT8W+fNED11kJ40NQ0rxADtuEJY7kESK9CzjMK3roQ0eQP29TPQ8w4ExmO5ltYzdNCf+4Ae8HAK4+ac2UK4J8unT5i18kzg2xOYVgWxE9FQHvlq6EN7LJ+1C+PwFdGx2vGXXaOfJVTWTTED2qVg8lcXzYp6Xj7Pfefkwm+cPqQyFDXItG9Zv18fdaBNWW7GGf9oQmSTZfa95/CMSRM5fUEsHCJkl42ODAQAAVAMAAFBLAwQUAAgACAB5bRZVAAAAAAAAAAARAQAACQAcAG15dGVzdC5qc1VUCQADlRcDYxC7BGN1eAsAAQToAwAABOgDAABdjzEOwjAMRfeewooYgoTSHcTCFdjY2mAVozQOiRkK4u6kVEjgzXp+/0u/CSjwBMEiB4oDvGAPGW93ymiNawP17TgVnymJuxaz3jWN51g4oAs8WJM4bc0GVmWKckEh7yqp1p90xqWBOCr556NDQiM+OKJKzPhUsdZD12MoSl6gVo/SZQHhz+p50ne9rfcbUEsHCA5zkg+OAAAAEQEAAFBLAQIeAwoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABgAAAAAAAAAEAD/QQAAAABsaWIvVVQFAAOVFwNjdXgLAAEE6AMAAAToAwAAUEsBAh4DFAAIAAgA1FkYVZkl42ODAQAAVAMAAA8AGAAAAAAAAQAAAP+BPgAAAGxpYi9teXNjcmlwdC5qc1VUBQADoJcFY3V4CwABBOgDAAAE6AMAAFBLAQIeAxQACAAIAHltFlUOc5IPjgAAABEBAAAJABgAAAAAAAEAAAD/gRoCAABteXRlc3QuanNVVAUAA5UXA2N1eAsAAQToAwAABOgDAABQSwUGAAAAAAMAAwDuAAAA+wIAAAAA" 
 ```
 
-- Create WebpageScript  
+### Create WebpageScript  
 
 
 ```
@@ -267,7 +279,7 @@ synctl create test -t 3 \
     --browser chrome
 ```
 
-- Create WebpageAction
+### Create WebpageAction
 ```
 synctl create test -t 4 \ 
     --label "browser-test-webpageaction" \
@@ -277,7 +289,7 @@ synctl create test -t 4 \
     --browser chrome
 ```
 
-- Create Synthetic Test using json payload  
+### Create Synthetic Test using json payload  
 
 ```
 synctl create test -t <type> --from-json payload/api-script.json
@@ -288,7 +300,9 @@ synctl create test -t <type> --from-json payload/api-script.json
 
 
 
-### Patch a Synthetic Test
+# Patch a Synthetic Test
+The command `patch` can be used to updates selected attributes of a Synthetic Test, only one attribute can be patched each time.
+
 
 ```
 # set label to simple-ping
@@ -348,7 +362,7 @@ synctl patch test <synthetic-id> --entry-file bundle-test/index.js
 
 ```
 
-### Update a Synthetic Test
+# Update a Synthetic Test
 
 
 ```
@@ -360,7 +374,7 @@ synctl update test <synthetic-id> --from-data 'json data'
 ```
 
 
-### Delete synthetic test
+# Delete synthetic test
 
 ```
 # delete a synthetic test
@@ -388,7 +402,7 @@ synctl delete test --no-locations
 ```
 
 
-## Query Application
+# Manage Application
 
 ### Get application list
 
@@ -403,7 +417,7 @@ synctl get app --name-filter <application-name>
 synctl create test -t 0 --app-id <application-id> ...
 ```
 
-## Manage Synthetic Locations
+# Manage Synthetic Locations
 
 ### Query synthetic location
 
@@ -425,7 +439,7 @@ synctl delete location <location-id>
 synctl delete location <location-id-1> <location-id-2> <location-id-3> ...
 ```
 
-## Manage Credentials
+# Manage Credentials
 
 ### Display all credentials
 
