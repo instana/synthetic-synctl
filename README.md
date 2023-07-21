@@ -4,7 +4,7 @@ Command to manage synthetic test, location and credential easily
 # Table of Contents
 - [Features](https://github.com/instana/synthetic-synctl#features)
 - [Installation](https://github.com/instana/synthetic-synctl#installation)
-    - [Linux & Mac OS](https://github.com/instana/synthetic-synctl#installation))
+    - [Linux & Mac OS](https://github.com/instana/synthetic-synctl#linux--mac-os)
     - [Windows](https://github.com/instana/synthetic-synctl#windows)
 - [Config an Instana Backend](https://github.com/instana/synthetic-synctl#config-an-instana-backend)
     - [Use a config file (Recommended)](https://github.com/instana/synthetic-synctl#use-a-config-file-recommended)
