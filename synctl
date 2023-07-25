@@ -1711,7 +1711,7 @@ class SyntheticTest(Base):
             return False
 
     def __is_httpscript(self, syn_test):
-        if syn_test['configuration']['syntheticType'] in [HTTPScript_TYPE, BrowserScript_TYPE]:
+        if syn_test['configuration']['syntheticType'] in [HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE]:
             return True
         else:
             return False
