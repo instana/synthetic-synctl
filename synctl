@@ -1628,7 +1628,10 @@ class SyntheticTest(Base):
         # save api script to local file
         if "script" in test["configuration"]:
             api_script = test["configuration"]["script"]
-            api_label = test["label"]+".js"
+            if test["configuration"]["syntheticType"] == WebpageScript_TYPE:
+                api_label = test["label"]+".side"
+            else:
+                api_label = test["label"]+".js"
             self.__save_script_to_local(api_script, label=api_label)
 
         # save bundle to zip file
@@ -1639,8 +1642,12 @@ class SyntheticTest(Base):
 
     def __save_script_to_local(self, script, label="synthetic-script.js"):
         file_path = os.getcwd() + "/" + label
-        with open(file_path, "w", encoding="utf-8") as js_file:
-            js_file.write(script)
+        if label.endswith('.side'):
+            with open(file_path, "w", encoding="utf-8") as side_file:
+                side_file.write(script)
+        else:
+            with open(file_path, "w", encoding="utf-8") as js_file:
+                js_file.write(script)
         print(f"script is written to file {file_path}")
 
     def __save_bundle_to_zip(self, script, label="synthetic-bundle.zip"):
@@ -1711,7 +1718,7 @@ class SyntheticTest(Base):
             return False
 
     def __is_httpscript(self, syn_test):
-        if syn_test['configuration']['syntheticType'] in [HTTPScript_TYPE, BrowserScript_TYPE]:
+        if syn_test['configuration']['syntheticType'] in [HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE]:
             return True
         else:
             return False
@@ -1727,7 +1734,10 @@ class SyntheticTest(Base):
             print("This is bundle script")
             return
         if script_str is not None and script_str != "":
-            print(f"// Label: {single_test['label']}.js")
+            if single_test['configuration']['syntheticType'] == WebpageScript_TYPE:
+                print(f"// Label: {single_test['label']}.side")
+            else:
+                print(f"// Label: {single_test['label']}.js")
             print(script_str)
 
 
