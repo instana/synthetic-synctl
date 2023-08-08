@@ -73,7 +73,7 @@ class TestStringMethods(unittest.TestCase):
         syn_instance = SyntheticTest()
         syn_instance.set_synthetic_payload(payload=syn_payload)
 
-    def test_create_api_script(self):
+    def test_create_browser_bundle(self):
         para_instanace = ParseParameter()
         para_instanace.set_options()
         get_args = para_instanace.get_parser().parse_args([
@@ -109,5 +109,6 @@ class TestStringMethods(unittest.TestCase):
         syn_instance.set_synthetic_payload(payload=syn_payload)
 
 
+    def
 if __name__ == '__main__':
     unittest.main()
