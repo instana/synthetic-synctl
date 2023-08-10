@@ -172,34 +172,35 @@ synctl get test <id> --show-json
 synctl create test [options]
 
 options:
-    -t int synthetic type
-           0 HTTPAction
-           1 HTTPScript
-           2 BrowserScript
-           3 WebpageScript
-    --label <label>                     test name
-    --location [id,...]                 location id, support multiple locations id
-    --description string, -d string     description of synthetic test
-    --frequency int                     The range is [1, 120], unit is min, default is 15
-    --app-id, --application-id <app-id> set application id
-    --url URL                           HTTP Request URL
-    --operation OPERATION               HTTP Request Method, GET, POST, HEAD, PUT, etc.
-    --headers HEADERS                   HTTP Headers
-    --body BODY                         HTTP Body
-    --from-file, -f <file>              specify synthetic script file name
-    --bundle <BASE64>, zip file         synthetic script encoded with base64, or use a zip file instead
-    --script-file <entry-name>          bundle script entry file, e.g, myscript.js
-    --retries {0,1,2}                   retry times, value is from [0, 2]
-    --retry-interval [1, 10]            retryInvertal
-    --timeout <number>(ms|s|m)          timeout
-    --follow-redirect {true,false}      followRedirect, default true
-    --expect-status int                 expectStatus, expected status code, default 200
-    --expect-json <json>                expectJson
-    --expect-match string               expectMatch
-    --expect-exists string              expectExists
-    --expect-not-empty string           expectNotEmpty
-    --allow-insecure {false,true}       allowInsecure
-    --browser {chrome,firefox}          set browser type
+    -t <int>, --type <int>              synthetic type: 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction
+    --location id [id ...]              location id, support multiple locations id
+    --label <string>                    friendly name of the Synthetic test
+    --description, -d <string>          the description of synthetic test
+    --frequency <int>                   the range is from 1 to 120 minute, default is 15
+    --app-id, --application-id <id>     application id
+    --url <url>                         HTTP request URL
+    --operation <method>                HTTP request methods, GET, POST, HEAD, PUT, etc
+    --headers <json>                    HTTP headers
+    --body <string>                     HTTP Body
+    -f, --from-file <file>              synthetic script, specify a file name
+    --bundle <bundle>                   specify a zip file or use synthetic script encoded with base64
+    --script-file <file-name>           bundle script entry file, e.g, myscript.js
+    --retries <int>                     retry times, value is from [0, 2]
+    --retry-interval <int>              set Retry Invertal, range is [1, 10]
+    --follow-redirect <boolean>         to allow redirect, true by default
+    --timeout <num>ms|s|m               set timeout, accept <number>(ms|s|m)
+    --expect-status <int>               expected status code, synthetic test will fail if response status is not equal to it, default 200
+    --expect-json <string>              An optional object to be used to check against the test response object
+    --expect-match <string>             An optional regular expression string to be used to check the test response
+    --expect-exists <string>            An optional list of property labels used to check if they are present in the test response object
+    --expect-not-empty <string>         An optional list of property labels used to check if they are present in the test response object with a non-empty value
+    --allow-insecure <boolean>          if set to true then allow insecure certificates
+    --custom-properties <string>        An object with name/value pairs to provide additional information of the Synthetic test
+    --browser <string>                  browser type, support chrome and firefox
+    --record-video <boolean>            set true to record video
+    --from-json <json>                  full synthetic test payload, specify a json file
+    --key <key>                         set credential name
+    --value <value>                     set credential value
 ```
 
 ## Examples  
@@ -215,7 +216,7 @@ synctl create test -t 0 \
     --location "$LOCATION" \
     --frequency 5
 
-# or schedule multiple pops
+# or schedule multiple locations
 synctl create test -t 0 \
     --label "simple-ping" \
     --url "https://httpbin.org/get" \
