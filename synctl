@@ -2426,7 +2426,7 @@ class ParseParameter:
             '--headers', type=str, metavar="<json>", help="HTTP headers")
 
         self.parser_create.add_argument(
-            '--body', type=str, metavar="<string>", help='HTTP Body')
+            '--body', type=str, metavar="<string>", help='HTTP body')
 
         # options for api script
         self.parser_create.add_argument(
@@ -2439,7 +2439,7 @@ class ParseParameter:
             '--script-file', type=str, metavar="<file-name>", help='bundle script entry file, e.g, myscript.js')
         # [0, 2]
         self.parser_create.add_argument(
-            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is from [0, 2]')
+            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
         self.parser_create.add_argument(
             '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="set Retry Invertal, range is [1, 10]")
         self.parser_create.add_argument(
@@ -2554,11 +2554,11 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--label', type=str, metavar="<string>", help='set label')
         patch_exclusive_group.add_argument(
-            '--retries', type=int, metavar="<int>", help="set retries, [0, 2]")
+            '--retries', type=int, metavar="<int>", help="set retries, min is 0 and max is 2")
         patch_exclusive_group.add_argument(
-            '--retry-interval', type=int, metavar="<int>", help="set retry-interval, [1, 10]")
+            '--retry-interval', type=int, metavar="<int>", help="set retry-interval, min is 1, max is 10")
         patch_exclusive_group.add_argument(
-            '--operation', type=str, metavar="<method>", help="HTTP Request Method, GET, POST, HEAD, PUT, etc.")
+            '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
         patch_exclusive_group.add_argument(
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
 
@@ -2595,7 +2595,7 @@ class ParseParameter:
             'id', type=str, help="synthetic id")
 
         self.parser_update.add_argument(
-            '--from-data', type=str, metavar="<json>", help='new json payload')
+            '--from-data', type=str, metavar="<json>", help='json payload')
 
         self.parser_update.add_argument(
             '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
@@ -2623,9 +2623,9 @@ class ParseParameter:
         self.parser_delete.add_argument(
             '--use-env', '-e', type=str, default=None, metavar="<name>", help='specify a config name')
         self.parser_delete.add_argument(
-            '--host', type=str, metavar="<host>", help='hostname')
+            '--host', type=str, metavar="<host>", help='set hostname')
         self.parser_delete.add_argument(
-            '--token', type=str, metavar="<token>", help='token')
+            '--token', type=str, metavar="<token>", help='set token')
 
     def set_options(self):
         self.global_options()
