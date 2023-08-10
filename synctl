@@ -2449,7 +2449,7 @@ class ParseParameter:
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
-            '--expect-status', type=int, metavar="<int>", help='expected status code, synthetic test will fail if response status is not equal to it, default 200')
+            '--expect-status', type=int, metavar="<int>", help='synthetic test will fail if response status is not equal to expected status code, default 200')
         self.parser_create.add_argument(
             '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
         self.parser_create.add_argument(
