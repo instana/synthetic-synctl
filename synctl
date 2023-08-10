@@ -41,7 +41,7 @@ synthetic_type = (
     HTTPAction_TYPE,     # 0
     HTTPScript_TYPE,     # 1
     BrowserScript_TYPE,  # 2
-    WebpageScript_TYPE,   # 3
+    WebpageScript_TYPE,  # 3
     WebpageAction_TYPE   # 4
 )
 
@@ -74,10 +74,10 @@ Options:
 Commands:
     config              manage configuration file
     create              create a synthetic test
-    get                 get synthetic tests or locations
+    get                 get synthetic tests, locations and credentials
     patch               patch a synthetic test
     update              update a synthetic test
-    delete              delete synthetic tests or locations
+    delete              delete synthetic tests, locations and credentials
 
 Use "synctl <command> --help" for more information about a command.
     """
@@ -100,13 +100,13 @@ synctl config set --host <host> --token <token> --name <name>"""
 CREATE_USAGE = """synctl create test/cred [options]
 
 examples:
-# create a simple ping
+# create an API Simple
 synctl create test -t 0 --label simple-ping-test --url <url> --location <id> --frequency 5
 
-# create an API script
+# create an API Script
 synctl create test -t 1 --label script-test --from-file script-name.js --location <id>
 
-# create an API script bundle type
+# create an API Script bundle
 synctl create test -t 1 --label script-bundle-test --bundle file.zip --script-file index.js --location <id>
 synctl create test -t 1 --label script-bundle-test --bundle <base64> --script-file index.js --location <id>
 
@@ -167,10 +167,10 @@ synctl delete test <id>
 # delete a location
 synctl delete location <location-id>
 
-# delete all test which label match regex
+# delete all tests which label match regex
 synctl delete test --match-regex "^simple-ping-"
 
-# delete all test with no locations
+# delete all tests with no locations
 synctl delete test --no-locations
 
 # delete all tests on a location
@@ -1208,21 +1208,6 @@ class SyntheticTest(Base):
         )
         return res
 
-    # def create_synthetic_test_in_batch(self, con_ins=None, prefix_label="batch-test-", index_start=1, count=1):
-    #     total_number = 0
-    #     start_time = time.time()
-    #     for i in range(index_start, index_start+count):
-    #         random_label = self.__generate_random_str(num=5)
-    #         syn_label = prefix_label + random_label + "-"+str(i)
-    #         if con_ins is not None:
-    #             con_ins.set_label(syn_label)
-    #             self.set_synthetic_payload(payload=con_ins.get_json())
-    #             self.create_a_synthetic_test()
-    #         total_number += 1
-    #     end_time = time.time()
-    #     total_time = round((end_time - start_time)*1000, 3)
-    #     print(f'total create: {total_number}, time used: {total_time}ms')
-
     def retrieve_a_synthetic_test(self, test_id=""):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
@@ -1876,7 +1861,7 @@ class PatchSyntheticTest(SyntheticTest):
 
     def patch_mark_synthetic_call(self, markSyntheticCall):
         """mark synthetic call"""
-        markSyntheticCall_options = ["True", "true", "False", "false"]
+        markSyntheticCall_options = ["true", "false"]
         payload = {"configuration": {"markSyntheticCall": ""}}
         if markSyntheticCall is not None and markSyntheticCall in markSyntheticCall_options:
             payload["configuration"]["markSyntheticCall"] = markSyntheticCall
@@ -2398,21 +2383,21 @@ class ParseParameter:
         self.parser_config.add_argument(
             'config_type', choices=["set", "list", "use", "remove"], help='supported command')
         self.parser_config.add_argument(
-            '--host', type=str, help='set hostname')
+            '--host', type=str, metavar="<host>", help='set hostname')
         self.parser_config.add_argument(
-            '--token', '-t', type=str, help='set token')
+            '--token', '-t', type=str, metavar="<token>", help='set token')
         self.parser_config.add_argument(
-            '--env', '--name', type=str, help='specify which config to use')
+            '--env', '--name', type=str, metavar="<name>", help='specify which config to use')
         self.parser_config.add_argument(
             '--default', action="store_true", help='set as default')
 
     def create_command_options(self):
         self.parser_create.add_argument(
-            'syn_type', type=str, choices=["test", "cred"], help="specify test/cred")
+            'syn_type', type=str, choices=["test", "cred"], metavar="test/cred", help="specify test/cred")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, help="test type: "
-            + "0 HTTPAction,"
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, metavar="<int>", help="synthetic type:"
+            + " 0 HTTPAction,"
             + " 1 HTTPScript,"
             + " 2 BrowserScript,"
             + " 3 WebpageScript,"
@@ -2422,89 +2407,87 @@ class ParseParameter:
         # --location location_id_1 location_id_2 location_id_3
         # location cannot set required to True, due to --from-json can support location from json file
         self.parser_create.add_argument(
-            '--location', type=str, nargs='+', required=False, help="location id, support multiple locations id")
+            '--location', type=str, nargs='+', required=False, metavar="id", help="location id, support multiple locations id")
         self.parser_create.add_argument(
-            '--label', type=str, help="test label")
+            '--label', type=str, metavar="<string>", help="friendly name of the Synthetic test")
         self.parser_create.add_argument(
-            '--description', '-d', type=str, help="description of synthetic test")
+            '--description', '-d', type=str, metavar="<string>", help="the description of synthetic test")
         self.parser_create.add_argument(
-            '--frequency', type=int, default=15, help="The range is from 1 to 120min, default is 15")
+            '--frequency', type=int, default=15, metavar="<int>", help="the range is from 1 to 120 minute, default is 15")
         self.parser_create.add_argument(
-            '--app-id', '--application-id', type=str, metavar="<application-id>", help="set application id")
+            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
 
         # options for ping, url
         self.parser_create.add_argument(
-            '--url', type=str, help='HTTP Request URL')
+            '--url', type=str, metavar="<url>", help='HTTP request URL')
         self.parser_create.add_argument(
-            '--operation', type=str, help='HTTP Request Method, GET, POST, HEAD, PUT, etc.')
+            '--operation', type=str, metavar="<method>", help='HTTP request methods, GET, POST, HEAD, PUT, etc')
         self.parser_create.add_argument(
-            '--headers', type=str, help="HTTP Headers")
+            '--headers', type=str, metavar="<json>", help="HTTP headers")
 
         self.parser_create.add_argument(
-            '--body', type=str, help='HTTP Body')
+            '--body', type=str, metavar="<string>", help='HTTP Body')
 
         # options for api script
         self.parser_create.add_argument(
-            '-f', '--from-file', type=str, metavar="<script-name>", help='synthetic script, specify a file name')
+            '-f', '--from-file', type=str, metavar="<file>", help='synthetic script, specify a file name')
 
         # options for bundle script
         self.parser_create.add_argument(
-            '--bundle', type=str, help='specify a zip file or use synthetic script encoded with base64')
+            '--bundle', type=str, metavar="<bundle>", help='specify a zip file or use synthetic script encoded with base64')
         self.parser_create.add_argument(
-            '--script-file', type=str, help='bundle script entry file, e.g, myscript.js')
+            '--script-file', type=str, metavar="<file-name>", help='bundle script entry file, e.g, myscript.js')
         # [0, 2]
         self.parser_create.add_argument(
-            '--retries', type=int, choices=range(0, 3), help='retry times, value is from [0, 2]')
+            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is from [0, 2]')
         self.parser_create.add_argument(
-            '--retry-interval', type=int, default=1, choices=range(1, 11), help="retryInvertal")
+            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="set Retry Invertal, range is [1, 10]")
         self.parser_create.add_argument(
-            '--follow-redirect', type=str, default="true", choices=["true", "false"], help='followRedirect default True')
+            '--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
         self.parser_create.add_argument(
-            '--timeout', type=str, help='set timeout, accept <number>(ms|s|m)')
+            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
-            '--expect-status', type=int, help='expectStatus default 200')
+            '--expect-status', type=int, metavar="<int>", help='expected status code, synthetic test will fail if response status is not equal to it, default 200')
         self.parser_create.add_argument(
-            '--expect-json', type=str, help='expectJson')
+            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
         self.parser_create.add_argument(
-            '--expect-match', type=str, help='expectMatch')
+            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
         self.parser_create.add_argument(
-            '--expect-exists', type=str, help='expectExists')
+            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
         self.parser_create.add_argument(
-            '--expect-not-empty', type=str, help='expectNotEmpty')
+            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
         self.parser_create.add_argument(
-            '--allow-insecure', type=str, default='true', choices=['false', 'true'], help='allowInsecure')
+            '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
         self.parser_create.add_argument(
-            '--custom-properties', type=str, help="set customProperties")
+            '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
 
         # browser type
         self.parser_create.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], default="chrome", help="set browser type")
+            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
 
         self.parser_create.add_argument(
-            '--record-video', type=str, choices=['true', 'false'], help='set record video')
-
-        # not implemented
-        # self.parser_create.add_argument(
-        #     '--from-zip', type=str, help="""read bundle script a zip file,\n--from-zip synthetic-bundle.zip""")
+            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
 
         # full payload in json file
         self.parser_create.add_argument(
-            '--from-json', type=str, help='full synthetic test payload, specify a json file')
+            '--from-json', type=str, metavar="<json>", help='full synthetic test payload, specify a json file')
+
+        self.parser_create.add_argument(
+            '--key', type=str, metavar="<key>", help='set credential name')
+        self.parser_create.add_argument(
+            '--value', type=str, metavar="<value>", help='set credential value')
+
 
         # set auth
         self.parser_create.add_argument(
-            '--use-env', '-e', type=str, default=None, help='use a specified configuration')
+            '--use-env', '-e', type=str, default=None, metavar="<name>",help='use a specified configuration')
         self.parser_create.add_argument(
-            '--host', type=str, help='set hostname')
+            '--host', type=str, metavar="<host>", help='set hostname')
         self.parser_create.add_argument(
-            '--token', type=str, help='set token')
+            '--token', type=str, metavar="<token>", help='set token')
 
-        self.parser_create.add_argument(
-            '--key', type=str, help='set credential name')
-        self.parser_create.add_argument(
-            '--value', type=str, help='set credential value')
 
     def get_command_options(self):
         self.parser_get.add_argument(
@@ -2513,16 +2496,13 @@ class ParseParameter:
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
         self.parser_get.add_argument(
-            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4], metavar='synthetic type', help='specify synthetic type')
+            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction')
         self.parser_get.add_argument(
             'id', type=str, nargs="?", help='synthetic id')
         self.parser_get.add_argument(
-            '--window-size', type=str, default="1h", help="set synthetic result window size, support [1,60]m, [1-24]h"
+            '--window-size', type=str, default="1h", metavar="<window>", help="set synthetic result window size, support [1,60]m, [1-24]h"
         )
 
-        # todo
-        # parser_get.add_argument(
-        #     '--save-script', type=str, default="synthetic-test.js", metavar="script-label.js", help='save script to local, default is test label')
         self.parser_get.add_argument(
             '--save-script', action="store_true", help='save script to local, default is test label')
 
@@ -2536,7 +2516,7 @@ class ParseParameter:
         # application
         application_group = self.parser_get.add_argument_group()
         application_group.add_argument(
-            '--name-filter', type=str, help="filter application by name")
+            '--name-filter', type=str, metavar="<app>", help="filter application by name, only applicable for application name")
         # application_group
 
         host_token_group = self.parser_get.add_argument_group()
@@ -2547,11 +2527,11 @@ class ParseParameter:
         # self.parser_get.add_argument(
         #     '--token', type=str, help='set token')
         host_token_group.add_argument(
-            '--use-env', '-e', type=str, default=None, help='use a specified config')
+            '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a specified config')
         host_token_group.add_argument(
-            '--host', type=str, help='set hostname')
+            '--host', type=str,  metavar="<host>", help='set hostname')
         host_token_group.add_argument(
-            '--token', type=str, help='set token')
+            '--token', type=str,  metavar="<token>", help='set token')
 
     def patch_command_options(self):
         self.parser_patch.add_argument(
@@ -2564,49 +2544,49 @@ class ParseParameter:
         #     '--from-json', type=str, help='new json payload')
         patch_exclusive_group = self.parser_patch.add_mutually_exclusive_group()
         patch_exclusive_group.add_argument(
-            '--active', type=str, choices=["false", "true"], help='set active')
+            '--active', type=str, choices=["false", "true"], metavar="<boolean>", help='set active')
         patch_exclusive_group.add_argument(
-            '--frequency', type=int, help='set frequency')
+            '--frequency', type=int, metavar="<int>", help='set frequency')
         patch_exclusive_group.add_argument(
-            '--location', nargs="+", help="set location")
+            '--location', nargs="+", metavar="<id>", help="set location")
         patch_exclusive_group.add_argument(
-            '--description', type=str, help="set description")
+            '--description', type=str, metavar="<string>", help="set description")
         patch_exclusive_group.add_argument(
-            '--label', type=str, help='set label')
+            '--label', type=str, metavar="<string>", help='set label')
         patch_exclusive_group.add_argument(
-            '--retries', type=int, help="set retries")
+            '--retries', type=int, metavar="<int>", help="set retries, [0, 2]")
         patch_exclusive_group.add_argument(
-            '--retry-interval', type=int, help="set retry-interval")
+            '--retry-interval', type=int, metavar="<int>", help="set retry-interval, [1, 10]")
         patch_exclusive_group.add_argument(
-            '--operation', type=str, help="HTTP Request Method, GET, POST, HEAD, PUT, etc.")
+            '--operation', type=str, metavar="<method>", help="HTTP Request Method, GET, POST, HEAD, PUT, etc.")
         patch_exclusive_group.add_argument(
-            '--mark-synthetic-call', type=str, help='set markSyntheticCall')
+            '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
 
         # timeout Expected <number>(ms|s|m)
         patch_exclusive_group.add_argument(
-            '--timeout', type=str, help='set timeout, accept <number>(ms|s|m)')
+            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
         patch_exclusive_group.add_argument(
-            '--script-file', type=str, help="script file name")
+            '--script-file', type=str, metavar="<file-name>", help="script file name")
         patch_exclusive_group.add_argument(
-            '--entry-file', type=str, help="entry file of a bundle test")
+            '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
         patch_exclusive_group.add_argument(
-            '--url', type=str, help="set url")
+            '--url', type=str, metavar="<url>", help="HTTP URL")
         patch_exclusive_group.add_argument(
-            '--follow-redirect', type=str, help='set follow-redirect')
+            '--follow-redirect', type=str, metavar="<boolean>", help='set follow-redirect')
         patch_exclusive_group.add_argument(
-            '--expect-status', type=int, help='set expect-status')
+            '--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
         patch_exclusive_group.add_argument(
-            '--validation-string', type=str, help='set validation-string')
+            '--validation-string', type=str, metavar="<string>", help='set validation-string')
         patch_exclusive_group.add_argument(
-            '--bundle', type=str, help='set bundle')
+            '--bundle', type=str, metavar="<bundle>", help='set bundle')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
-            '--use-env', '-e', type=str, default=None, help='use a config hostname')
+            '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a config hostname')
         self.parser_patch.add_argument(
-            '--host', type=str, help='set hostname')
+            '--host', type=str, metavar="<host>", help='set hostname')
         self.parser_patch.add_argument(
-            '--token', type=str, help='set token')
+            '--token', type=str, metavar="<token>", help='set token')
 
     def update_command_options(self):
         self.parser_update.add_argument(
@@ -2614,40 +2594,38 @@ class ParseParameter:
         self.parser_update.add_argument(
             'id', type=str, help="synthetic id")
 
-        # parser_update.add_argument(
-        #     '--from-json', type=str, help='new json payload')
         self.parser_update.add_argument(
-            '--from-data', type=str, help='new json payload')
+            '--from-data', type=str, metavar="<json>", help='new json payload')
 
         self.parser_update.add_argument(
-            '--use-env', '-e', type=str, default=None, help='use a config hostname')
+            '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
         self.parser_update.add_argument(
-            '--host', type=str, help='set hostname')
+            '--host', type=str, metavar="<host>", help='set hostname')
         self.parser_update.add_argument(
-            '--token', type=str, help='set token')
+            '--token', type=str, metavar="<token>", help='set token')
 
     def delete_command_options(self):
         self.parser_delete.add_argument(
             'delete_type', choices=['location', 'lo', 'test', 'cred'], help='specify synthetic type: location/test/credential')
         self.parser_delete.add_argument(
-            'id', type=str, nargs="*", help='synthetic test id, location id, credential name')
+            'id', type=str, nargs="*", metavar="<id>", help='synthetic test id, location id, credential name')
 
         # other options
         self.parser_delete.add_argument(
-            '--match-regex', type=str, default=None, help='use a regex to match synthetic label')
+            '--match-regex', type=str, default=None,metavar="<regex>", help='use a regex to match synthetic label')
         # only deletes tests full match location, if a test has two locations, include this, will
         # not be deleted
         self.parser_delete.add_argument(
-            '--match-location', type=str, default=None, help='delete tests match this location id')
+            '--match-location', type=str, default=None, metavar="<id>", help='delete tests match this location id')
         self.parser_delete.add_argument(
-            '--no-locations', action="store_true", help="delete test with no locations")
+            '--no-locations', action="store_true", help="delete tests with no locations")
 
         self.parser_delete.add_argument(
-            '--use-env', '-e', type=str, default=None, help='use a config hostname')
+            '--use-env', '-e', type=str, default=None, metavar="<name>", help='specify a config name')
         self.parser_delete.add_argument(
-            '--host', type=str, help='set hostname')
+            '--host', type=str, metavar="<host>", help='hostname')
         self.parser_delete.add_argument(
-            '--token', type=str, help='set token')
+            '--token', type=str, metavar="<token>", help='token')
 
     def set_options(self):
         self.global_options()

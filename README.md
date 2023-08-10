@@ -82,9 +82,11 @@ python3 synctl [options]
 
 # Config an Instana Backend
 `synctl` support three types of configurations:
-- Use configurations file
-- Use `--host` and `--token` as options
+- Use configurations file, default is `~/.synthetic/config.json`.
+- Use `--host` and `--token` to specify the host and token.
 - Use ENVIRONMENT Variables, export `SYN_SERVER_HOSTNAME`, `SYN_API_TOKEN`
+
+**Note:** The priority of configuration is ENVIRONMENT > options > config file.
 
 ### Use a config file (Recommended)
 
@@ -107,7 +109,7 @@ synctl config remove --name pink
 ```
 **Note:** By default, config file is `~/.synthetic/config.json`.
 
-### Run command with --host and --token, no need to set a config file
+### Run command with --host <host> and --token <token>
 
 ```
 # retrieve all tests with --host and --token
