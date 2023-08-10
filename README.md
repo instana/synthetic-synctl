@@ -84,9 +84,9 @@ python3 synctl [options]
 `synctl` support three types of configurations:
 - Use configurations file, default is `~/.synthetic/config.json`.
 - Use `--host` and `--token` to specify the host and token.
-- Use ENVIRONMENT Variables, export `SYN_SERVER_HOSTNAME`, `SYN_API_TOKEN`
+- Use environment variables, export `SYN_SERVER_HOSTNAME`, `SYN_API_TOKEN`.
 
-**Note:** The priority of configuration is ENVIRONMENT > options > config file.
+**Note:** The priority of configuration is command options > environment variables > config file.
 
 ### Use a config file (Recommended)
 
