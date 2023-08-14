@@ -10,6 +10,10 @@ Command to manage synthetic test, location and credential easily
     - [Use a config file (Recommended)](#use-a-config-file-recommended)
     - [Run command with options](#run-command-with---host-and---token-no-need-to-set-a-config-file)
     - [Use environment variables](#use-environment-vars)
+- [ManManage configuration files](#manage-configuration-files)
+    - [synctl config Syntax](#synctl-config-syntax)
+    - [synctl config Options](#synctl-config-options)
+    - [synctl config Examples](#synctl-config-examples)
 - [Query Synthetic Test](#query-synthetic-test)
 - [Create a synthetic test](#create-a-synthetic-test)
     - [Create command usage](#create-command-usage)
@@ -37,7 +41,7 @@ Command to manage synthetic test, location and credential easily
 - CRUD of Synthetic test, support API Simple, API Script, Browser script, etc.
 - `query`/`delete` of Synthetic location.
 - `query`/`create`/`delete` of Synthetic credential.
-- Support multiple backend server.
+- Support multiple configurations of backend server.
 
 # Prerequisites
 - [Python 3.6+](https://www.python.org/downloads/)
@@ -88,7 +92,7 @@ python3 synctl [options]
 
 **Note:** The priority of configuration is command options > environment variables > config file.
 
-### Use a config file (Recommended)
+### Use a configuration file (Recommended)
 The configuration file is stored under `~/.synthetic/config.json` by default, uses can edit it directly or use `synctl config` command to manage configuration information. Below is an example to configure a backend server:
 ```
 # set your backend host and token, and give it an alias name, and set it as default
@@ -98,7 +102,7 @@ synctl config set \
     --name "pink" \
     --default
 
-# list configs
+# list configurations
 synctl config list
 ```
 **Note:** By default, config file is `~/.synthetic/config.json`.
@@ -151,7 +155,7 @@ remove     delete a configuration
 --default             set as default
 ```
 
-## Examples
+## synctl config Examples
 
 ```
 # configure a backend, name it as pink and set it as default
