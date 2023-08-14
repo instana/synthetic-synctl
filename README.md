@@ -20,7 +20,7 @@ Command to manage synthetic test, location and credential easily
     - [synctl get test Examples](#synctl-get-test-examples)
 - [Create a synthetic test](#create-a-synthetic-test)
     - [synctl create test Syntax](#synctl-create-test-syntax)
-    - [synctl create test Options](##synctl-create-test-options)
+    - [synctl create test Options](#synctl-create-test-options)
     - [synctl create test Examples](#synctl-create-test-examples)
         - [Create an API Simple test](#create-an-api-simple-test)
         - [Create an API Script test](#create-an-api-script-test)
