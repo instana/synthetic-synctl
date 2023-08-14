@@ -9,7 +9,7 @@ Command to manage synthetic test, location and credential easily
 - [Configure an Instana Backend](#configure-an-instana-backend)
     - [Use a configuration file (Recommended)](#use-a-configuration-file-recommended)
     - [Run command with options](#run-command-with-options)
-    - [Use environment variables](#use-environment-vars)
+    - [Use environment variables](#use-environment-variables)
 - [Manage configuration files](#manage-configuration-files)
     - [synctl config Syntax](#synctl-config-syntax)
     - [synctl config Options](#synctl-config-options)
