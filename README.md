@@ -10,28 +10,43 @@ Command to manage synthetic test, location and credential easily
     - [Use a config file (Recommended)](#use-a-config-file-recommended)
     - [Run command with options](#run-command-with---host-and---token-no-need-to-set-a-config-file)
     - [Use environment variables](#use-environment-vars)
-- [ManManage configuration files](#manage-configuration-files)
+- [Manage configuration files](#manage-configuration-files)
     - [synctl config Syntax](#synctl-config-syntax)
     - [synctl config Options](#synctl-config-options)
     - [synctl config Examples](#synctl-config-examples)
 - [Query Synthetic Test](#query-synthetic-test)
+    - [synctl get test Syntax](#synctl-get-test-syntax)
+    - [synctl get test Options](#synctl-get-test-options)
+    - [synctl get test Examples](#synctl-get-test-examples)
 - [Create a synthetic test](#create-a-synthetic-test)
-    - [Create command usage](#create-command-usage)
-    - [Examples](#examples)
-        - [Create an API Simple test](#create-a-simple-ping-test)
+    - [synctl create test Syntax](#synctl-create-test-syntax)
+    - [synctl create test Options](##synctl-create-test-options)
+    - [synctl create test Examples](#synctl-create-test-examples)
+        - [Create an API Simple test](#create-an-api-simple-test)
         - [Create an API Script test](#create-an-api-script-test)
         - [Create BrowserScript](#create-browserscript)
         - [Create WebpageScript](#create-webpagescript)
         - [Create WebpageAction](#create-webpageaction)
-        - [Create Synthetic Test using json payload](#create-synthetic-test-using-json-payload)
+        - [Create Synthetic Test with json payload](#create-synthetic-test-using-json-payload)
 - [Patch a Synthetic Test](#patch-a-synthetic-test)
+    - [synctl patch Syntax](#synctl-patch-syntax)
+    - [synctl patch Options](#synctl-patch-options)
+    - [synctl patch Examples](#synctl-patch-examples)
 - [Update a Synthetic Test](#update-a-synthetic-test)
+    - [synctl update Syntax](#synctl-update-syntax)
+    - [synctl update Options](#synctl-update-options)
+    - [synctl update Examples](#synctl-update-examples)
 - [Delete Synthetic test](#delete-synthetic-test)
-- [Manage Application](#query-application)
-    - [Get application list](#get-application-list)
+    - [synctl delete test Syntax](#synctl-delete-test-syntax)
+    - [synctl delete test Options](#synctl-delete-test-options)
+    - [synctl delete test Examples](#synctl-delete-test-examples)
+- [Manage Application](##manage-application)
+    - [Get application Syntax](#get-application-syntax)
+    - [Get application examples](#get-application-examples)
 - [Manage Synthetic Locations](#manage-synthetic-locations)
-    - [Query synthetic location](#query-synthetic-location)
-    - [Delete synthetic location](#delete-synthetic-location)
+    - [Manage Location Syntax](#manage-location-syntax)
+    - [Query Synthetic location](#query-synthetic-location)
+    - [Delete Synthetic location](#delete-synthetic-location)
 - [Manage Credentials](#manage-credentials)
     - [Display all credentials](#display-all-credentials)
     - [Create credential](#create-credential)
@@ -193,7 +208,7 @@ synctl get test [id] [options]
 --token <token>        set token
 ```
 
-## Examples
+## synctl get test Examples
 ```
 # Display all tests
 synctl get test
@@ -579,7 +594,7 @@ synctl create test -t 0 --app-id <application-id> ...
 
 # Manage Synthetic Locations
 
-### Manage Synthetic Location Syntax
+### Manage Location Syntax
 ```
 # get location
 synctl get {location,lo} [id] [options]
@@ -591,7 +606,7 @@ Options:
 synctl delete {location, lo} [id...]
 ```
 
-### Query synthetic location
+### Query Synthetic location
 
 ```
 # Display Synthetic Location
@@ -601,7 +616,7 @@ synctl get location
 synctl get location <location-id> --show-details
 ```
 
-### Delete synthetic location
+### Delete Synthetic location
 
 ```
 # delete a synthetic location
