@@ -40,7 +40,7 @@ Command to manage synthetic test, location and credential easily
     - [synctl delete test Syntax](#synctl-delete-test-syntax)
     - [synctl delete test Options](#synctl-delete-test-options)
     - [synctl delete test Examples](#synctl-delete-test-examples)
-- [Manage Application](##manage-application)
+- [Manage Application](#manage-application)
     - [Get application Syntax](#get-application-syntax)
     - [Get application examples](#get-application-examples)
 - [Manage Synthetic Locations](#manage-synthetic-locations)
@@ -49,8 +49,8 @@ Command to manage synthetic test, location and credential easily
     - [Delete Synthetic location](#delete-synthetic-location)
 - [Manage Credentials](#manage-credentials)
     - [Display all credentials](#display-all-credentials)
-    - [Create credential](#create-credential)
-    - [Delete credential](#delete-credential)
+    - [Create a credential](#create-a-credential)
+    - [Delete a credential](#delete-a-credential)
 
 # Features
 - CRUD of Synthetic test, support API Simple, API Script, Browser script, etc.
