@@ -1,5 +1,5 @@
-# synctl
-Command to manage synthetic test, location and credential easily
+# Synthetic CLI Command
+Synthetic Command Line Tool used to manage synthetic test, locations and credentials.
 
 # Table of Contents
 - [Features](#features)
