@@ -2519,7 +2519,7 @@ class ParseParameter:
         self.parser_get.add_argument(
             "--show-script", action='store_true', help="output test script to terminal")
         self.parser_get.add_argument(
-            "--show-details", action='store_true', help="output test script details to terminal")
+            "--show-details", action='store_true', help="output test or location details to terminal")
         self.parser_get.add_argument(
             "--show-json", action='store_true', help="output test json to terminal")
 
@@ -2576,9 +2576,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
         patch_exclusive_group.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help="script file name")
-        patch_exclusive_group.add_argument(
-            '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
+            '--script-file', type=str, metavar="<file-name>", help="specify a script file to update APIScript or BrowserScript")
         patch_exclusive_group.add_argument(
             '--url', type=str, metavar="<url>", help="HTTP URL")
         patch_exclusive_group.add_argument(
@@ -2589,6 +2587,8 @@ class ParseParameter:
             '--validation-string', type=str, metavar="<string>", help='set validation-string')
         patch_exclusive_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
+        patch_exclusive_group.add_argument(
+            '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
