@@ -6,7 +6,7 @@ Command to manage synthetic test, location and credential easily
 - [Installation](#installation)
     - [Linux & Mac OS](#linux--mac-os)
     - [Windows](#windows)
-- [Config an Instana Backend](#config-an-instana-backend)
+- [Configure an Instana Backend](#configure-an-instana-backend)
     - [Use a config file (Recommended)](#use-a-config-file-recommended)
     - [Run command with options](#run-command-with---host-and---token-no-need-to-set-a-config-file)
     - [Use environment variables](#use-environment-vars)
