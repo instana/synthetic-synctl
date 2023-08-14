@@ -27,7 +27,7 @@ Command to manage synthetic test, location and credential easily
         - [Create BrowserScript](#create-browserscript)
         - [Create WebpageScript](#create-webpagescript)
         - [Create WebpageAction](#create-webpageaction)
-        - [Create Synthetic Test with json payload](#create-synthetic-test-using-json-payload)
+        - [Create Synthetic Test with json payload](#create-synthetic-test-with-json-payload)
 - [Patch a Synthetic Test](#patch-a-synthetic-test)
     - [synctl patch Syntax](#synctl-patch-syntax)
     - [synctl patch Options](#synctl-patch-options)
@@ -386,7 +386,7 @@ synctl create test -t 4 \
     --browser chrome
 ```
 
-### Create Synthetic Test using json payload  
+### Create Synthetic Test with json payload  
 
 ```
 synctl create test -t <type> --from-json payload/api-script.json
