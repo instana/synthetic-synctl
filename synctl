@@ -36,7 +36,7 @@ BrowserScript_TYPE = "BrowserScript"
 WebpageScript_TYPE = "WebpageScript"
 WebpageAction_TYPE = "WebpageAction"
 
-# supported synthetic type
+# supported Synthetic type
 synthetic_type = (
     HTTPAction_TYPE,     # 0
     HTTPScript_TYPE,     # 1
@@ -73,11 +73,11 @@ Options:
 
 Commands:
     config              manage configuration file
-    create              create a synthetic test
-    get                 get synthetic tests, locations and credentials
-    patch               patch a synthetic test
-    update              update a synthetic test
-    delete              delete synthetic tests, locations and credentials
+    create              create a Synthetic test
+    get                 get Synthetic tests, locations and credentials
+    patch               patch a Synthetic test
+    update              update a Synthetic test
+    delete              delete Synthetic tests, locations and credentials
 
 Use "synctl <command> --help" for more information about a command.
     """
@@ -154,7 +154,7 @@ synctl patch test <id> --frequency 5"""
 UPDATE_USAGE = """synctl update test <id> [options]
 
 examples:
-# update synthetic test
+# update Synthetic test
 synctl update test <id> --from-data '{}'
 """
 
@@ -458,7 +458,7 @@ class SyntheticConfiguration(Base):
             "label": "default-test-label",
             # "tenantId": "instanalocal",
             # The description of the Synthetic test.
-            "description": "This is a synthetic test",
+            "description": "This is a Synthetic test",
             # Indicates if the Synthetic test is started or not. The default is true.
             "active": True,  # required
             # Unique identifier of the Application Perspective.
@@ -484,7 +484,7 @@ class SyntheticConfiguration(Base):
 
             # An object which has two properties: syntheticType and the corresponding configuration object
             "configuration": {
-                # Flag used to control if HTTP calls will be marked as synthetic calls/endpoints in Instana backend,
+                # Flag used to control if HTTP calls will be marked as Synthetic calls/endpoints in Instana backend,
                 # so they can be ignored when calculating service and application KPIs, users can also check "Hide
                 # Synthetic Calls" checkbox to hide/show them in UI.
                 "markSyntheticCall": True,
@@ -1002,9 +1002,9 @@ class SyntheticPoP(Base):
             return None
 
     def print_a_location_details(self, location_id, single_location, show_details=False):
-        """show a synthetic location details data"""
+        """show a Synthetic location details data"""
         if single_location is None or len(single_location) == 0 or location_id is None:
-            print("no synthetic location")
+            print("no Synthetic location")
             return
         if show_details is True:
             a_single_location = single_location[0]
@@ -1017,7 +1017,7 @@ class SyntheticPoP(Base):
             self.__delete_a_synthetic_location(location_id=pop_id)
 
     def __delete_a_synthetic_location(self, location_id=""):
-        """delete a synthetic location"""
+        """delete a Synthetic location"""
         if location_id == "":
             print("location id should not be empty")
             return
@@ -1107,7 +1107,7 @@ class SyntheticPoP(Base):
 
 
 class SyntheticTest(Base):
-    """create, query, update and delete synthetic test"""
+    """create, query, update and delete Synthetic test"""
 
     def __init__(self) -> None:
         Base.__init__(self)
@@ -1132,7 +1132,7 @@ class SyntheticTest(Base):
         return self.payload
 
     def create_a_synthetic_test(self):
-        """create a synthetic test, test_payload is json"""
+        """create a Synthetic test, test_payload is json"""
         test_payload = self.payload
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
@@ -1359,7 +1359,7 @@ class SyntheticTest(Base):
                 f'update test {test_id} failed, status code: {update_result.status_code}')
 
     def delete_a_synthetic_test(self, test_id=""):
-        """Delete a synthetic by id"""
+        """delete a Synthetic by id"""
         # https://instana.github.io/openapi/#operation/deleteSyntheticTest
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         if test_id == "":
@@ -1501,7 +1501,7 @@ class SyntheticTest(Base):
             self.delete_a_credential(cred)
 
     def __sort_synthetic_tests(self, syn_list):
-        """sort synthetic list by locationDisplayLabels"""
+        """sort Synthetic list by locationDisplayLabels"""
         new_list = sorted(
             syn_list, key=lambda syn: syn["locationDisplayLabels"] if syn is not None else [])
         return new_list
@@ -1645,7 +1645,7 @@ class SyntheticTest(Base):
     def print_a_synthetic_details(self, single_test, show_json=False, show_details=False, show_script=False):
         """output a single test details info"""
         if single_test is None or len(single_test) == 0:
-            print("no synthetic test")
+            print("no Synthetic test")
             return
         # show title
         if show_json is True:
@@ -1657,7 +1657,7 @@ class SyntheticTest(Base):
             self.__print_a_synthetic_script(single_test[0])
 
     def __print_a_synthetic_details(self, single_test):
-        """show a synthetic test details data"""
+        """show a Synthetic test details data"""
         a_single_test = single_test[0]
         syn_label = a_single_test["label"]
 
@@ -1727,7 +1727,7 @@ class SyntheticTest(Base):
 
 
 class PatchSyntheticTest(SyntheticTest):
-    """patch synthetic test"""
+    """patch Synthetic test"""
 
     def __init__(self) -> None:
         super().__init__()
@@ -1870,7 +1870,7 @@ class PatchSyntheticTest(SyntheticTest):
             return
 
     def patch_mark_synthetic_call(self, markSyntheticCall):
-        """mark synthetic call"""
+        """mark Synthetic call"""
         markSyntheticCall_options = ["true", "false"]
         payload = {"configuration": {"markSyntheticCall": ""}}
         if markSyntheticCall is not None and markSyntheticCall in markSyntheticCall_options:
@@ -2359,27 +2359,27 @@ class ParseParameter:
         self.parser_config._optionals.title = OPTIONS_PARAMS
 
         self.parser_create = sub_parsers.add_parser(
-            'create', help='create a synthetic test or credential', add_help=True, usage=CREATE_USAGE)
+            'create', help='create a Synthetic test or credential', add_help=True, usage=CREATE_USAGE)
         self.parser_create._positionals.title = POSITION_PARAMS
         self.parser_create._optionals.title = OPTIONS_PARAMS
 
         self.parser_get = sub_parsers.add_parser(
-            'get', help='get synthetic test, location or credential', usage=GET_USAGE)
+            'get', help='get Synthetic test, location or credential', usage=GET_USAGE)
         self.parser_get._positionals.title = POSITION_PARAMS
         self.parser_get._optionals.title = OPTIONS_PARAMS
 
         self.parser_patch = sub_parsers.add_parser(
-            'patch', help='patch a synthetic test', usage=PATCH_USAGE)
+            'patch', help='patch a Synthetic test', usage=PATCH_USAGE)
         self.parser_patch._positionals.title = POSITION_PARAMS
         self.parser_patch._optionals.title = OPTIONS_PARAMS
 
         self.parser_update = sub_parsers.add_parser(
-            'update', help='update a synthetic test', usage=UPDATE_USAGE)
+            'update', help='update a Synthetic test', usage=UPDATE_USAGE)
         self.parser_update._positionals.title = POSITION_PARAMS
         self.parser_update._optionals.title = OPTIONS_PARAMS
 
         self.parser_delete = sub_parsers.add_parser(
-            'delete', help='delete a synthetic test, location or credential', usage=DELETE_USAGE)
+            'delete', help='delete a Synthetic test, location or credential', usage=DELETE_USAGE)
         self.parser_delete._positionals.title = POSITION_PARAMS
         self.parser_delete._optionals.title = OPTIONS_PARAMS
 
@@ -2406,12 +2406,8 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred"], metavar="test/cred", help="specify test/cred")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, metavar="<int>", help="synthetic type:"
-            + " 0 HTTPAction,"
-            + " 1 HTTPScript,"
-            + " 2 BrowserScript,"
-            + " 3 WebpageScript,"
-            + " 4 WebpageAction")
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, metavar="<int>", help="Synthetic type:"
+            + "HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4]")
 
         # support multiple locations
         # --location location_id_1 location_id_2 location_id_3
@@ -2421,7 +2417,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--label', type=str, metavar="<string>", help="friendly name of the Synthetic test")
         self.parser_create.add_argument(
-            '--description', '-d', type=str, metavar="<string>", help="the description of synthetic test")
+            '--description', '-d', type=str, metavar="<string>", help="the description of Synthetic test")
         self.parser_create.add_argument(
             '--frequency', type=int, default=15, metavar="<int>", help="the range is from 1 to 120 minute, default is 15")
         self.parser_create.add_argument(
@@ -2440,18 +2436,18 @@ class ParseParameter:
 
         # options for api script
         self.parser_create.add_argument(
-            '-f', '--from-file', type=str, metavar="<file>", help='synthetic script, specify a file name')
+            '-f', '--from-file', type=str, metavar="<file>", help='Synthetic script, support js file, e.g, script.js')
 
         # options for bundle script
         self.parser_create.add_argument(
-            '--bundle', type=str, metavar="<bundle>", help='specify a zip file or use synthetic script encoded with base64')
+            '--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
         self.parser_create.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help='bundle script entry file, e.g, myscript.js')
+            '--script-file', type=str, metavar="<file-name>", help='Synthetic bundle test entry file, e.g, myscript.js')
         # [0, 2]
         self.parser_create.add_argument(
             '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
         self.parser_create.add_argument(
-            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="set Retry Invertal, range is [1, 10]")
+            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
         self.parser_create.add_argument(
             '--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
         self.parser_create.add_argument(
@@ -2459,7 +2455,7 @@ class ParseParameter:
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
-            '--expect-status', type=int, metavar="<int>", help='synthetic test will fail if response status is not equal to expected status code, default 200')
+            '--expect-status', type=int, metavar="<int>", help='Synthetic test will fail if response status is not equal to expected status code, default 200')
         self.parser_create.add_argument(
             '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
         self.parser_create.add_argument(
@@ -2482,7 +2478,7 @@ class ParseParameter:
 
         # full payload in json file
         self.parser_create.add_argument(
-            '--from-json', type=str, metavar="<json>", help='full synthetic test payload, specify a json file')
+            '--from-json', type=str, metavar="<json>", help='full Synthetic test payload, support json file')
 
         self.parser_create.add_argument(
             '--key', type=str, metavar="<key>", help='set credential name')
@@ -2508,9 +2504,9 @@ class ParseParameter:
         self.parser_get.add_argument(
             '--type', '-t', type=int, choices=[0, 1, 2, 3, 4], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction')
         self.parser_get.add_argument(
-            'id', type=str, nargs="?", help='synthetic id')
+            'id', type=str, nargs="?", help='Synthetic test id')
         self.parser_get.add_argument(
-            '--window-size', type=str, default="1h", metavar="<window>", help="set synthetic result window size, support [1,60]m, [1-24]h"
+            '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1,60]m, [1-24]h"
         )
 
         self.parser_get.add_argument(
@@ -2545,10 +2541,10 @@ class ParseParameter:
 
     def patch_command_options(self):
         self.parser_patch.add_argument(
-            'syn_type', type=str, choices=["test"], help="synthetic type, only test support")
+            'syn_type', type=str, choices=["test"], help="Synthetic type, only test support")
 
         self.parser_patch.add_argument(
-            'id', type=str, help="specify synthetic test id")
+            'id', type=str, help="Synthetic test id")
 
         # parser_update.add_argument(
         #     '--from-json', type=str, help='new json payload')
@@ -2600,9 +2596,9 @@ class ParseParameter:
 
     def update_command_options(self):
         self.parser_update.add_argument(
-            'syn_type', type=str, choices=["test"], help="synthetic type, only test is supported")
+            'syn_type', type=str, choices=["test"], help="Synthetic type, only test is supported")
         self.parser_update.add_argument(
-            'id', type=str, help="synthetic id")
+            'id', type=str, help="Synthetic test id")
 
         self.parser_update.add_argument(
             '--from-data', type=str, metavar="<json>", help='json payload')
@@ -2616,13 +2612,13 @@ class ParseParameter:
 
     def delete_command_options(self):
         self.parser_delete.add_argument(
-            'delete_type', choices=['location', 'lo', 'test', 'cred'], help='specify synthetic type: location/test/credential')
+            'delete_type', choices=['location', 'lo', 'test', 'cred'], help='specify Synthetic type: location/test/credential')
         self.parser_delete.add_argument(
-            'id', type=str, nargs="*", metavar="<id>", help='synthetic test id, location id, credential name')
+            'id', type=str, nargs="*", metavar="<id>", help='Synthetic test id, location id, credential name')
 
         # other options
         self.parser_delete.add_argument(
-            '--match-regex', type=str, default=None,metavar="<regex>", help='use a regex to match synthetic label')
+            '--match-regex', type=str, default=None,metavar="<regex>", help='use a regex to match Synthetic label')
         # only deletes tests full match location, if a test has two locations, include this, will
         # not be deleted
         self.parser_delete.add_argument(
@@ -2746,7 +2742,7 @@ def main():
                 try:
                     syn_type_t = synthetic_type[get_args.type]
                 except IndexError:
-                    print("synthetic type only support 0 1 2 3 4", syn_type_t)
+                    print("Synthetic type only support 0 1 2 3 4", syn_type_t)
 
             if get_args.id is None:
                 out_list = syn_instance.retrieve_all_synthetic_tests(

@@ -18,7 +18,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
     - [synctl get test Syntax](#synctl-get-test-syntax)
     - [synctl get test Options](#synctl-get-test-options)
     - [synctl get test Examples](#synctl-get-test-examples)
-- [Create a synthetic test](#create-a-synthetic-test)
+- [Create Synthetic test](#create-synthetic-test)
     - [synctl create test Syntax](#synctl-create-test-syntax)
     - [synctl create test Options](#synctl-create-test-options)
     - [synctl create test Examples](#synctl-create-test-examples)
@@ -28,11 +28,11 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
         - [Create Webpage Script test](#create-webpage-script-test)
         - [Create Webpage Action test](#create-webpage-action-test)
         - [Create Synthetic test with json payload](#create-synthetic-test-with-json-payload)
-- [Patch a Synthetic Test](#patch-a-synthetic-test)
+- [Patch Synthetic Test](#patch-synthetic-test)
     - [synctl patch Syntax](#synctl-patch-syntax)
     - [synctl patch Options](#synctl-patch-options)
     - [synctl patch Examples](#synctl-patch-examples)
-- [Update a Synthetic Test](#update-a-synthetic-test)
+- [Update Synthetic Test](#update-synthetic-test)
     - [synctl update Syntax](#synctl-update-syntax)
     - [synctl update Options](#synctl-update-options)
     - [synctl update Examples](#synctl-update-examples)
@@ -82,7 +82,7 @@ chmod +x synctl && cp synctl /usr/local/bin/synctl
 chmod +x synctl && sudo cp synctl /usr/local/bin/synctl
 ```
 
-**Note** To upgrade synctl to new version, download new synctl and overwrite the file `/usr/local/bin/synctl`.
+**Note:** To upgrade synctl to new version, download new synctl and overwrite the file `/usr/local/bin/synctl`.
 
 ### Windows
 
@@ -244,7 +244,7 @@ synctl get test <id> --show-script
 synctl get test <id> --show-json
 ```
 
-# Create a synthetic test
+# Create Synthetic test
 `synctl create test` is used to create Synthetic test.
 
 ### synctl create test Syntax
@@ -253,24 +253,25 @@ synctl create test [options]
 ```
 ### synctl create test Options
 ```
--t <int>, --type <int>              synthetic type: 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction
+-h, --help                          show this help message and exit
+-t <int>, --type <int>              Synthetic type: 0 HTTPAction[0], 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction
 --location id [id ...]              location id, support multiple locations id
 --label <string>                    friendly name of the Synthetic test
---description, -d <string>          the description of synthetic test
+--description, -d <string>          the description of Synthetic test
 --frequency <int>                   the range is from 1 to 120 minute, default is 15
 --app-id, --application-id <id>     application id
 --url <url>                         HTTP request URL
 --operation <method>                HTTP request methods, GET, POST, HEAD, PUT, etc
 --headers <json>                    HTTP headers
---body <string>                     HTTP Body
--f, --from-file <file>              synthetic script, specify a file name
---bundle <bundle>                   specify a zip file or use synthetic script encoded with base64
---script-file <file-name>           bundle script entry file, e.g, myscript.js
+--body <string>                     HTTP body
+-f, --from-file <file>              Synthetic script, support js file, e.g, script.js
+--bundle <bundle>                   Synthetic bundle test script, support zip file, zip file encoded with base64
+--script-file <file-name>           Synthetic bundle test entry file, e.g, myscript.js
 --retries <int>                     retry times, value is from [0, 2]
---retry-interval <int>              set Retry Invertal, range is [1, 10]
+--retry-interval <int>              retry interval, range is [1, 10]
 --follow-redirect <boolean>         to allow redirect, true by default
 --timeout <num>ms|s|m               set timeout, accept <number>(ms|s|m)
---expect-status <int>               expected status code, synthetic test will fail if response status is not equal to it, default 200
+--expect-status <int>               expected status code, Synthetic test will fail if response status is not equal to it, default 200
 --expect-json <string>              An optional object to be used to check against the test response object
 --expect-match <string>             An optional regular expression string to be used to check the test response
 --expect-exists <string>            An optional list of property labels used to check if they are present in the test response object
@@ -279,9 +280,13 @@ synctl create test [options]
 --custom-properties <string>        An object with name/value pairs to provide additional information of the Synthetic test
 --browser <string>                  browser type, support chrome and firefox
 --record-video <boolean>            set true to record video
---from-json <json>                  full synthetic test payload, specify a json file
+--from-json <json>                  full Synthetic test payload, support json file
 --key <key>                         set credential name
 --value <value>                     set credential value
+
+--use-env <name>, -e <name>         use a specified configuration
+--host <host>                       set hostname
+--token <token>                     set token
 ```
 
 ### synctl create test Examples  
@@ -401,7 +406,7 @@ synctl create test -t <type> --from-json payload/api-script.json
 
 
 
-# Patch a Synthetic Test
+# Patch Synthetic Test
 The command `patch` can be used to updates selected attributes of a Synthetic test, only one attribute can be patched each time.
 
 ### synctl patch Syntax
@@ -499,7 +504,7 @@ synctl patch test <synthetic-id> --bundle "${PATCH_BASE64_STR}"
 synctl patch test <synthetic-id> --entry-file bundle-test/index.js
 ```
 
-# Update a Synthetic Test
+# Update Synthetic Test
 
 ### synctl update Syntax
 ```
