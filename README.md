@@ -7,8 +7,8 @@ Synthetic Command Line Tool(synctl) used to manage synthetic tests, locations an
     - [Linux & Mac OS](#linux--mac-os)
     - [Windows](#windows)
 - [Configure an Instana Backend](#configure-an-instana-backend)
-    - [Use a configuration file (Recommended)](#use-a-configuration-file-recommended)
-    - [Run command with options](#run-command-with-options)
+    - [Use a configuration file](#use-a-configuration-file-recommended)
+    - [Use command options](#use-command-options)
     - [Use environment variables](#use-environment-variables)
 - [Manage configuration files](#manage-configuration-files)
     - [synctl config Syntax](#synctl-config-syntax)
@@ -22,12 +22,12 @@ Synthetic Command Line Tool(synctl) used to manage synthetic tests, locations an
     - [synctl create test Syntax](#synctl-create-test-syntax)
     - [synctl create test Options](#synctl-create-test-options)
     - [synctl create test Examples](#synctl-create-test-examples)
-        - [Create an API Simple test](#create-an-api-simple-test)
-        - [Create an API Script test](#create-an-api-script-test)
-        - [Create BrowserScript](#create-browserscript)
-        - [Create WebpageScript](#create-webpagescript)
-        - [Create WebpageAction](#create-webpageaction)
-        - [Create Synthetic Test with json payload](#create-synthetic-test-with-json-payload)
+        - [Create API Simple test](#create-api-simple-test)
+        - [Create API Script test](#create-api-script-test)
+        - [Create Browser Script test](#create-browser-script-test)
+        - [Create Webpage Script test](#create-webpage-script-test)
+        - [Create Webpage Action test](#create-webpage-action-test)
+        - [Create Synthetic test with json payload](#create-synthetic-test-with-json-payload)
 - [Patch a Synthetic Test](#patch-a-synthetic-test)
     - [synctl patch Syntax](#synctl-patch-syntax)
     - [synctl patch Options](#synctl-patch-options)
@@ -40,9 +40,6 @@ Synthetic Command Line Tool(synctl) used to manage synthetic tests, locations an
     - [synctl delete test Syntax](#synctl-delete-test-syntax)
     - [synctl delete test Options](#synctl-delete-test-options)
     - [synctl delete test Examples](#synctl-delete-test-examples)
-- [Manage Application](#manage-application)
-    - [Get application Syntax](#get-application-syntax)
-    - [Get application examples](#get-application-examples)
 - [Manage Synthetic Locations](#manage-synthetic-locations)
     - [Manage Location Syntax](#manage-location-syntax)
     - [Query Synthetic location](#query-synthetic-location)
@@ -51,6 +48,9 @@ Synthetic Command Line Tool(synctl) used to manage synthetic tests, locations an
     - [Display all credentials](#display-all-credentials)
     - [Create a credential](#create-a-credential)
     - [Delete a credential](#delete-a-credential)
+- [Manage Application](#manage-application)
+    - [Get application Syntax](#get-application-syntax)
+    - [Get application Examples](#get-application-examples)
 
 # Features
 - CRUD of Synthetic test, support API Simple, API Script, Browser script, etc.
@@ -122,7 +122,7 @@ synctl config list
 ```
 **Note:** By default, config file is `~/.synthetic/config.json`.
 
-### Run command with options
+### Use command options
 Synthetic `synctl` command can accept `--host <host>` and `--token <token>` option to specify host and token if there is not a configuration file. See below examples:
 
 ```
@@ -284,7 +284,7 @@ synctl create test [options]
 
 ### synctl create test Examples  
 
-#### Create an API Simple test  
+#### Create API Simple test  
 
 ```
 # get location id
@@ -303,7 +303,7 @@ synctl create test -t 0 \
 
 ```
 
-#### Create an API script test  
+#### Create API Script test  
 
 ```
 # a simple API script
@@ -337,7 +337,7 @@ synctl create test -t 1 --label "syn-bundle-test" \
     --frequency 5
 ```
 
-#### Create BrowserScript  
+#### Create Browser Script test
 
 
 ```
@@ -367,7 +367,7 @@ synctl create test -t 2 \
     --bundle "UEsDBAoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABwAbGliL1VUCQADlRcDY2izBGN1eAsAAQToAwAABOgDAABQSwMEFAAIAAgA1FkYVQAAAAAAAAAAVAMAAA8AHABsaWIvbXlzY3JpcHQuanNVVAkAA6CXBWOglwVjdXgLAAEE6AMAAAToAwAAlVPBbuIwEL3zFSOLQ5C65t5qVwIpB9RuVbW5R8YMidVgp56hWYT67zsOoUuLkFifEue9N2/eTGzwxLAHQ4SR4QN+QsS3rYuYKVsbpyZ3I0M7b2G99ZZd8MBIPHe+yiawH41AznQK3ry7yjACB+i6Ti8FoG3Y9N+tFAkN6iZUmfp1ftQNqJm1SASJB62pMBVOXNMZxzBextCJQ10hZ6pmbm+n09M6CX700mJch7gBQhNtDaa3/R9GEpwgrAeBC07GmdK0LFOl8u0C5lCasokm9Kt73FGmJEyukZ1VJ7fjVXTvQpAXnT8W+fNED11kJ40NQ0rxADtuEJY7kESK9CzjMK3roQ0eQP29TPQ8w4ExmO5ltYzdNCf+4Ae8HAK4+ac2UK4J8unT5i18kzg2xOYVgWxE9FQHvlq6EN7LJ+1C+PwFdGx2vGXXaOfJVTWTTED2qVg8lcXzYp6Xj7Pfefkwm+cPqQyFDXItG9Zv18fdaBNWW7GGf9oQmSTZfa95/CMSRM5fUEsHCJkl42ODAQAAVAMAAFBLAwQUAAgACAB5bRZVAAAAAAAAAAARAQAACQAcAG15dGVzdC5qc1VUCQADlRcDYxC7BGN1eAsAAQToAwAABOgDAABdjzEOwjAMRfeewooYgoTSHcTCFdjY2mAVozQOiRkK4u6kVEjgzXp+/0u/CSjwBMEiB4oDvGAPGW93ymiNawP17TgVnymJuxaz3jWN51g4oAs8WJM4bc0GVmWKckEh7yqp1p90xqWBOCr556NDQiM+OKJKzPhUsdZD12MoSl6gVo/SZQHhz+p50ne9rfcbUEsHCA5zkg+OAAAAEQEAAFBLAQIeAwoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABgAAAAAAAAAEAD/QQAAAABsaWIvVVQFAAOVFwNjdXgLAAEE6AMAAAToAwAAUEsBAh4DFAAIAAgA1FkYVZkl42ODAQAAVAMAAA8AGAAAAAAAAQAAAP+BPgAAAGxpYi9teXNjcmlwdC5qc1VUBQADoJcFY3V4CwABBOgDAAAE6AMAAFBLAQIeAxQACAAIAHltFlUOc5IPjgAAABEBAAAJABgAAAAAAAEAAAD/gRoCAABteXRlc3QuanNVVAUAA5UXA2N1eAsAAQToAwAABOgDAABQSwUGAAAAAAMAAwDuAAAA+wIAAAAA" 
 ```
 
-#### Create WebpageScript  
+#### Create Webpage Script test
 
 
 ```
@@ -378,7 +378,7 @@ synctl create test -t 3 \
     --browser chrome
 ```
 
-#### Create WebpageAction
+#### Create Webpage Action test
 ```
 synctl create test -t 4 \ 
     --label "browser-test-webpageaction" \
@@ -388,7 +388,7 @@ synctl create test -t 4 \
     --browser chrome
 ```
 
-#### Create Synthetic Test with json payload  
+#### Create Synthetic test with json payload  
 
 ```
 synctl create test -t <type> --from-json payload/api-script.json
@@ -400,7 +400,7 @@ synctl create test -t <type> --from-json payload/api-script.json
 
 
 # Patch a Synthetic Test
-The command `patch` can be used to updates selected attributes of a Synthetic Test, only one attribute can be patched each time.
+The command `patch` can be used to updates selected attributes of a Synthetic test, only one attribute can be patched each time.
 
 ### synctl patch Syntax
 ```
@@ -572,29 +572,6 @@ synctl delete test --match-location <location-id>
 synctl delete test --no-locations
 ```
 
-
-# Manage Application
-
-### Get application Syntax
-```
-synctl get {application,app} [id] [options]
-
-Options:
---name-filter <app>   filter application by name, only applicable for application name
-```
-### Get application examples
-
-```
-# get all application
-synctl get app
-
-# filter application by --name-filter, or pattern that application name contains
-synctl get app --name-filter <application-name>
-
-# then create test with application id
-synctl create test -t 0 --app-id <application-id> ...
-```
-
 # Manage Synthetic Locations
 
 ### Manage Location Syntax
@@ -648,3 +625,26 @@ synctl create cred --key <key-name> --value <value>
 ```
 synctl delete cred <key-name>
 ```
+
+# Manage Application
+
+### Get application Syntax
+```
+synctl get {application,app} [id] [options]
+
+Options:
+--name-filter <app>   filter application by name, only applicable for application name
+```
+### Get application Examples
+
+```
+# get all application
+synctl get app
+
+# filter application by --name-filter, or pattern that application name contains
+synctl get app --name-filter <application-name>
+
+# then create test with application id
+synctl create test -t 0 --app-id <application-id> ...
+```
+
