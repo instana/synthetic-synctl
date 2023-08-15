@@ -1,5 +1,5 @@
 # Synthetic CLI Command
-Synthetic Command Line Tool(synctl) used to manage synthetic tests, locations and credentials.
+Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations and credentials.
 
 # Table of Contents
 - [Features](#features)
@@ -53,9 +53,9 @@ Synthetic Command Line Tool(synctl) used to manage synthetic tests, locations an
     - [Get application Examples](#get-application-examples)
 
 # Features
-- CRUD of Synthetic test, support API Simple, API Script, Browser script, etc.
-- `query`/`delete` of Synthetic location.
-- `query`/`create`/`delete` of Synthetic credential.
+- CRUD of Synthetic test, support API Simple, API Script, Browser Script, etc.
+- Query/delete of Synthetic location.
+- Query/create/delete of Synthetic credential.
 - Support multiple configurations of backend server.
 
 # Prerequisites
@@ -81,6 +81,8 @@ chmod +x synctl && cp synctl /usr/local/bin/synctl
 # if no permissions, add sudo 
 chmod +x synctl && sudo cp synctl /usr/local/bin/synctl
 ```
+
+**Note** To upgrade synctl to new version, download new synctl and overwrite the file `/usr/local/bin/synctl`.
 
 ### Windows
 
