@@ -57,6 +57,39 @@ class TestStringMethods(unittest.TestCase):
         syn_instance = SyntheticTest()
         syn_instance.set_synthetic_payload(payload=syn_payload)
 
+    def test_create_api_script(self):
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'create', 'test',
+            '-t', '1',
+            '--frequency', '5',
+            '--lo', 'N2I5Uc12K8W6qh2dklkh',
+            '--label', 'synthetic-api-script-test',
+            '-f', '../examples/http-scripts/http-get.js'
+            ])
+        self.assertEqual(get_args.sub_command, 'create')
+
+        syn_type_t = synthetic_type[get_args.type]
+        payload = SyntheticConfiguration(syn_type_t, bundle_type=False)
+        payload.set_label(get_args.label)
+        payload.set_locations(get_args.location)
+        payload.set_frequency(get_args.frequency)
+
+        with open(Path(get_args.from_file).resolve(), "r", encoding="utf-8") as file1:
+            script_str = file1.read()
+            payload.set_api_script_script(script_str)
+
+        syn_payload = json.loads(payload.get_json())
+
+        self.assertEqual(syn_payload['label'], 'synthetic-api-script-test')
+        self.assertEqual(syn_payload['locations'][0], 'N2I5Uc12K8W6qh2dklkh')
+        self.assertEqual(syn_payload['configuration']['syntheticType'], synthetic_type[1])
+        self.assertEqual(syn_payload['testFrequency'], 5)
+
+        syn_instance = SyntheticTest()
+        syn_instance.set_synthetic_payload(payload=syn_payload)
+
     def test_create_bundle_test(self):
         para_instanace = ParseParameter()
         para_instanace.set_options()
@@ -163,7 +196,7 @@ class TestStringMethods(unittest.TestCase):
             payload.set_api_script_script(script_str)
 
         syn_payload = json.loads(payload.get_json())
-        print(syn_payload)
+
         self.assertEqual(syn_payload['label'], 'browser-script-test')
         self.assertEqual(syn_payload['locations'][0], 'N2I5Uc12K8W6qh2dklkh')
         self.assertEqual(syn_payload['configuration']['syntheticType'], synthetic_type[2])
