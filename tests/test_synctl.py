@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from synctl import ParseParameter, SyntheticConfiguration, SyntheticTest
 from synctl import synthetic_type
+from pathlib import Path
 
 import unittest
 import json
@@ -134,6 +135,80 @@ class TestStringMethods(unittest.TestCase):
         syn_instance = SyntheticTest()
         syn_instance.set_synthetic_payload(payload=syn_payload)
 
+
+    def test_create_browser_script(self):
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'create', 'test',
+            '-t', '2',
+            '--label', 'browser-script-test',
+            '--location', 'N2I5Uc12K8W6qh2dklkh',
+            '--frequency', '10',
+            '--browser', 'firefox',
+            '--from-file', '../examples/browserscripts/api-sample.js'
+        ])
+        self.assertEqual(get_args.sub_command, 'create')
+
+        syn_type_t = synthetic_type[get_args.type]
+        payload = SyntheticConfiguration(syn_type_t, bundle_type=False)
+        payload.set_label(get_args.label)
+        payload.set_locations(get_args.location)
+        payload.set_browser_type(get_args.browser)
+        payload.set_frequency(get_args.frequency)
+
+        # read script
+        with open(Path(get_args.from_file).resolve(), "r", encoding="utf-8") as file1:
+            script_str = file1.read()
+            payload.set_api_script_script(script_str)
+
+        syn_payload = json.loads(payload.get_json())
+        print(syn_payload)
+        self.assertEqual(syn_payload['label'], 'browser-script-test')
+        self.assertEqual(syn_payload['locations'][0], 'N2I5Uc12K8W6qh2dklkh')
+        self.assertEqual(syn_payload['configuration']['syntheticType'], synthetic_type[2])
+        self.assertEqual(syn_payload['testFrequency'], 10)
+        self.assertEqual(syn_payload['configuration']['browser'], 'firefox')
+
+        syn_instance = SyntheticTest()
+        syn_instance.set_synthetic_payload(payload=syn_payload)
+
+    def test_create_webpage_action(self):
+        """webpage action test"""
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'create', 'test',
+            '-t', '4',
+            '--label', 'webpage-simple-test',
+            '--location', 'N2I5Uc12K8W6qh2dklkh',
+            '--frequency', '10',
+            '--browser', 'firefox',
+            '--url', 'https://www.ibm.com'
+        ])
+        self.assertEqual(get_args.sub_command, 'create')
+
+        syn_type_t = synthetic_type[get_args.type]
+        payload = SyntheticConfiguration(syn_type_t, bundle_type=False)
+        payload.set_label(get_args.label)
+        payload.set_locations(get_args.location)
+        payload.set_browser_type(get_args.browser)
+        payload.set_frequency(get_args.frequency)
+
+        payload.set_ping_url(get_args.url)
+
+
+        syn_payload = json.loads(payload.get_json())
+
+        self.assertEqual(syn_payload['label'], 'webpage-simple-test')
+        self.assertEqual(syn_payload['locations'][0], 'N2I5Uc12K8W6qh2dklkh')
+        self.assertEqual(syn_payload['configuration']['syntheticType'], synthetic_type[4])
+        self.assertEqual(syn_payload['testFrequency'], 10)
+        self.assertEqual(syn_payload['configuration']['browser'], 'firefox')
+        self.assertEqual(syn_payload['configuration']['url'], 'https://www.ibm.com')
+
+        syn_instance = SyntheticTest()
+        syn_instance.set_synthetic_payload(payload=syn_payload)
 
 if __name__ == '__main__':
     unittest.main()
