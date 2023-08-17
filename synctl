@@ -238,6 +238,13 @@ class Base:
             dict1[i] = dict2[i]
         return dict1
 
+    def format_time(self, milliseconds):
+        """convert milliseconds to format like \'Wed Aug  2 16:50:25 2023\'"""
+        if milliseconds is not None and isinstance(milliseconds, int):
+            return time.ctime(milliseconds/1000)
+        else:
+            return milliseconds
+
     def exit_synctl(self, error_code=-1, message=''):
         """exit synctl"""
         if message != '':
@@ -1001,6 +1008,23 @@ class SyntheticPoP(Base):
         else:
             return None
 
+    def __get_max_lo_label_length(self, loc_list, max_len=60):
+        label_len = 12
+        display_label_len = 12
+        max_result = {
+            "max_label": 35,
+            "max_display_label": 50
+        }
+        if loc_list is not None and isinstance(loc_list, list):
+            for lo in loc_list:
+                if lo is not None and label_len < len(lo["label"]):
+                    label_len = len(lo["label"])
+                if lo is not None and display_label_len < len(lo["displayLabel"]):
+                    display_label_len = len(lo["displayLabel"])
+        max_result["max_label"] = label_len if label_len < 60 else 60
+        max_result["max_display_label"] = display_label_len if display_label_len < 60 else 60
+        return max_result
+
     def print_a_location_details(self, location_id, single_location, show_details=False):
         """show a Synthetic location details data"""
         if single_location is None or len(single_location) == 0 or location_id is None:
@@ -1010,7 +1034,10 @@ class SyntheticPoP(Base):
             a_single_location = single_location[0]
             print(self.fill_space("Name".upper(), 30), "value".upper())
             for key, value in a_single_location.items():
-                print(self.fill_space(key, 30), value)
+                if key == 'createdAt' or key == 'modifiedAt' or key == 'observedAt':
+                    print(self.fill_space(key, 30), self.format_time(value))
+                else:
+                    print(self.fill_space(key, 30), value)
 
     def delete_a_synthetic_pop(self, pop_id=""):
         if pop_id != "":
@@ -1060,17 +1087,19 @@ class SyntheticPoP(Base):
         self.__print_pop(locations, locations_summary)
 
     def __print_pop(self, pop_data: list, pop_locations_summary):
-
-        id_length = 30
+        id_length = 22
         label_length = 35
         display_label_length = 50
-        status_length = 15
-        no_of_tests_length = 15
+        status_length = 10
+        no_of_tests_length = 13
+        max_length = self.__get_max_lo_label_length(pop_data)
+        label_length = max_length["max_label"]
+        display_label_length = max_length["max_display_label"]
         print(self.fill_space("ID".upper(), id_length),
               self.fill_space("Label".upper(), label_length),
               self.fill_space("DisplayLabel".upper(), display_label_length),
               self.fill_space("Status".upper(), status_length),
-              self.fill_space("No. of tests".upper(), no_of_tests_length),
+              self.fill_space("No. of Tests".upper(), no_of_tests_length),
               "Description".upper())
         if len(pop_data) > 0 and pop_locations_summary is not None:
             for pop in pop_data:
@@ -1411,13 +1440,12 @@ class SyntheticTest(Base):
                 label_1 = syn["label"]
                 match_result1 = prog.match(label_1)
                 if match_result1 is not None:
-                    print(f"{label_1} is to delete")
+                    print(f"test \"{label_1}\"")
                     # delete it
                     delete_syn_id_lists.append(syn["id"])
             print('total match:', len(delete_syn_id_lists))
-            if len(delete_syn_id_lists) > 0:
-                if self.ask_answer("are you sure to delete these tests?"):
-                    self.delete_multiple_synthetic_tests(delete_syn_id_lists)
+            if len(delete_syn_id_lists) > 0 and self.ask_answer("are you sure to delete these tests?"):
+                self.delete_multiple_synthetic_tests(delete_syn_id_lists)
 
     def delete_tests_match_location(self, match_location=None):
         """delete all tests match location"""
@@ -1433,12 +1461,12 @@ class SyntheticTest(Base):
                 label_1 = syn["label"]
                 syn_locations = syn["locations"]
                 if syn_locations is not None and len(syn_locations) == 1 and syn_locations[0] == match_location:
-                    print(f"{label_1} is to delete")
+                    print(f"test \"{label_1}\"")
                     # add to delete list
                     delete_syn_id_lists.append(syn["id"])
-            print(f'total test with location {match_location}:', len(
+            print(f'Total tests with location id \"{match_location}\":', len(
                 delete_syn_id_lists))
-            if self.ask_answer("are you sure to delete these tests?"):
+            if len(delete_syn_id_lists) > 0 and self.ask_answer("are you sure to delete these tests?"):
                 self.delete_multiple_synthetic_tests(delete_syn_id_lists)
 
     def delete_tests_without_location(self):
@@ -1450,11 +1478,14 @@ class SyntheticTest(Base):
             label_1 = syn["label"]
             syn_locations = syn["locations"]
             if len(syn_locations) == 0:
-                print(f"{label_1} is to delete")
+                print(f"test \"{label_1}\"")
                 # delete it
                 delete_syn_id_lists.append(syn["id"])
-        print('total tests:', len(delete_syn_id_lists))
-        if self.ask_answer("are you sure to delete these tests?"):
+        if len(delete_syn_id_lists) > 0:
+            print('Total tests:', len(delete_syn_id_lists))
+        else:
+            print('no tests match no locations')
+        if len(delete_syn_id_lists) > 0 and self.ask_answer("are you sure to delete these tests?"):
             self.delete_multiple_synthetic_tests(delete_syn_id_lists)
 
     def delete_a_credential(self, cred):
@@ -1667,7 +1698,10 @@ class SyntheticTest(Base):
             if key == "configuration":
                 config_details = value
             else:
-                print(self.fill_space(key, 30), value)
+                if key == 'createdAt' or key == 'modifiedAt':
+                    print(self.fill_space(key, 30), self.format_time(value))
+                else:
+                    print(self.fill_space(key, 30), value)
 
         print("---- CONFIGURATION ----")
         # show script content
@@ -2616,14 +2650,15 @@ class ParseParameter:
         self.parser_delete.add_argument(
             'id', type=str, nargs="*", metavar="<id>", help='Synthetic test id, location id, credential name')
 
-        # other options
-        self.parser_delete.add_argument(
-            '--match-regex', type=str, default=None,metavar="<regex>", help='use a regex to match Synthetic label')
+        # delete test in batch options
+        delete_exclusive_group = self.parser_delete.add_mutually_exclusive_group()
+        delete_exclusive_group.add_argument(
+            '--match-regex', type=str, default=None, metavar="<regex>", help='use a regex to match Synthetic label')
         # only deletes tests full match location, if a test has two locations, include this, will
         # not be deleted
-        self.parser_delete.add_argument(
+        delete_exclusive_group.add_argument(
             '--match-location', type=str, default=None, metavar="<id>", help='delete tests match this location id')
-        self.parser_delete.add_argument(
+        delete_exclusive_group.add_argument(
             '--no-locations', action="store_true", help="delete tests with no locations")
 
         self.parser_delete.add_argument(
