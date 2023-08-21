@@ -1538,75 +1538,124 @@ class SyntheticTest(Base):
         location_str = NOT_APPLICABLE
 
         test_type = "" if test_type is None else test_type
-        # show title
-        print(self.fill_space("ID".upper(), id_length),
-              self.fill_space("Label".upper(), max_label_length),
-              self.fill_space("syntheticType".upper(), syn_type_length),
-              self.fill_space("Frequency".upper(), test_frequency_length),
-              self.fill_space("SuccessRate".upper(), success_rate_length),
-              self.fill_space("Latency".upper(), response_time_length),
-              self.fill_space("Active".upper(), active_length),
-              self.fill_space("Locations".upper()),
-              "URL".upper())
 
-        # tests = self.test_lists
-        output_lists = []
-        for t in tests:
-            if t is None:
-                continue
-            success_rate_value = "No Data"
-            current_response_time = "No Data"
-            if t is None:
-                continue
-            if t["id"] in summary_list:
-                success_rate_value = summary_list[t["id"]]["success_rate"]
-                # current_response_time = summary_list[""]
-                current_response_time = str(
-                    summary_list[t["id"]]["response_time"])+"ms" if summary_list[t["id"]]["response_time"] != "N/A" else "N/A"
-            # else:
-            #     print(t["id"], "not in summary list")
-            current_type = t['configuration']['syntheticType']
-            if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
-                if len(t['locations']) > 0:
-                    # locations,
-                    location_str = ','.join(t['locationDisplayLabels'])
-                else:
-                    location_str = NOT_APPLICABLE
-                if test_type == "" or (test_type != "" and current_type == test_type):
-                    print(self.fill_space(t["id"], id_length),
-                          self.fill_space(t['label'], max_label_length),
-                          self.fill_space(t['configuration']
-                                          ['syntheticType'], syn_type_length),
-                          self.fill_space(str(t["testFrequency"])+"m",
-                                          test_frequency_length),
-                          self.fill_space(str(success_rate_value),
-                                          success_rate_length),
-                          self.fill_space(current_response_time,
-                                          response_time_length),
-                          self.fill_space(str(t["active"]), active_length),
-                          self.fill_space(location_str),
-                          t['configuration']['url'])
-                    output_lists.append(t)
-            if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]):
-                if len(t['locations']) > 0:
-                    location_str = ','.join(t['locationDisplayLabels'])
-                else:
-                    location_str = NOT_APPLICABLE
-                if test_type == "" or (test_type != "" and current_type == test_type):
-                    print(self.fill_space(t["id"], id_length),
-                          self.fill_space(t['label'], max_label_length),
-                          self.fill_space(t['configuration']
-                                          ['syntheticType'], syn_type_length),
-                          self.fill_space(str(t["testFrequency"])+"m",
-                                          test_frequency_length),
-                          self.fill_space(str(success_rate_value),
-                                          success_rate_length),
-                          self.fill_space(current_response_time,
-                                          response_time_length),
-                          self.fill_space(str(t["active"]), active_length),
-                          self.fill_space(location_str),
-                          "N/A")  # None URL => N/A
-                    output_lists.append(t)
+        if summary_list is None:
+            print(self.fill_space("ID".upper(), id_length),
+                  self.fill_space("Label".upper(), max_label_length),
+                  self.fill_space("syntheticType".upper(), syn_type_length),
+                  self.fill_space("Frequency".upper(), test_frequency_length),
+                  self.fill_space("Active".upper(), active_length),
+                  self.fill_space("Locations".upper()),
+                  "URL".upper())
+            output_lists = []
+            for t in tests:
+                if t is None:
+                    continue
+                if t is None:
+                    continue
+                current_type = t['configuration']['syntheticType']
+                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
+                    if len(t['locations']) > 0:
+                        # locations,
+                        location_str = ','.join(t['locationDisplayLabels'])
+                    else:
+                        location_str = NOT_APPLICABLE
+                    if test_type == "" or (test_type != "" and current_type == test_type):
+                        print(self.fill_space(t["id"], id_length),
+                              self.fill_space(t['label'], max_label_length),
+                              self.fill_space(t['configuration']
+                                              ['syntheticType'], syn_type_length),
+                              self.fill_space(str(t["testFrequency"])+"m",
+                                              test_frequency_length),
+                              self.fill_space(str(t["active"]), active_length),
+                              self.fill_space(location_str),
+                              t['configuration']['url'])
+                        output_lists.append(t)
+                if t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]:
+                    if len(t['locations']) > 0:
+                        location_str = ','.join(t['locationDisplayLabels'])
+                    else:
+                        location_str = NOT_APPLICABLE
+                    if test_type == "" or (test_type != "" and current_type == test_type):
+                        print(self.fill_space(t["id"], id_length),
+                              self.fill_space(t['label'], max_label_length),
+                              self.fill_space(t['configuration']
+                                              ['syntheticType'], syn_type_length),
+                              self.fill_space(str(t["testFrequency"])+"m",
+                                              test_frequency_length),
+                              self.fill_space(str(t["active"]), active_length),
+                              self.fill_space(location_str),
+                              "N/A")  # None URL => N/A
+                        output_lists.append(t)
+        else:
+            # show title
+            print(self.fill_space("ID".upper(), id_length),
+                  self.fill_space("Label".upper(), max_label_length),
+                  self.fill_space("syntheticType".upper(), syn_type_length),
+                  self.fill_space("Frequency".upper(), test_frequency_length),
+                  self.fill_space("SuccessRate".upper(), success_rate_length),
+                  self.fill_space("Latency".upper(), response_time_length),
+                  self.fill_space("Active".upper(), active_length),
+                  self.fill_space("Locations".upper()),
+                  "URL".upper())
+            # tests = self.test_lists
+            output_lists = []
+            for t in tests:
+                if t is None:
+                    continue
+                success_rate_value = "No Data"
+                current_response_time = "No Data"
+                if t is None:
+                    continue
+                if t["id"] in summary_list:
+                    success_rate_value = summary_list[t["id"]]["success_rate"]
+                    # current_response_time = summary_list[""]
+                    current_response_time = str(
+                        summary_list[t["id"]]["response_time"])+"ms" if summary_list[t["id"]]["response_time"] != "N/A" else "N/A"
+                # else:
+                #     print(t["id"], "not in summary list")
+                current_type = t['configuration']['syntheticType']
+                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
+                    if len(t['locations']) > 0:
+                        # locations,
+                        location_str = ','.join(t['locationDisplayLabels'])
+                    else:
+                        location_str = NOT_APPLICABLE
+                    if test_type == "" or (test_type != "" and current_type == test_type):
+                        print(self.fill_space(t["id"], id_length),
+                              self.fill_space(t['label'], max_label_length),
+                              self.fill_space(t['configuration']
+                                              ['syntheticType'], syn_type_length),
+                              self.fill_space(str(t["testFrequency"])+"m",
+                                              test_frequency_length),
+                              self.fill_space(str(success_rate_value),
+                                              success_rate_length),
+                              self.fill_space(current_response_time,
+                                              response_time_length),
+                              self.fill_space(str(t["active"]), active_length),
+                              self.fill_space(location_str),
+                              t['configuration']['url'])
+                        output_lists.append(t)
+                if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]):
+                    if len(t['locations']) > 0:
+                        location_str = ','.join(t['locationDisplayLabels'])
+                    else:
+                        location_str = NOT_APPLICABLE
+                    if test_type == "" or (test_type != "" and current_type == test_type):
+                        print(self.fill_space(t["id"], id_length),
+                              self.fill_space(t['label'], max_label_length),
+                              self.fill_space(t['configuration']
+                                              ['syntheticType'], syn_type_length),
+                              self.fill_space(str(t["testFrequency"])+"m",
+                                              test_frequency_length),
+                              self.fill_space(str(success_rate_value),
+                                              success_rate_length),
+                              self.fill_space(current_response_time,
+                                              response_time_length),
+                              self.fill_space(str(t["active"]), active_length),
+                              self.fill_space(location_str),
+                              "N/A")  # None URL => N/A
+                        output_lists.append(t)
         print('total:', len(output_lists))
 
     def save_api_script_to_local(self, test):
@@ -2518,6 +2567,9 @@ class ParseParameter:
             "--show-details", action='store_true', help="output test or location details to terminal")
         self.parser_get.add_argument(
             "--show-json", action='store_true', help="output test json to terminal")
+        self.parser_get.add_argument(
+            '--no-result', action='store_true', help="disable latency and success rate"
+        )
 
         # application
         application_group = self.parser_get.add_argument_group()
@@ -2747,6 +2799,9 @@ def main():
             if get_args.id is None:
                 out_list = syn_instance.retrieve_all_synthetic_tests(
                     syn_type_t)
+                if get_args.no_result is True:
+                    syn_instance.print_synthetic_test(out_list=out_list)
+                    sys.exit(1)
                 summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                    test_id=get_args.id)
                 syn_instance.print_synthetic_test(out_list=out_list,
