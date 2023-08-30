@@ -1185,7 +1185,7 @@ class SyntheticTest(Base):
             data = create_res.json()
             test_id = data["id"]
             test_label = data["label"]
-            print(f"test \"{test_id}\" \"{test_label}\" created")
+            print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
         elif create_res.status_code == 429:
             self.exit_synctl(-1, "Too Many Requests")
         else:
