@@ -1009,8 +1009,8 @@ class SyntheticPoP(Base):
             return None
 
     def __get_max_lo_label_length(self, loc_list, max_len=60):
-        label_len = 12
-        display_label_len = 12
+        label_len = 15
+        display_label_len = 15
         max_result = {
             "max_label": 35,
             "max_display_label": 50
@@ -1088,8 +1088,7 @@ class SyntheticPoP(Base):
 
     def __print_pop(self, pop_data: list, pop_locations_summary):
         id_length = 22
-        label_length = 35
-        display_label_length = 50
+        pop_version_length = 13
         status_length = 10
         no_of_tests_length = 13
         max_length = self.__get_max_lo_label_length(pop_data)
@@ -1098,6 +1097,7 @@ class SyntheticPoP(Base):
         print(self.fill_space("ID".upper(), id_length),
               self.fill_space("Label".upper(), label_length),
               self.fill_space("DisplayLabel".upper(), display_label_length),
+              self.fill_space("Pop version".upper(), pop_version_length),
               self.fill_space("Status".upper(), status_length),
               self.fill_space("No. of Tests".upper(), no_of_tests_length),
               "Description".upper())
@@ -1109,6 +1109,7 @@ class SyntheticPoP(Base):
                               self.fill_space(pop['label'], label_length),
                               self.fill_space(pop['displayLabel'],
                                               display_label_length),
+                              self.fill_space(pop['popVersion'], pop_version_length),
                               self.fill_space(
                                   pop['status'], status_length),
                               self.fill_space(
@@ -1120,6 +1121,7 @@ class SyntheticPoP(Base):
                       self.fill_space(pop['label'], label_length),
                       self.fill_space(pop['displayLabel'],
                                       display_label_length),
+                      self.fill_space(pop['popVersion'], pop_version_length),
                       self.fill_space(
                           pop['status'], status_length),
                       self.fill_space(
