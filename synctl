@@ -1551,8 +1551,6 @@ class SyntheticTest(Base):
             for t in tests:
                 if t is None:
                     continue
-                if t is None:
-                    continue
                 current_type = t['configuration']['syntheticType']
                 if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
                     if len(t['locations']) > 0:
@@ -1605,8 +1603,6 @@ class SyntheticTest(Base):
                     continue
                 success_rate_value = "No Data"
                 current_response_time = "No Data"
-                if t is None:
-                    continue
                 if t["id"] in summary_list:
                     success_rate_value = summary_list[t["id"]]["success_rate"]
                     # current_response_time = summary_list[""]
