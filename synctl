@@ -598,6 +598,7 @@ class SyntheticConfiguration(Base):
             "script": "",
             "syntheticType": "WebpageScript",
             "browser": "chrome",
+            "recordVideo": False
         }
 
         # syntheticType WebpageAction
@@ -1875,6 +1876,12 @@ class PatchSyntheticTest(SyntheticTest):
             payload["description"] = description
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
+    def patch_record_video(self, record_video=False):
+        payload = {"configuration": {"recordVideo": False}}
+        if record_video is not None and record_video.upper() in ("TRUE", "FALSE"):
+            payload["configuration"]["recordVideo"] = record_video
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
     def patch_active(self, active):
         """active"""
         if active is None:
@@ -2651,6 +2658,8 @@ class ParseParameter:
             '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
         patch_exclusive_group.add_argument(
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
+        patch_exclusive_group.add_argument(
+            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
 
         # timeout Expected <number>(ms|s|m)
         patch_exclusive_group.add_argument(
@@ -2999,13 +3008,15 @@ def main():
                 if get_args.type in (2, 3, 4):
                     payload.set_browser_type(get_args.browser)
 
+                    if get_args.record_video is not None:
+                        payload.set_record_video(get_args.record_video)
+
+
                 if get_args.type == 4:
                     if get_args.url is not None:
                         payload.set_ping_url(get_args.url)
                     else:
                         print("url is required")
-                    if get_args.record_video is not None:
-                        payload.set_record_video(get_args.record_video)
 
                 # global operation, add label, location, description, frequency, etc.
                 if get_args.label is not None:
@@ -3061,6 +3072,8 @@ def main():
             patch_instance.patch_config_script_file(get_args.script_file)
         elif get_args.description is not None:
             patch_instance.patch_description(get_args.description)
+        elif get_args.record_video is not None:
+            patch_instance.patch_record_video(get_args.record_video)
         elif get_args.label is not None:
             patch_instance.patch_label(get_args.label)
         elif get_args.location is not None:
