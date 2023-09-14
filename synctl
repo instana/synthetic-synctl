@@ -1299,6 +1299,47 @@ class SyntheticTest(Base):
             print(f'get test failed, status code: {query_result.status_code}')
             sys.exit(-1)
 
+    def retrieve_synthetic_test_by_location(self, location_id, window_size=60*60*1000):
+        host = self.auth["host"]
+        token = self.auth["token"]
+        self.check_host_and_token(host, token)
+
+        split_string = location_id.split('=')
+        loc = split_string[1]
+        summary_config = {"syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"], "metrics": [{
+            "aggregation": "SUM",
+            "granularity": 600,
+            "metric": "synthetic.metricsStatus"
+        }], "timeFrame": {
+            "to": 0,
+            "windowSize": window_size
+        },  "tagFilters": [{
+            "stringValue": loc,
+            "name": "synthetic.locationId",
+            "operator": "EQUALS"
+        }]}
+
+        test_summary_list_url = f"{host}/api/synthetics/results/testsummarylist"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        retrieve_res = requests.post(test_summary_list_url,
+                                     headers=headers,
+                                     data=json.dumps(summary_config),
+                                     timeout=60,
+                                     verify=self.insecure)
+
+        if retrieve_res.status_code == 200:
+            data = retrieve_res.json()
+            return data
+        else:
+            print('retrieve test summary list failed, status code:',
+                  retrieve_res.status_code)
+            return None
+
     def retrieve_credentials(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
@@ -1527,6 +1568,17 @@ class SyntheticTest(Base):
         else:
             return label_len if label_len > 10 else 10
 
+    def get_max_label_length(self, syn_list, max_len=60):
+        label_len = 0
+        if syn_list is not None :
+            for syn in syn_list["items"]:
+                if syn is not None and label_len < len(syn["testResultCommonProperties"]["testName"]):
+                    label_len = len(syn["testResultCommonProperties"]["testName"])
+        if label_len > 60:
+            return 60
+        else:
+            return label_len if label_len > 10 else 10
+
     def __output_tests_to_terminal(self, tests: list, test_type="", summary_list=None):
         id_length = 22
         max_label_length = self.__get_max_label_length(tests)
@@ -1653,6 +1705,73 @@ class SyntheticTest(Base):
                               "N/A")  # None URL => N/A
                         output_lists.append(t)
         print('total:', len(output_lists))
+
+    def print_tests_by_filter(self, payload: list):
+        id_length = 25
+        max_label_length = self.get_max_label_length(payload)
+        syn_type_length = 13
+        test_frequency_length = 10
+        active_length = 6
+        success_rate_length = 12
+        response_time_length = 12
+
+        if payload is not None:
+            print(self.fill_space("ID".upper(), id_length),
+                  self.fill_space("Label".upper(), max_label_length),
+                  self.fill_space("syntheticType".upper(), syn_type_length),
+                  self.fill_space("Frequency".upper(), test_frequency_length),
+                  self.fill_space("SuccessRate".upper(), success_rate_length),
+                  self.fill_space("Latency".upper(), response_time_length),
+                  self.fill_space("Active".upper(), active_length),
+                  self.fill_space("Locations".upper()),
+                  "URL".upper()
+                  )
+
+            for t in payload["items"]:
+                if len(t["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
+                    # locations,
+                    location_str = ','.join(t["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
+                else:
+                    location_str = NOT_APPLICABLE
+
+                synthetic_type = t["testResultCommonProperties"]["testCommonProperties"]["type"]
+                if synthetic_type == "API Simple":
+                    synthetic_type = "HTTPAction"
+                elif synthetic_type == "API Script":
+                    synthetic_type = "HTTPScript"
+                elif synthetic_type == "Webpage Simple":
+                    synthetic_type = "WebpageAction"
+                elif synthetic_type == "Webpage Script":
+                    synthetic_type = "WebpageScript"
+                elif synthetic_type == "Browser Script":
+                    synthetic_type = "BrowserScript"
+
+                if synthetic_type in ["HTTPAction", "WebpageAction"]:
+                    test_result = self.retrieve_a_synthetic_test(t["testResultCommonProperties"]["testId"])
+                    url = test_result[0]["configuration"]["url"]
+                else:
+                    url = "None"
+
+                if not t["metrics"]:
+                    success_rate = "No Data"
+                    response_time = "No Data"
+                else:
+                    success_rate = round(t["metrics"]["successful_test_runs"][0][1] / t["metrics"]["total_test_runs"][0][1], 2)
+                    response_time = round(t["metrics"]["response_time"][0][1], 2)
+
+                print(self.fill_space(t["testResultCommonProperties"]["testId"], id_length),
+                      self.fill_space((t["testResultCommonProperties"]["testName"]), max_label_length),
+                      self.fill_space(synthetic_type, syn_type_length),
+                      self.fill_space(str(t["testResultCommonProperties"]["testCommonProperties"]["frequency"])+'m',
+                                      test_frequency_length),
+                      self.fill_space(str(success_rate),
+                                      success_rate_length),
+                      self.fill_space(str(response_time),
+                                      response_time_length),
+                      self.fill_space(str(t["testResultCommonProperties"]["testCommonProperties"]["active"]), active_length),
+                      self.fill_space(location_str),
+                      url)
+
 
     def save_api_script_to_local(self, test):
         # save api script to local file
@@ -2564,8 +2683,9 @@ class ParseParameter:
         self.parser_get.add_argument(
             "--show-json", action='store_true', help="output test json to terminal")
         self.parser_get.add_argument(
-            '--no-result', action='store_true', help="disable latency and success rate"
-        )
+            '--no-result', action='store_true', help="disable latency and success rate")
+        self.parser_get.add_argument(
+            '--filter=locationId=', dest='location_id_filter', help='filter by location')
 
         # application
         application_group = self.parser_get.add_argument_group()
@@ -2793,6 +2913,10 @@ def main():
                     print("Synthetic type only support 0 1 2 3 4", syn_type_t)
 
             if get_args.id is None:
+                if get_args.location_id_filter is not None:
+                    filtered_payload = syn_instance.retrieve_synthetic_test_by_location(get_args.location_id_filter)
+                    syn_instance.print_tests_by_filter(filtered_payload)
+                    sys.exit(1)
                 out_list = syn_instance.retrieve_all_synthetic_tests(
                     syn_type_t)
                 if get_args.no_result is True:
