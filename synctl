@@ -1729,7 +1729,6 @@ class SyntheticTest(Base):
 
             for t in payload["items"]:
                 if len(t["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
-                    # locations,
                     location_str = ','.join(t["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
                 else:
                     location_str = NOT_APPLICABLE
@@ -2685,7 +2684,7 @@ class ParseParameter:
         self.parser_get.add_argument(
             '--no-result', action='store_true', help="disable latency and success rate")
         self.parser_get.add_argument(
-            '--filter=locationId=', dest='location_id_filter', help='filter by location')
+            '--filter', nargs='?', default=None, help='filter by location')
 
         # application
         application_group = self.parser_get.add_argument_group()
@@ -2913,8 +2912,8 @@ def main():
                     print("Synthetic type only support 0 1 2 3 4", syn_type_t)
 
             if get_args.id is None:
-                if get_args.location_id_filter is not None:
-                    filtered_payload = syn_instance.retrieve_synthetic_test_by_location(get_args.location_id_filter)
+                if get_args.filter is not None:
+                    filtered_payload = syn_instance.retrieve_synthetic_test_by_location(get_args.filter)
                     syn_instance.print_tests_by_filter(filtered_payload)
                     sys.exit(1)
                 out_list = syn_instance.retrieve_all_synthetic_tests(
