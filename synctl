@@ -2694,7 +2694,7 @@ class ParseParameter:
             'id', type=str, help="Synthetic test id")
 
         self.parser_update.add_argument(
-            '--from-data', type=str, metavar="<json>", help='json payload')
+            '--file', '-f', type=str, metavar="<file-name>", help='json payload')
 
         self.parser_update.add_argument(
             '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
@@ -3094,7 +3094,10 @@ def main():
         elif get_args.bundle is not None:
             patch_instance.patch_bundle(get_args.id, get_args.bundle)
     elif COMMAND_UPDATE == get_args.sub_command:
-        syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
+        if get_args.file is not None:
+            with open(get_args.file, 'rb') as json_file:
+                payload = json_file.read()
+            syn_instance.update_a_synthetic_test(get_args.id, payload)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
