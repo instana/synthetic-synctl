@@ -1336,6 +1336,9 @@ class SyntheticTest(Base):
                 "name": "synthetic.applicationId",
                 "operator": "EQUALS"
             }]}
+        else:
+            print(f"Invalid filter : {tag_filter[0]}")
+            sys.exit(1)
 
         test_summary_list_url = f"{host}/api/synthetics/results/testsummarylist"
 
