@@ -541,10 +541,10 @@ class SyntheticConfiguration(Base):
             "expectMatch": "",
             # expectExists An optional list of property labels used to check if
             # they are present in the test response object.
-            "expectExists": [],  # list
+            "expectExists": None,  # list
             # expectNotEmpty An optional list of property labels used to check if
             # they are present in the test response object with a non-empty value.
-            "expectNotEmpty": []  # list
+            "expectNotEmpty": None  # list
         }
 
         http_script_con = {
