@@ -524,11 +524,11 @@ synctl update test <id> [options]
 
 ### synctl update Examples
 ```
-# get synthetic configuration and save to test.js
-synctl get test <synthetic-id> --show-json > test.js
+# get synthetic configuration and save to test.json
+synctl get test <synthetic-id> --show-json > test.json
 
 # edit json file and update
-synctl update test <synthetic-id> --file/-f test.js
+synctl update test <synthetic-id> --file/-f test.json
 ```
 
 
