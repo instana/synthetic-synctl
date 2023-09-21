@@ -155,9 +155,9 @@ UPDATE_USAGE = """synctl update test <id> [options]
 
 examples:
 # update Synthetic test
-synctl get test <id>  --show-json > test.js
-edit test.js
-synctl update test <id> --file/-f test.js
+synctl get test <id>  --show-json > test.json
+edit test.json
+synctl update test <id> --file/-f test.json
 """
 
 DELETE_USAGE = """synctl delete {location,lo,test,cred} [id...] [options]
