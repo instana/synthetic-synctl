@@ -1364,7 +1364,7 @@ class SyntheticTest(Base):
     def get_all_tests_by_filter(self, tag_filter, page=1):
         total_hits = 0
         summary_result = self.retrieve_synthetic_test_by_filter(tag_filter)
-        test_result = []
+
         if summary_result is not None:
             page = summary_result["page"] if page in summary_result else 1
             page_size = summary_result["pageSize"] if "pageSize" in summary_result else 200
@@ -1372,16 +1372,14 @@ class SyntheticTest(Base):
                 total_hits = summary_result["totalHits"]
 
             if page_size >= total_hits:
-                return summary_result
+                yield summary_result
             else:
                 total_pages = total_hits/page_size
                 if (total_pages - round(total_pages)) > 0:
                     total_pages += 1
-                print(total_pages)
                 for x in range(0, round(total_pages)):
                     summary_result = self.retrieve_synthetic_test_by_filter(tag_filter, page=x+1)
-                    test_result.append(summary_result)
-                return test_result
+                    yield summary_result
         else:
             return None
 
@@ -1613,13 +1611,14 @@ class SyntheticTest(Base):
         else:
             return label_len if label_len > 10 else 10
 
-    def get_max_label_length(self, syn_list, max_len=60):
+    def get_max_label_length(self, tag_filter, max_len=60):
         label_len = 0
+        syn_list = self.get_all_tests_by_filter(tag_filter)
         if syn_list is not None:
-            for i in range(len(syn_list)):
-                for _, syn in enumerate(syn_list[i]["items"]):
-                    if syn is not None and label_len < len(syn["testResultCommonProperties"]["testName"]):
-                        label_len = len(syn["testResultCommonProperties"]["testName"])
+            for test_res_gen in syn_list:
+                for i in test_res_gen["items"]:
+                    if label_len < len(i["testResultCommonProperties"]["testName"]):
+                        label_len = len(i["testResultCommonProperties"]["testName"])
         if label_len > 60:
             return 60
         else:
@@ -1752,15 +1751,18 @@ class SyntheticTest(Base):
                         output_lists.append(t)
         print('total:', len(output_lists))
 
-    def print_tests_by_filter(self, payload: list):
+    def print_tests_by_filter(self, tag_filter):
         id_length = 25
-        max_label_length = self.get_max_label_length(payload)
+        max_label_length = self.get_max_label_length(tag_filter)
         syn_type_length = 13
         app_id_length = 15
         test_frequency_length = 10
         active_length = 6
         success_rate_length = 12
         response_time_length = 12
+
+        test_result = self.retrieve_all_synthetic_tests()
+        payload = self.get_all_tests_by_filter(tag_filter)
 
         if payload is not None:
             print(self.fill_space("ID".upper(), id_length),
@@ -1774,55 +1776,54 @@ class SyntheticTest(Base):
                   self.fill_space("Application".upper(), app_id_length),
                   "URL".upper()
                   )
-            for i in range(len(payload)):
-                for _, t in enumerate(payload[i]["items"]):
-                    if len(t["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
-                        location_str = ','.join(t["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
+            for t in payload:
+                for i in t["items"]:
+                    if len(i["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
+                        location_str = ','.join(i["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
                     else:
                         location_str = NOT_APPLICABLE
 
-                    synthetic_type = t["testResultCommonProperties"]["testCommonProperties"]["type"]
-                    if synthetic_type == "API Simple":
-                        synthetic_type = "HTTPAction"
-                    elif synthetic_type == "API Script":
-                        synthetic_type = "HTTPScript"
-                    elif synthetic_type == "Webpage Simple":
-                        synthetic_type = "WebpageAction"
+                    syn_type = i["testResultCommonProperties"]["testCommonProperties"]["type"]
+                    if syn_type == "API Simple":
+                        syn_type = "HTTPAction"
+                    elif syn_type == "API Script":
+                        syn_type = "HTTPScript"
+                    elif syn_type == "Webpage Simple":
+                        syn_type = "WebpageAction"
                     elif synthetic_type == "Webpage Script":
-                        synthetic_type = "WebpageScript"
-                    elif synthetic_type == "Browser Script":
-                        synthetic_type = "BrowserScript"
+                        syn_type = "WebpageScript"
+                    elif syn_type == "Browser Script":
+                        syn_type = "BrowserScript"
 
                     if synthetic_type in ["HTTPAction", "WebpageAction"]:
-                        test_result = self.retrieve_all_synthetic_tests(synthetic_type)
                         for _, x in enumerate(test_result):
-                            if t["testResultCommonProperties"]["testId"] == x["id"]:
+                            if i["testResultCommonProperties"]["testId"] == x["id"]:
                                 url = x["configuration"]["url"]
                     else:
                         url = "None"
 
-                    if not t["metrics"]:
+                    if not i["metrics"]:
                         success_rate = "No Data"
                         response_time = "No Data"
                     else:
-                        success_rate = f'{t["metrics"]["successful_test_runs"][0][1]}/{t["metrics"]["total_test_runs"][0][1]}'
-                        response_time = round(t["metrics"]["response_time"][0][1], 2)
+                        success_rate = f'{i["metrics"]["successful_test_runs"][0][1]}/{i["metrics"]["total_test_runs"][0][1]}'
+                        response_time = round(i["metrics"]["response_time"][0][1], 2)
 
-                    if "applicationLabel" in t["testResultCommonProperties"]["testCommonProperties"]:
-                        application_id = t["testResultCommonProperties"]["testCommonProperties"]["applicationLabel"]
+                    if "applicationLabel" in i["testResultCommonProperties"]["testCommonProperties"]:
+                        application_id = i["testResultCommonProperties"]["testCommonProperties"]["applicationLabel"]
                     else:
                         application_id = "N/A"
 
-                    print(self.fill_space(t["testResultCommonProperties"]["testId"], id_length),
-                          self.fill_space((t["testResultCommonProperties"]["testName"]), max_label_length),
-                          self.fill_space(synthetic_type, syn_type_length),
-                          self.fill_space(str(t["testResultCommonProperties"]["testCommonProperties"]["frequency"])+'m',
+                    print(self.fill_space(i["testResultCommonProperties"]["testId"], id_length),
+                          self.fill_space((i["testResultCommonProperties"]["testName"]), max_label_length),
+                          self.fill_space(syn_type, syn_type_length),
+                          self.fill_space(str(i["testResultCommonProperties"]["testCommonProperties"]["frequency"])+'m',
                                           test_frequency_length),
                           self.fill_space(str(success_rate),
                                           success_rate_length),
                           self.fill_space(str(response_time),
                                           response_time_length),
-                          self.fill_space(str(t["testResultCommonProperties"]["testCommonProperties"]["active"]), active_length),
+                          self.fill_space(str(i["testResultCommonProperties"]["testCommonProperties"]["active"]), active_length),
                           self.fill_space(location_str),
                           self.fill_space(application_id, app_id_length),
                           url)
@@ -2969,8 +2970,9 @@ def main():
             if get_args.id is None:
                 if get_args.filter is not None:
                     split_string = get_args.filter.split('=')
-                    filtered_payload = syn_instance.get_all_tests_by_filter(split_string, syn_window_size)
-                    syn_instance.print_tests_by_filter(filtered_payload)
+                    #filtered_payload = syn_instance.get_all_tests_by_filter(split_string, syn_window_size)
+                    #syn_instance.print_tests_by_filter(filtered_payload,split_string[0])
+                    syn_instance.print_tests_by_filter(split_string)
                     sys.exit(1)
 
                 out_list = syn_instance.retrieve_all_synthetic_tests(
