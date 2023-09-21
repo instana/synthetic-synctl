@@ -1780,6 +1780,7 @@ class SyntheticTest(Base):
                 for i in t["items"]:
                     if len(i["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
                         location_str = ','.join(i["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
+
                     else:
                         location_str = NOT_APPLICABLE
 
@@ -1790,12 +1791,12 @@ class SyntheticTest(Base):
                         syn_type = "HTTPScript"
                     elif syn_type == "Webpage Simple":
                         syn_type = "WebpageAction"
-                    elif synthetic_type == "Webpage Script":
+                    elif syn_type == "Webpage Script":
                         syn_type = "WebpageScript"
                     elif syn_type == "Browser Script":
                         syn_type = "BrowserScript"
 
-                    if synthetic_type in ["HTTPAction", "WebpageAction"]:
+                    if syn_type in ["HTTPAction", "WebpageAction"]:
                         for _, x in enumerate(test_result):
                             if i["testResultCommonProperties"]["testId"] == x["id"]:
                                 url = x["configuration"]["url"]
