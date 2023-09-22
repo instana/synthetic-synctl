@@ -1624,6 +1624,21 @@ class SyntheticTest(Base):
         else:
             return label_len if label_len > 10 else 10
 
+    def __get_loc_length(self, tag_filter):
+        loc_length = 0
+        syn_list = self.get_all_tests_by_filter(tag_filter)
+        if syn_list is not None:
+            for test_res_gen in syn_list:
+                for i in test_res_gen["items"]:
+                    if len(i["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
+                        location_str = ','.join(i["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
+                        if loc_length < len(location_str):
+                            loc_length = len(location_str)
+        if loc_length > 60:
+            return 60
+        else:
+            return loc_length if loc_length > 10 else 10
+
     def __output_tests_to_terminal(self, tests: list, test_type="", summary_list=None):
         id_length = 22
         max_label_length = self.__get_max_label_length(tests)
@@ -1754,6 +1769,7 @@ class SyntheticTest(Base):
     def print_tests_by_filter(self, tag_filter):
         id_length = 25
         max_label_length = self.get_max_label_length(tag_filter)
+        loc_length = self.__get_loc_length(tag_filter)
         syn_type_length = 13
         app_id_length = 15
         test_frequency_length = 10
@@ -1772,7 +1788,7 @@ class SyntheticTest(Base):
                   self.fill_space("SuccessRate".upper(), success_rate_length),
                   self.fill_space("Latency".upper(), response_time_length),
                   self.fill_space("Active".upper(), active_length),
-                  self.fill_space("Locations".upper()),
+                  self.fill_space("Locations".upper(), loc_length),
                   self.fill_space("Application".upper(), app_id_length),
                   "URL".upper()
                   )
@@ -1825,7 +1841,7 @@ class SyntheticTest(Base):
                           self.fill_space(str(response_time),
                                           response_time_length),
                           self.fill_space(str(i["testResultCommonProperties"]["testCommonProperties"]["active"]), active_length),
-                          self.fill_space(location_str),
+                          self.fill_space(location_str, loc_length),
                           self.fill_space(application_id, app_id_length),
                           url)
 
