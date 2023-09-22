@@ -1611,29 +1611,14 @@ class SyntheticTest(Base):
         else:
             return label_len if label_len > 10 else 10
 
-    def get_max_label_length(self, tag_filter, max_len=60):
-        label_len = 0
-        syn_list = self.get_all_tests_by_filter(tag_filter)
-        if syn_list is not None:
-            for test_res_gen in syn_list:
-                for i in test_res_gen["items"]:
-                    if label_len < len(i["testResultCommonProperties"]["testName"]):
-                        label_len = len(i["testResultCommonProperties"]["testName"])
-        if label_len > 60:
-            return 60
-        else:
-            return label_len if label_len > 10 else 10
-
-    def __get_loc_length(self, tag_filter):
+    def __get_loc_length(self, syn_list):
         loc_length = 0
-        syn_list = self.get_all_tests_by_filter(tag_filter)
-        if syn_list is not None:
-            for test_res_gen in syn_list:
-                for i in test_res_gen["items"]:
-                    if len(i["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
-                        location_str = ','.join(i["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
-                        if loc_length < len(location_str):
-                            loc_length = len(location_str)
+        if syn_list is not None and isinstance(syn_list, list):
+            for syn in syn_list:
+                if syn is not None and len(syn['locations']) > 0:
+                    location_str = ','.join(syn['locationDisplayLabels'])
+                    if loc_length < len(location_str):
+                        loc_length = len(location_str)
         if loc_length > 60:
             return 60
         else:
@@ -1767,9 +1752,12 @@ class SyntheticTest(Base):
         print('total:', len(output_lists))
 
     def print_tests_by_filter(self, tag_filter):
+        test_result = self.retrieve_all_synthetic_tests()
+        filtered_payload = self.get_all_tests_by_filter(tag_filter)
+
         id_length = 25
-        max_label_length = self.get_max_label_length(tag_filter)
-        loc_length = self.__get_loc_length(tag_filter)
+        max_label_length = self.__get_max_label_length(test_result)
+        loc_length = self.__get_loc_length(test_result)
         syn_type_length = 13
         app_id_length = 15
         test_frequency_length = 10
@@ -1777,10 +1765,11 @@ class SyntheticTest(Base):
         success_rate_length = 12
         response_time_length = 12
 
-        test_result = self.retrieve_all_synthetic_tests()
-        payload = self.get_all_tests_by_filter(tag_filter)
+        syn_dict = {}
+        for _, test in enumerate(test_result):
+            syn_dict[test['id']] = test
 
-        if payload is not None:
+        if filtered_payload is not None:
             print(self.fill_space("ID".upper(), id_length),
                   self.fill_space("Label".upper(), max_label_length),
                   self.fill_space("syntheticType".upper(), syn_type_length),
@@ -1792,8 +1781,8 @@ class SyntheticTest(Base):
                   self.fill_space("Application".upper(), app_id_length),
                   "URL".upper()
                   )
-            for t in payload:
-                for i in t["items"]:
+            for test in filtered_payload:
+                for i in test["items"]:
                     if len(i["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
                         location_str = ','.join(i["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
 
@@ -1813,9 +1802,7 @@ class SyntheticTest(Base):
                         syn_type = "BrowserScript"
 
                     if syn_type in ["HTTPAction", "WebpageAction"]:
-                        for _, x in enumerate(test_result):
-                            if i["testResultCommonProperties"]["testId"] == x["id"]:
-                                url = x["configuration"]["url"]
+                        url = syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['url']
                     else:
                         url = "None"
 
@@ -1831,6 +1818,7 @@ class SyntheticTest(Base):
                     else:
                         application_id = "N/A"
 
+                    total_hits = test["totalHits"]
                     print(self.fill_space(i["testResultCommonProperties"]["testId"], id_length),
                           self.fill_space((i["testResultCommonProperties"]["testName"]), max_label_length),
                           self.fill_space(syn_type, syn_type_length),
@@ -1844,6 +1832,7 @@ class SyntheticTest(Base):
                           self.fill_space(location_str, loc_length),
                           self.fill_space(application_id, app_id_length),
                           url)
+        print('Total:', total_hits)
 
     def save_api_script_to_local(self, test):
         # save api script to local file
