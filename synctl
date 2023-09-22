@@ -1611,19 +1611,6 @@ class SyntheticTest(Base):
         else:
             return label_len if label_len > 10 else 10
 
-    def __get_loc_length(self, syn_list):
-        loc_length = 0
-        if syn_list is not None and isinstance(syn_list, list):
-            for syn in syn_list:
-                if syn is not None and len(syn['locations']) > 0:
-                    location_str = ','.join(syn['locationDisplayLabels'])
-                    if loc_length < len(location_str):
-                        loc_length = len(location_str)
-        if loc_length > 60:
-            return 60
-        else:
-            return loc_length if loc_length > 10 else 10
-
     def __output_tests_to_terminal(self, tests: list, test_type="", summary_list=None):
         id_length = 22
         max_label_length = self.__get_max_label_length(tests)
@@ -1757,7 +1744,7 @@ class SyntheticTest(Base):
 
         id_length = 25
         max_label_length = self.__get_max_label_length(test_result)
-        loc_length = self.__get_loc_length(test_result)
+        loc_length = 30
         syn_type_length = 13
         app_id_length = 15
         test_frequency_length = 10
