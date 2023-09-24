@@ -1769,6 +1769,7 @@ class SyntheticTest(Base):
                   "URL".upper()
                   )
             for test in filtered_payload:
+                total_hits = test["totalHits"]
                 for i in test["items"]:
                     if len(i["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
                         location_str = ','.join(i["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
@@ -1805,7 +1806,6 @@ class SyntheticTest(Base):
                     else:
                         application_id = "N/A"
 
-                    total_hits = test["totalHits"]
                     print(self.fill_space(i["testResultCommonProperties"]["testId"], id_length),
                           self.fill_space((i["testResultCommonProperties"]["testName"]), max_label_length),
                           self.fill_space(syn_type, syn_type_length),
