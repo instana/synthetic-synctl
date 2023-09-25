@@ -515,7 +515,7 @@ synctl update test <id> [options]
 ```
 -h, --help            show this help message and exit
 
---from-data <json>    json payload
+--file,-f <file-name> json payload
 
 --use-env, -e <name>  use a config hostname
 --host <host>         set hostname
@@ -524,11 +524,11 @@ synctl update test <id> [options]
 
 ### synctl update Examples
 ```
-# get synthetic configuration
-synctl get test <synthetic-id> --show-json
+# get synthetic configuration and save to test.json
+synctl get test <synthetic-id> --show-json > test.json
 
-# edit json and update
-synctl update test <synthetic-id> --from-data 'json data'
+# edit json file and update
+synctl update test <synthetic-id> --file/-f test.json
 ```
 
 

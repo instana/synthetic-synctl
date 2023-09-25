@@ -20,7 +20,7 @@ import time
 import requests
 import urllib3
 
-VERSION = "1.0.9"
+VERSION = "1.0.10"
 
 # disable warning when certificate is self signed
 # InsecureRequestWarning: Unverified HTTPS request is being made to host 'some url'.
@@ -155,7 +155,9 @@ UPDATE_USAGE = """synctl update test <id> [options]
 
 examples:
 # update Synthetic test
-synctl update test <id> --from-data '{}'
+synctl get test <id>  --show-json > test.json
+edit test.json
+synctl update test <id> --file/-f test.json
 """
 
 DELETE_USAGE = """synctl delete {location,lo,test,cred} [id...] [options]
@@ -237,6 +239,13 @@ class Base:
         for i in dict2.keys():
             dict1[i] = dict2[i]
         return dict1
+
+    def format_time(self, milliseconds):
+        """convert milliseconds to format like \'Wed Aug  2 16:50:25 2023\'"""
+        if milliseconds is not None and isinstance(milliseconds, int):
+            return time.ctime(milliseconds/1000)
+        else:
+            return milliseconds
 
     def exit_synctl(self, error_code=-1, message=''):
         """exit synctl"""
@@ -534,10 +543,10 @@ class SyntheticConfiguration(Base):
             "expectMatch": "",
             # expectExists An optional list of property labels used to check if
             # they are present in the test response object.
-            "expectExists": [],  # list
+            "expectExists": None,  # list
             # expectNotEmpty An optional list of property labels used to check if
             # they are present in the test response object with a non-empty value.
-            "expectNotEmpty": []  # list
+            "expectNotEmpty": None  # list
         }
 
         http_script_con = {
@@ -591,6 +600,7 @@ class SyntheticConfiguration(Base):
             "script": "",
             "syntheticType": "WebpageScript",
             "browser": "chrome",
+            "recordVideo": False
         }
 
         # syntheticType WebpageAction
@@ -1001,6 +1011,23 @@ class SyntheticPoP(Base):
         else:
             return None
 
+    def __get_max_lo_label_length(self, loc_list, max_len=60):
+        label_len = 15
+        display_label_len = 15
+        max_result = {
+            "max_label": 35,
+            "max_display_label": 50
+        }
+        if loc_list is not None and isinstance(loc_list, list):
+            for lo in loc_list:
+                if lo is not None and label_len < len(lo["label"]):
+                    label_len = len(lo["label"])
+                if lo is not None and display_label_len < len(lo["displayLabel"]):
+                    display_label_len = len(lo["displayLabel"])
+        max_result["max_label"] = label_len if label_len < 60 else 60
+        max_result["max_display_label"] = display_label_len if display_label_len < 60 else 60
+        return max_result
+
     def print_a_location_details(self, location_id, single_location, show_details=False):
         """show a Synthetic location details data"""
         if single_location is None or len(single_location) == 0 or location_id is None:
@@ -1010,7 +1037,10 @@ class SyntheticPoP(Base):
             a_single_location = single_location[0]
             print(self.fill_space("Name".upper(), 30), "value".upper())
             for key, value in a_single_location.items():
-                print(self.fill_space(key, 30), value)
+                if key == 'createdAt' or key == 'modifiedAt' or key == 'observedAt':
+                    print(self.fill_space(key, 30), self.format_time(value))
+                else:
+                    print(self.fill_space(key, 30), value)
 
     def delete_a_synthetic_pop(self, pop_id=""):
         if pop_id != "":
@@ -1060,17 +1090,19 @@ class SyntheticPoP(Base):
         self.__print_pop(locations, locations_summary)
 
     def __print_pop(self, pop_data: list, pop_locations_summary):
-
-        id_length = 30
-        label_length = 35
-        display_label_length = 50
-        status_length = 15
-        no_of_tests_length = 15
+        id_length = 22
+        pop_version_length = 13
+        status_length = 10
+        no_of_tests_length = 13
+        max_length = self.__get_max_lo_label_length(pop_data)
+        label_length = max_length["max_label"]
+        display_label_length = max_length["max_display_label"]
         print(self.fill_space("ID".upper(), id_length),
               self.fill_space("Label".upper(), label_length),
               self.fill_space("DisplayLabel".upper(), display_label_length),
+              self.fill_space("Pop version".upper(), pop_version_length),
               self.fill_space("Status".upper(), status_length),
-              self.fill_space("No. of tests".upper(), no_of_tests_length),
+              self.fill_space("No. of Tests".upper(), no_of_tests_length),
               "Description".upper())
         if len(pop_data) > 0 and pop_locations_summary is not None:
             for pop in pop_data:
@@ -1080,6 +1112,7 @@ class SyntheticPoP(Base):
                               self.fill_space(pop['label'], label_length),
                               self.fill_space(pop['displayLabel'],
                                               display_label_length),
+                              self.fill_space(pop['popVersion'], pop_version_length),
                               self.fill_space(
                                   pop['status'], status_length),
                               self.fill_space(
@@ -1091,6 +1124,7 @@ class SyntheticPoP(Base):
                       self.fill_space(pop['label'], label_length),
                       self.fill_space(pop['displayLabel'],
                                       display_label_length),
+                      self.fill_space(pop['popVersion'], pop_version_length),
                       self.fill_space(
                           pop['status'], status_length),
                       self.fill_space(
@@ -1156,7 +1190,7 @@ class SyntheticTest(Base):
             data = create_res.json()
             test_id = data["id"]
             test_label = data["label"]
-            print(f"test \"{test_id}\" \"{test_label}\" created")
+            print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
         elif create_res.status_code == 429:
             self.exit_synctl(-1, "Too Many Requests")
         else:
@@ -1495,13 +1529,12 @@ class SyntheticTest(Base):
                 label_1 = syn["label"]
                 match_result1 = prog.match(label_1)
                 if match_result1 is not None:
-                    print(f"{label_1} is to delete")
+                    print(f"test \"{label_1}\"")
                     # delete it
                     delete_syn_id_lists.append(syn["id"])
             print('total match:', len(delete_syn_id_lists))
-            if len(delete_syn_id_lists) > 0:
-                if self.ask_answer("are you sure to delete these tests?"):
-                    self.delete_multiple_synthetic_tests(delete_syn_id_lists)
+            if len(delete_syn_id_lists) > 0 and self.ask_answer("are you sure to delete these tests?"):
+                self.delete_multiple_synthetic_tests(delete_syn_id_lists)
 
     def delete_tests_match_location(self, match_location=None):
         """delete all tests match location"""
@@ -1517,12 +1550,12 @@ class SyntheticTest(Base):
                 label_1 = syn["label"]
                 syn_locations = syn["locations"]
                 if syn_locations is not None and len(syn_locations) == 1 and syn_locations[0] == match_location:
-                    print(f"{label_1} is to delete")
+                    print(f"test \"{label_1}\"")
                     # add to delete list
                     delete_syn_id_lists.append(syn["id"])
-            print(f'total test with location {match_location}:', len(
+            print(f'Total tests with location id \"{match_location}\":', len(
                 delete_syn_id_lists))
-            if self.ask_answer("are you sure to delete these tests?"):
+            if len(delete_syn_id_lists) > 0 and self.ask_answer("are you sure to delete these tests?"):
                 self.delete_multiple_synthetic_tests(delete_syn_id_lists)
 
     def delete_tests_without_location(self):
@@ -1534,11 +1567,14 @@ class SyntheticTest(Base):
             label_1 = syn["label"]
             syn_locations = syn["locations"]
             if len(syn_locations) == 0:
-                print(f"{label_1} is to delete")
+                print(f"test \"{label_1}\"")
                 # delete it
                 delete_syn_id_lists.append(syn["id"])
-        print('total tests:', len(delete_syn_id_lists))
-        if self.ask_answer("are you sure to delete these tests?"):
+        if len(delete_syn_id_lists) > 0:
+            print('Total tests:', len(delete_syn_id_lists))
+        else:
+            print('no tests match no locations')
+        if len(delete_syn_id_lists) > 0 and self.ask_answer("are you sure to delete these tests?"):
             self.delete_multiple_synthetic_tests(delete_syn_id_lists)
 
     def delete_a_credential(self, cred):
@@ -1651,7 +1687,7 @@ class SyntheticTest(Base):
                                               test_frequency_length),
                               self.fill_space(str(t["active"]), active_length),
                               self.fill_space(location_str),
-                              t['configuration']['url'])
+                              t['configuration']['url'] if 'url' in t['configuration'] else 'None')
                         output_lists.append(t)
                 if t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]:
                     if len(t['locations']) > 0:
@@ -1714,7 +1750,7 @@ class SyntheticTest(Base):
                                               response_time_length),
                               self.fill_space(str(t["active"]), active_length),
                               self.fill_space(location_str),
-                              t['configuration']['url'])
+                              t['configuration']['url'] if 'url' in t['configuration'] else 'None')
                         output_lists.append(t)
                 if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]):
                     if len(t['locations']) > 0:
@@ -1879,7 +1915,10 @@ class SyntheticTest(Base):
             if key == "configuration":
                 config_details = value
             else:
-                print(self.fill_space(key, 30), value)
+                if key == 'createdAt' or key == 'modifiedAt':
+                    print(self.fill_space(key, 30), self.format_time(value))
+                else:
+                    print(self.fill_space(key, 30), value)
 
         print("---- CONFIGURATION ----")
         # show script content
@@ -2004,6 +2043,12 @@ class PatchSyntheticTest(SyntheticTest):
             print("no description")
         else:
             payload["description"] = description
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_record_video(self, record_video=False):
+        payload = {"configuration": {"recordVideo": False}}
+        if record_video is not None and record_video.upper() in ("TRUE", "FALSE"):
+            payload["configuration"]["recordVideo"] = record_video
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
     def patch_active(self, active):
@@ -2783,6 +2828,8 @@ class ParseParameter:
             '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
         patch_exclusive_group.add_argument(
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
+        patch_exclusive_group.add_argument(
+            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
 
         # timeout Expected <number>(ms|s|m)
         patch_exclusive_group.add_argument(
@@ -2817,7 +2864,7 @@ class ParseParameter:
             'id', type=str, help="Synthetic test id")
 
         self.parser_update.add_argument(
-            '--from-data', type=str, metavar="<json>", help='json payload')
+            '--file', '-f', type=str, metavar="<file-name>", help='json payload')
 
         self.parser_update.add_argument(
             '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
@@ -2832,14 +2879,15 @@ class ParseParameter:
         self.parser_delete.add_argument(
             'id', type=str, nargs="*", metavar="<id>", help='Synthetic test id, location id, credential name')
 
-        # other options
-        self.parser_delete.add_argument(
-            '--match-regex', type=str, default=None,metavar="<regex>", help='use a regex to match Synthetic label')
+        # delete test in batch options
+        delete_exclusive_group = self.parser_delete.add_mutually_exclusive_group()
+        delete_exclusive_group.add_argument(
+            '--match-regex', type=str, default=None, metavar="<regex>", help='use a regex to match Synthetic label')
         # only deletes tests full match location, if a test has two locations, include this, will
         # not be deleted
-        self.parser_delete.add_argument(
+        delete_exclusive_group.add_argument(
             '--match-location', type=str, default=None, metavar="<id>", help='delete tests match this location id')
-        self.parser_delete.add_argument(
+        delete_exclusive_group.add_argument(
             '--no-locations', action="store_true", help="delete tests with no locations")
 
         self.parser_delete.add_argument(
@@ -3137,13 +3185,15 @@ def main():
                 if get_args.type in (2, 3, 4):
                     payload.set_browser_type(get_args.browser)
 
+                    if get_args.record_video is not None:
+                        payload.set_record_video(get_args.record_video)
+
+
                 if get_args.type == 4:
                     if get_args.url is not None:
                         payload.set_ping_url(get_args.url)
                     else:
                         print("url is required")
-                    if get_args.record_video is not None:
-                        payload.set_record_video(get_args.record_video)
 
                 # global operation, add label, location, description, frequency, etc.
                 if get_args.label is not None:
@@ -3199,6 +3249,8 @@ def main():
             patch_instance.patch_config_script_file(get_args.script_file)
         elif get_args.description is not None:
             patch_instance.patch_description(get_args.description)
+        elif get_args.record_video is not None:
+            patch_instance.patch_record_video(get_args.record_video)
         elif get_args.label is not None:
             patch_instance.patch_label(get_args.label)
         elif get_args.location is not None:
@@ -3219,7 +3271,10 @@ def main():
         elif get_args.bundle is not None:
             patch_instance.patch_bundle(get_args.id, get_args.bundle)
     elif COMMAND_UPDATE == get_args.sub_command:
-        syn_instance.update_a_synthetic_test(get_args.id, get_args.from_data)
+        if get_args.file is not None:
+            with open(get_args.file, 'rb') as json_file:
+                payload = json_file.read()
+            syn_instance.update_a_synthetic_test(get_args.id, payload)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
