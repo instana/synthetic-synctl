@@ -1413,6 +1413,37 @@ class SyntheticTest(Base):
                 f'get alert failed, status code: {alert_result.status_code}')
             sys.exit(-1)
 
+    def retrieve_a_synthetic_alert(self, alert_id=""):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        alert_result = requests.get(retrieve_url, headers=headers,
+                                    timeout=60, verify=self.insecure)
+
+        if alert_result.status_code == 200:
+            data = alert_result.json()
+
+            if isinstance(data, list):
+                self.test_lists = data
+                return data
+            elif isinstance(data, dict):
+                self.test_lists = [data]
+                return [data]
+            else:
+                print('unknown data:', data)
+        else:
+            print(
+                f'get alert failed, status code: {alert_result.status_code}')
+            sys.exit(-1)
+
     def update_a_synthetic_test(self, test_id, new_payload):
         """API https://instana.github.io/openapi/#operation/updateSyntheticTest"""
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2974,8 +3005,12 @@ def main():
             credentials = syn_instance.retrieve_credentials()
             pop_instance.print_credentials(credentials)
         elif get_args.op_type == SYN_ALERT:
-            alerts = syn_instance.retrieve_all_synthetic_alerts()
-            syn_instance.print_synthetic_alerts(alerts)
+            if get_args.id is None:
+                alerts = syn_instance.retrieve_all_synthetic_alerts()
+                syn_instance.print_synthetic_alerts(alerts)
+            else:
+                single_alert = syn_instance.retrieve_a_synthetic_alert(get_args.id)
+                syn_instance.print_synthetic_alerts(single_alert)
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
