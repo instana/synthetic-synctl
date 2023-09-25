@@ -51,6 +51,7 @@ SYN_LO = "lo"  # short for location
 SYN_APPLICATION = "application"
 SYN_APP = "app"  # short for application
 SYN_CRED = "cred"  # short for credentials
+SYN_ALERT = "alert"  # short for smart alerts
 
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
@@ -902,6 +903,39 @@ class CredentialConfiguration(Base):
         result = json.dumps(self.credential_config)
         return result
 
+class SmartAlertConfiguration(Base):
+    def __init__(self):
+        Base.__init__(self)
+        self.smart_alert_config = {
+            # Unique identifier of the alert configuration..
+            # "id": "",
+            # Name for the synthetic alert configuration, which is used as the title of the event when triggered.
+            "name": "default-Synthetics-Smart-Alert",
+            # Description for the synthetic alert configuration, which is used as the detials of the triggerd event.
+            "description": "Synthetic test failed at least 3 times in sequence.",
+            # The severity of the alert when triggered, which is either 5 (Warning), or 10 (Critical).
+            "severity": 5,
+            # syntheticTestIds: It is an array of the synthetic test IDs this alert configuration is applied to.
+            "syntheticTestIds": [],
+            # Indicates the type of rule this alert configuration is about.
+            # The only alertType available so far is "failure", where the metric name "status" is expected.
+            # This boolean metric requires no threshold to be specified, because value of status=0 indicates a test failure.
+            "rule": {
+                "alertType": '',
+                "metricName": "status",
+                "aggregation": "SUM"
+            },
+            # Defines the triggering condition in time, such as how many consecutive test failures are required to open an event.
+            "timeThreshold": {
+                "type": "violationsInSequence",
+                "violationsCount": 1
+            },
+            # alertChannelIds: It is an array of alert channels defined in Instana.
+            "alertChannelIds": [],
+        }
+
+
+
 
 class SyntheticPoP(Base):
     def __init__(self) -> None:
@@ -1356,6 +1390,29 @@ class SyntheticTest(Base):
                 f'get cred failed, status code: {cred_result.status_code}')
             sys.exit(-1)
 
+    def retrieve_all_synthetic_alerts(self):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/events/settings/global-alert-configs/synthetics/"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        alert_result = requests.get(retrieve_url, headers=headers,
+                                    timeout=60, verify=self.insecure)
+
+        if alert_result.status_code == 200:
+            data = alert_result.json()
+            return data
+        else:
+            print(
+                f'get alert failed, status code: {alert_result.status_code}')
+            sys.exit(-1)
+
     def update_a_synthetic_test(self, test_id, new_payload):
         """API https://instana.github.io/openapi/#operation/updateSyntheticTest"""
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1689,6 +1746,26 @@ class SyntheticTest(Base):
                               "N/A")  # None URL => N/A
                         output_lists.append(t)
         print('total:', len(output_lists))
+
+    def print_synthetic_alerts(self, alerts):
+        id_length = 25
+        max_label_length = 50
+        severity_length = 10
+
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("label".upper(), max_label_length),
+              self.fill_space("severity".upper(), severity_length),
+              "Tests".upper())
+
+        for x in alerts:
+            if len(x["syntheticTestIds"]) > 0:
+                test_str = ','.join(x['syntheticTestIds'])
+            else:
+                test_str = NOT_APPLICABLE
+            print(self.fill_space(x["id"], id_length),
+                  self.fill_space(x["name"], max_label_length),
+                  self.fill_space(str(x["severity"]), severity_length),
+                  self.fill_space(test_str))
 
     def save_api_script_to_local(self, test):
         # save api script to local file
@@ -2234,7 +2311,7 @@ class SyntheticResult(Base):
 
             if response_time is not None:
                 metrics_summary[item["testResultCommonProperties"]["testId"]
-                                ]["response_time"] = str(round(response_time, 2))
+                ]["response_time"] = str(round(response_time, 2))
 
     def get_summary_list(self, window_size, test_id=None):
         """convert summary list to a dict"""
@@ -2497,7 +2574,7 @@ class ParseParameter:
 
         self.parser_create.add_argument(
             '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, metavar="<int>", help="Synthetic type:"
-            + "HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4]")
+                                                                                                     + "HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4]")
 
         # support multiple locations
         # --location location_id_1 location_id_2 location_id_3
@@ -2587,7 +2664,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -2896,6 +2973,9 @@ def main():
         elif get_args.op_type == SYN_CRED:
             credentials = syn_instance.retrieve_credentials()
             pop_instance.print_credentials(credentials)
+        elif get_args.op_type == SYN_ALERT:
+            alerts = syn_instance.retrieve_all_synthetic_alerts()
+            syn_instance.print_synthetic_alerts(alerts)
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
