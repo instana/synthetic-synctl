@@ -1719,6 +1719,43 @@ class SyntheticTest(Base):
         for cred in cred_list:
             self.delete_a_credential(cred)
 
+    def __delete_a_smart_alert(self, alert_id=""):
+        """delete a smart alert"""
+        if alert_id == "":
+            print("alert id should not be empty")
+            return
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+
+        delete_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "apiToken %s" % (self.auth["token"])
+        }
+
+        result = requests.delete(delete_url, headers=headers,
+                                 timeout=60, verify=self.insecure)
+
+        if result.status_code == 204:
+            print(f'alert \"{alert_id}\" deleted')
+        elif result.status_code == 404:
+            print(f"{alert_id} not found")
+        elif result.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
+        else:
+            print(f"Fail to delete {alert_id}, status code {result.status_code}")
+
+    def delete_smart_alerts(self, alert_list):
+        if alert_list is None:
+            alert_list = []
+
+        if len(alert_list) == 0:
+            print("No alerts to delete")
+            return
+
+        for alert in alert_list:
+            self.__delete_a_smart_alert(alert)
+
     def __sort_synthetic_tests(self, syn_list):
         """sort Synthetic list by locationDisplayLabels"""
         new_list = sorted(
@@ -2782,10 +2819,10 @@ class ParseParameter:
             '--name', type=str, metavar="<string>", help='friendly name for smart alert')
 
         self.parser_create.add_argument(
-            '--test', type=str, nargs='+', required=True, metavar="id", help="test id, support multiple test id")
+            '--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
 
         self.parser_create.add_argument(
-            '--alert_channel', type=str, nargs='+', required=True, metavar="id", help="alert channel id, support multiple alert channel id")
+            '--alert_channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
 
         self.parser_create.add_argument(
             '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
@@ -2925,7 +2962,7 @@ class ParseParameter:
 
     def delete_command_options(self):
         self.parser_delete.add_argument(
-            'delete_type', choices=['location', 'lo', 'test', 'cred'], help='specify Synthetic type: location/test/credential')
+            'delete_type', choices=['location', 'lo', 'test', 'cred', 'alert'], help='specify Synthetic type: location/test/credential/smart alert')
         self.parser_delete.add_argument(
             'id', type=str, nargs="*", metavar="<id>", help='Synthetic test id, location id, credential name')
 
@@ -3360,6 +3397,9 @@ def main():
         if get_args.delete_type == SYN_CRED:
             if get_args.id is not None:
                 syn_instance.delete_credentials(get_args.id)
+        if get_args.delete_type == SYN_ALERT:
+            if get_args.id is not None:
+                syn_instance.delete_smart_alerts(get_args.id)
 
     else:
         print('unknown sub command:', get_args.sub_command)
