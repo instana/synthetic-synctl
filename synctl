@@ -911,7 +911,7 @@ class SmartAlertConfiguration(Base):
             # "id": "",
             # Name for the synthetic alert configuration, which is used as the title of the event when triggered.
             "name": "default-Synthetics-Smart-Alert",
-            # Description for the synthetic alert configuration, which is used as the detials of the triggerd event.
+            # Description for the synthetic alert configuration, which is used as the details of the triggerd event.
             "description": "Synthetic test failed at least 3 times in sequence.",
             # The severity of the alert when triggered, which is either 5 (Warning), or 10 (Critical).
             "severity": 5,
@@ -921,7 +921,7 @@ class SmartAlertConfiguration(Base):
             # The only alertType available so far is "failure", where the metric name "status" is expected.
             # This boolean metric requires no threshold to be specified, because value of status=0 indicates a test failure.
             "rule": {
-                "alertType": '',
+                "alertType": 'failure',
                 "metricName": "status",
                 "aggregation": "SUM"
             },
@@ -932,10 +932,73 @@ class SmartAlertConfiguration(Base):
             },
             # alertChannelIds: It is an array of alert channels defined in Instana.
             "alertChannelIds": [],
+            "tagFilterExpression": {
+                "type": "TAG_FILTER",
+                "name": "synthetic.syntheticType",
+                "stringValue": "API Simple",
+                "value": "API Simple",
+                "operator": "EQUALS",
+                "entity": "NOT_APPLICABLE"
+            }
         }
 
+    def set_alert_name(self, name: str = "default-test-name") -> None:
+        """set name"""
+        if name != "":
+            self.smart_alert_config["name"] = name
 
+    def set_description(self, description: str = "This is default smart alert description"):
+        """set description"""
+        if description != "":
+            self.smart_alert_config["description"] = description
 
+    def set_severity(self, severity: int):
+        """set severity"""
+        if severity != "":
+            self.smart_alert_config["severity"] = severity
+
+    def set_synthetic_tests(self, synthetic_tests: list = None):
+        """set synthetic tests"""
+        if synthetic_tests is None:
+            synthetic_tests = []
+        if len(synthetic_tests) > 0:
+            self.smart_alert_config["syntheticTestIds"] = synthetic_tests
+
+    def set_alert_type(self, alert_type: str):
+        """set alert type"""
+        self.smart_alert_config["rule"]["alertType"] = alert_type
+
+    def set_metric_name(self, metric_name: str):
+        """set metric name"""
+        self.smart_alert_config["rule"]["metricName"] = metric_name
+
+    def set_aggregation(self, aggregation: str):
+        """set aggregation"""
+        self.smart_alert_config["rule"]["aggregation"] = aggregation
+
+    def set_time_threshold_type(self, threshold_type: str):
+        """set time threshold type"""
+        self.smart_alert_config["timeThreshold"]["violationsInSequence"] = threshold_type
+
+    def set_violations_count(self, violations_count):
+        """set violations count"""
+        self.smart_alert_config["timeThreshold"]["violationsCount"] = violations_count
+
+    def set_alert_channel(self, alert_channels):
+        """set alert channels"""
+        self.smart_alert_config["alertChannelIds"] = alert_channels
+
+    def get_json(self):
+        """return payload as json"""
+        if len(self.smart_alert_config["syntheticTestIds"]) == 0:
+            print("Error: no synthetic tests, set --test <test-id> at least a synthetic test")
+            sys.exit(-1)
+        if len(self.smart_alert_config["alertChannelIds"]) == 0:
+            print("Error: no alert channel, set --alert_channel <alert-channel-id> at least an alert channel ")
+            sys.exit(-1)
+
+        result = json.dumps(self.smart_alert_config)
+        return result
 
 class SyntheticPoP(Base):
     def __init__(self) -> None:
@@ -1268,6 +1331,38 @@ class SyntheticTest(Base):
         else:
             print("Credential already exists")
 
+    def create_synthetic_alert(self):
+        alert_payload = self.payload
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        create_url = f"{host}/api/events/settings/global-alert-configs/synthetics"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        create_res = requests.post(create_url,
+                                   headers=headers,
+                                   data=alert_payload,
+                                   timeout=60,
+                                   verify=self.insecure)
+
+        if create_res.status_code == 200:
+            # extracting data in json format
+            data = create_res.json()
+            alert_id = data["id"]
+            alert_name = data["name"]
+            print(f"smart alert \"{alert_name}\" created, id is \"{alert_id}\"")
+        elif create_res.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
+        else:
+            print('create test failed, status code:', create_res.status_code)
+            if create_res.text:
+                print(create_res.text)
+
     def __generate_random_str(self, num=5):
         # using random.choices()
         # generating random strings
@@ -1432,10 +1527,10 @@ class SyntheticTest(Base):
             data = alert_result.json()
 
             if isinstance(data, list):
-                self.test_lists = data
+                self.alert_lists = data
                 return data
             elif isinstance(data, dict):
-                self.test_lists = [data]
+                self.alert_lists = [data]
                 return [data]
             else:
                 print('unknown data:', data)
@@ -2601,7 +2696,7 @@ class ParseParameter:
 
     def create_command_options(self):
         self.parser_create.add_argument(
-            'syn_type', type=str, choices=["test", "cred"], metavar="test/cred", help="specify test/cred")
+            'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
         self.parser_create.add_argument(
             '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, metavar="<int>", help="Synthetic type:"
@@ -2682,6 +2777,21 @@ class ParseParameter:
             '--key', type=str, metavar="<key>", help='set credential name')
         self.parser_create.add_argument(
             '--value', type=str, metavar="<value>", help='set credential value')
+
+        self.parser_create.add_argument(
+            '--name', type=str, metavar="<string>", help='friendly name for smart alert')
+
+        self.parser_create.add_argument(
+            '--test', type=str, nargs='+', required=True, metavar="id", help="test id, support multiple test id")
+
+        self.parser_create.add_argument(
+            '--alert_channel', type=str, nargs='+', required=True, metavar="id", help="alert channel id, support multiple alert channel id")
+
+        self.parser_create.add_argument(
+            '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
+
+        self.parser_create.add_argument(
+            '--violation_count', type=int, metavar="<int>", help="the range is from 1 to 10 failures")
 
 
         # set auth
@@ -3022,6 +3132,21 @@ def main():
             syn_instance.set_synthetic_payload(payload=cred_payload.get_json())
             syn_instance.create_credential()
             return
+        elif get_args.syn_type == SYN_ALERT:
+            alert_payload = SmartAlertConfiguration()
+            if get_args.name is not None:
+                alert_payload.set_alert_name(get_args.name)
+            if get_args.test is not None:
+                alert_payload.set_synthetic_tests(get_args.test)
+            if get_args.alert_channel is not None:
+                alert_payload.set_alert_channel(get_args.alert_channel)
+            if get_args.violation_count is not None:
+                alert_payload.set_violations_count(get_args.violation_count)
+            if get_args.severity is not None:
+                alert_payload.set_severity(get_args.severity)
+
+            syn_instance.set_synthetic_payload(alert_payload.get_json())
+            syn_instance.create_synthetic_alert()
         elif get_args.syn_type == SYN_TEST:
             if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4]:
                 syn_type_t = synthetic_type[get_args.type]
