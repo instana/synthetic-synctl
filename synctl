@@ -1462,6 +1462,90 @@ class SyntheticTest(Base):
             print(f'get test failed, status code: {query_result.status_code}')
             sys.exit(-1)
 
+    def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
+        host = self.auth["host"]
+        token = self.auth["token"]
+        self.check_host_and_token(host, token)
+
+        if isinstance(tag_filter[0], str) and tag_filter[0].lower() == "locationid":
+            summary_config = {"syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"], "metrics": [{
+                "aggregation": "SUM",
+                "granularity": 600,
+                "metric": "synthetic.metricsStatus"
+            }], "timeFrame": {
+                "to": 0,
+                "windowSize": window_size
+            }, "pagination": {
+                "page": page,
+                "pageSize": page_size
+            }, "tagFilters": [{
+                "stringValue": tag_filter[1],
+                "name": "synthetic.locationId",
+                "operator": "EQUALS"
+            }]}
+        elif isinstance(tag_filter[0], str) and tag_filter[0].lower() == "applicationid":
+            summary_config = {"syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"], "metrics": [{
+                "aggregation": "SUM",
+                "granularity": 600,
+                "metric": "synthetic.metricsStatus"
+            }], "timeFrame": {
+                "to": 0,
+                "windowSize": window_size
+            }, "pagination": {
+                "page": page,
+                "pageSize": page_size
+            }, "tagFilters": [{
+                "stringValue": tag_filter[1],
+                "name": "synthetic.applicationId",
+                "operator": "EQUALS"
+            }]}
+        else:
+            print(f"Invalid filter : {tag_filter[0]}")
+            sys.exit(1)
+
+        test_summary_list_url = f"{host}/api/synthetics/results/testsummarylist"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        retrieve_res = requests.post(test_summary_list_url,
+                                     headers=headers,
+                                     data=json.dumps(summary_config),
+                                     timeout=60,
+                                     verify=self.insecure)
+
+        if retrieve_res.status_code == 200:
+            data = retrieve_res.json()
+            return data
+        else:
+            print('retrieve test summary list failed, status code:',
+                  retrieve_res.status_code)
+            return None
+
+    def get_all_tests_by_filter(self, tag_filter, page=1):
+        total_hits = 0
+        summary_result = self.retrieve_synthetic_test_by_filter(tag_filter)
+
+        if summary_result is not None:
+            page = summary_result["page"] if page in summary_result else 1
+            page_size = summary_result["pageSize"] if "pageSize" in summary_result else 200
+            if "totalHits" in summary_result:
+                total_hits = summary_result["totalHits"]
+
+            if page_size >= total_hits:
+                yield summary_result
+            else:
+                total_pages = total_hits/page_size
+                if (total_pages - round(total_pages)) > 0:
+                    total_pages += 1
+                for x in range(0, round(total_pages)):
+                    summary_result = self.retrieve_synthetic_test_by_filter(tag_filter, page=x+1)
+                    yield summary_result
+        else:
+            return None
+
     def retrieve_credentials(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
@@ -1910,6 +1994,7 @@ class SyntheticTest(Base):
                         output_lists.append(t)
         print('total:', len(output_lists))
 
+
     def print_synthetic_alerts(self, alerts):
         id_length = 25
         max_label_length = 50
@@ -1929,6 +2014,90 @@ class SyntheticTest(Base):
                   self.fill_space(x["name"], max_label_length),
                   self.fill_space(str(x["severity"]), severity_length),
                   self.fill_space(test_str))
+
+    def print_tests_by_filter(self, tag_filter):
+        test_result = self.retrieve_all_synthetic_tests()
+        filtered_payload = self.get_all_tests_by_filter(tag_filter)
+
+        id_length = 25
+        max_label_length = self.__get_max_label_length(test_result)
+        loc_length = 30
+        syn_type_length = 13
+        app_id_length = 15
+        test_frequency_length = 10
+        active_length = 6
+        success_rate_length = 12
+        response_time_length = 12
+
+        syn_dict = {}
+        for _, test in enumerate(test_result):
+            syn_dict[test['id']] = test
+
+        if filtered_payload is not None:
+            print(self.fill_space("ID".upper(), id_length),
+                  self.fill_space("Label".upper(), max_label_length),
+                  self.fill_space("syntheticType".upper(), syn_type_length),
+                  self.fill_space("Frequency".upper(), test_frequency_length),
+                  self.fill_space("SuccessRate".upper(), success_rate_length),
+                  self.fill_space("Latency".upper(), response_time_length),
+                  self.fill_space("Active".upper(), active_length),
+                  self.fill_space("Locations".upper(), loc_length),
+                  self.fill_space("Application".upper(), app_id_length),
+                  "URL".upper()
+                  )
+            for test in filtered_payload:
+                total_hits = test["totalHits"]
+                for i in test["items"]:
+                    if len(i["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
+                        location_str = ','.join(i["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
+
+                    else:
+                        location_str = NOT_APPLICABLE
+
+                    syn_type = i["testResultCommonProperties"]["testCommonProperties"]["type"]
+                    if syn_type == "API Simple":
+                        syn_type = "HTTPAction"
+                    elif syn_type == "API Script":
+                        syn_type = "HTTPScript"
+                    elif syn_type == "Webpage Simple":
+                        syn_type = "WebpageAction"
+                    elif syn_type == "Webpage Script":
+                        syn_type = "WebpageScript"
+                    elif syn_type == "Browser Script":
+                        syn_type = "BrowserScript"
+
+                    if syn_type in ["HTTPAction", "WebpageAction"]:
+                        url = syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['url']
+                    else:
+                        url = "None"
+
+                    if not i["metrics"]:
+                        success_rate = "No Data"
+                        response_time = "No Data"
+                    else:
+                        success_rate = f'{i["metrics"]["successful_test_runs"][0][1]}/{i["metrics"]["total_test_runs"][0][1]}'
+                        response_time = round(i["metrics"]["response_time"][0][1], 2)
+
+                    if "applicationLabel" in i["testResultCommonProperties"]["testCommonProperties"]:
+                        application_id = i["testResultCommonProperties"]["testCommonProperties"]["applicationLabel"]
+                    else:
+                        application_id = "N/A"
+
+                    print(self.fill_space(i["testResultCommonProperties"]["testId"], id_length),
+                          self.fill_space((i["testResultCommonProperties"]["testName"]), max_label_length),
+                          self.fill_space(syn_type, syn_type_length),
+                          self.fill_space(str(i["testResultCommonProperties"]["testCommonProperties"]["frequency"])+'m',
+                                          test_frequency_length),
+                          self.fill_space(str(success_rate),
+                                          success_rate_length),
+                          self.fill_space(str(response_time),
+                                          response_time_length),
+                          self.fill_space(str(i["testResultCommonProperties"]["testCommonProperties"]["active"]), active_length),
+                          self.fill_space(location_str, loc_length),
+                          self.fill_space(application_id, app_id_length),
+                          url)
+        print('Total:', total_hits)
+
 
     def save_api_script_to_local(self, test):
         # save api script to local file
@@ -2864,8 +3033,9 @@ class ParseParameter:
         self.parser_get.add_argument(
             "--show-json", action='store_true', help="output test json to terminal")
         self.parser_get.add_argument(
-            '--no-result', action='store_true', help="disable latency and success rate"
-        )
+            '--no-result', action='store_true', help="disable latency and success rate")
+        self.parser_get.add_argument(
+            '--filter', nargs='?', default=None, help='filter by location')
 
         # application
         application_group = self.parser_get.add_argument_group()
@@ -3096,6 +3266,13 @@ def main():
                     print("Synthetic type only support 0 1 2 3 4", syn_type_t)
 
             if get_args.id is None:
+                if get_args.filter is not None:
+                    split_string = get_args.filter.split('=')
+                    #filtered_payload = syn_instance.get_all_tests_by_filter(split_string, syn_window_size)
+                    #syn_instance.print_tests_by_filter(filtered_payload,split_string[0])
+                    syn_instance.print_tests_by_filter(split_string)
+                    sys.exit(1)
+
                 out_list = syn_instance.retrieve_all_synthetic_tests(
                     syn_type_t)
                 if get_args.no_result is True:
