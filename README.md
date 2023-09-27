@@ -654,4 +654,55 @@ synctl get app --name-filter <application-name>
 # then create test with application id
 synctl create test -t 0 --app-id <application-id> ...
 ```
+# Query Smart Alerts
+`synctl get alert ` can be used to query Smart Alerts. 
 
+### synctl get alert Syntax
+```
+synctl get alert [id]
+```
+### synctl get alert Examples
+```
+# Display all alert
+synctl get alert
+```
+# Create Smart alert
+`synctl create alert` is used to create Smart Alerts.
+
+### synctl create alert Options
+```
+-h, --help                          show this help message and exit
+--test id [id ...]                  synthetic-test id, support multiple synthetic tests id
+--name <string>                     friendly name of the Smart Alerts
+--description, -d <string>          the description of Smart Alerts
+--severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
+--alert_channel <id>                alert_channel
+```
+### synctl create alert Examples
+```
+# get synthetic test
+synctl get test 
+synctl create alert --name "Smart-alert" \
+       --alert_channel "$ALERT_CHANNEL" \
+       --test "$SYNTHETIC_TEST" \
+        --violation_count 2
+
+# or schedule multiple synthetic tests
+synctl create alert --name "Smart-alert" \
+       --alert_channel "$ALERT_CHANNEL" \
+       --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ...  \
+       --violation_count 2
+```
+# Delete Smart alert
+### synctl delete alert Syntax
+```
+synctl delete alert [id...] 
+```
+### synctl delete alert Examples
+```
+# delete a smart test
+synctl delete alert <alert-id>
+
+# delete several smart alert
+synctl delete alert <alert-id-1> <alert-id-2> <alert-id-3> ...
+```
