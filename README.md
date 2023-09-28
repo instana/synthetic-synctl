@@ -683,10 +683,13 @@ synctl get alert
 ```
 # get synthetic test
 synctl get test 
+# get alert channel
+synctl get alert-channel
+
 synctl create alert --name "Smart-alert" \
        --alert-channel "$ALERT_CHANNEL" \
        --test "$SYNTHETIC_TEST" \
-        --violation-count 2
+       --violation-count 2
 
 # or schedule a smart alert for multiple synthetic tests
 synctl create alert --name "Smart-alert" \

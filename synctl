@@ -74,11 +74,11 @@ Options:
 
 Commands:
     config              manage configuration file
-    create              create a Synthetic test
-    get                 get Synthetic tests, locations and credentials
+    create              create a Synthetic test, credential and smart alert
+    get                 get Synthetic tests, locations, credentials and smart alert
     patch               patch a Synthetic test
-    update              update a Synthetic test
-    delete              delete Synthetic tests, locations and credentials
+    update              update a Synthetic test and smart alert
+    delete              delete Synthetic tests, locations credentials and smart alert
 
 Use "synctl <command> --help" for more information about a command.
     """
@@ -98,7 +98,7 @@ examples:
 # set a default instana backend to connect
 synctl config set --host <host> --token <token> --name <name>"""
 
-CREATE_USAGE = """synctl create test/cred [options]
+CREATE_USAGE = """synctl create test/cred/alert [options]
 
 examples:
 # create an API Simple
@@ -131,7 +131,7 @@ synctl create cred --key MY_PASS --value password123
 synctl create alert --name "Smart-alert" --alert-channel "$ALERT_CHANNEL" --test "$SYNTHETIC_TEST" --violation-count 2
 """
 
-GET_USAGE = """synctl get {location,lo,test,application,app,cred} [id] [options]
+GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert} [id] [options]
 
 examples:
 # display all tests
@@ -159,7 +159,7 @@ synctl patch test <syn-id> --active false
 # update frequency to 5, run test every 5min
 synctl patch test <id> --frequency 5"""
 
-UPDATE_USAGE = """synctl update test <id> [options]
+UPDATE_USAGE = """synctl update {test,alert} <id> [options]
 
 examples:
 # update Synthetic test
@@ -180,7 +180,7 @@ synctl update alert <alert-id> --severity 10
 synctl update alert <alert-id> --test <test_id1> <test_id2> ...
 """
 
-DELETE_USAGE = """synctl delete {location,lo,test,cred} [id...] [options]
+DELETE_USAGE = """synctl delete {location,lo,test,cred,alert} [id...] [options]
 
 examples:
 # delete a test
@@ -198,10 +198,10 @@ synctl delete test --no-locations
 # delete all tests on a location
 synctl delete test --match-location <location-id>
 
-# delete credential
+# delete a credential
 synctl delete cred <credential-name>
 
-# delete a smart test
+# delete a smart alert
 synctl delete alert <alert-id>"""
 
 
@@ -3106,7 +3106,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alerting_channel'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -3438,7 +3438,7 @@ def main():
             if get_args.id is None:
                 alerts = syn_instance.retrieve_all_synthetic_alerts()
                 syn_instance.print_synthetic_alerts(alerts)
-        elif get_args.op_type == "alerting_channel":
+        elif get_args.op_type == "alert-channel":
             if get_args.id is None:
                 alerting_channel = syn_instance.retrieve_all_alerting_channel()
                 syn_instance.print_alerting_channels(alerting_channel)
