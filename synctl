@@ -1659,6 +1659,43 @@ class SyntheticTest(Base):
             print(
                 f'update test {test_id} failed, status code: {update_result.status_code}')
 
+    def update_a_smart_alert(self, alert_id, new_payload):
+        """API https://instana.github.io/openapi/#operation/updateSyntheticAlertConfig"""
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+        if new_payload is None:
+            print("config cannot be empty")
+            sys.exit(-1)
+
+        if alert_id is None or alert_id == "":
+            print("test id should not be empty")
+            return
+        else:
+            update_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        update_result = requests.post(update_url,
+                                      headers=headers,
+                                      data=new_payload,
+                                      timeout=60,
+                                      verify=self.insecure)
+
+        if update_result.status_code == 200:
+            print(f"{alert_id} updated")
+        elif update_result.status_code == 400:
+            print(f'Error: {update_result}', update_result.content)
+        elif update_result.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
+        else:
+            print(
+                f'update test {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+
+
     def delete_a_synthetic_test(self, test_id=""):
         """delete a Synthetic by id"""
         # https://instana.github.io/openapi/#operation/deleteSyntheticTest
@@ -2991,13 +3028,13 @@ class ParseParameter:
             '--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
 
         self.parser_create.add_argument(
-            '--alert_channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
+            '--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
 
         self.parser_create.add_argument(
             '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
 
         self.parser_create.add_argument(
-            '--violation_count', type=int, metavar="<int>", help="the range is from 1 to 10 failures")
+            '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
 
 
         # set auth
@@ -3116,12 +3153,25 @@ class ParseParameter:
 
     def update_command_options(self):
         self.parser_update.add_argument(
-            'syn_type', type=str, choices=["test"], help="Synthetic type, only test is supported")
+            'syn_type', type=str, choices=["test", "alert"], help="Synthetic type/ smart alert")
         self.parser_update.add_argument(
             'id', type=str, help="Synthetic test id")
 
         self.parser_update.add_argument(
             '--file', '-f', type=str, metavar="<file-name>", help='json payload')
+
+        self.parser_update.add_argument(
+            '--name', type=str, metavar="<string>", help='name of smart alert')
+        self.parser_update.add_argument(
+            '--description', '-d', type=str, metavar="<string>", help='description of smart alert')
+        self.parser_update.add_argument(
+            '--severity', type=int, metavar="<int>", help='set severity')
+        self.parser_update.add_argument(
+            '--test', nargs="+", metavar="<id>", help="set synthetic test ids")
+        self.parser_update.add_argument(
+            '--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
+        self.parser_update.add_argument(
+            '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
 
         self.parser_update.add_argument(
             '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
@@ -3552,6 +3602,24 @@ def main():
             with open(get_args.file, 'rb') as json_file:
                 payload = json_file.read()
             syn_instance.update_a_synthetic_test(get_args.id, payload)
+        if get_args.syn_type == SYN_ALERT:
+            if get_args.id is not None:
+                payload = syn_instance.retrieve_a_synthetic_alert(get_args.id)
+                if get_args.name is not None:
+                    payload[0]["name"] = get_args.name
+                if get_args.description is not None:
+                    payload[0]["description"] = get_args.description
+                if get_args.severity is not None:
+                    payload[0]["severity"] = get_args.severity
+                if get_args.test is not None:
+                    payload[0]["syntheticTestIds"] = get_args.test
+                if get_args.alert_channel is not None:
+                    payload[0]["alertChannelIds"] = get_args.alert_channel
+                if get_args.violation_count is not None:
+                    payload[0]["timeThreshold"]["violationsCount"] = get_args.violation_count
+
+                alert_payload = json.dumps(payload[0])
+                syn_instance.update_a_smart_alert(get_args.id, alert_payload)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
