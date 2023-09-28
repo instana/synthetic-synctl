@@ -3268,8 +3268,6 @@ def main():
             if get_args.id is None:
                 if get_args.filter is not None:
                     split_string = get_args.filter.split('=')
-                    #filtered_payload = syn_instance.get_all_tests_by_filter(split_string, syn_window_size)
-                    #syn_instance.print_tests_by_filter(filtered_payload,split_string[0])
                     syn_instance.print_tests_by_filter(split_string)
                     sys.exit(1)
 

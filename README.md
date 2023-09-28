@@ -676,24 +676,69 @@ synctl get alert
 --name <string>                     friendly name of the Smart Alerts
 --description, -d <string>          the description of Smart Alerts
 --severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
---alert_channel <id>                alert_channel
+--alert-channel <id>                alerting channel
+--violation-count <int>             the number of consecutive failures to trigger an alert
 ```
 ### synctl create alert Examples
 ```
 # get synthetic test
 synctl get test 
 synctl create alert --name "Smart-alert" \
-       --alert_channel "$ALERT_CHANNEL" \
+       --alert-channel "$ALERT_CHANNEL" \
        --test "$SYNTHETIC_TEST" \
-        --violation_count 2
+        --violation-count 2
 
-# or schedule multiple synthetic tests
+# or schedule a smart alert for multiple synthetic tests
 synctl create alert --name "Smart-alert" \
-       --alert_channel "$ALERT_CHANNEL" \
+       --alert-channel "$ALERT_CHANNEL" \
        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ...  \
-       --violation_count 2
+       --violation-count 2
 ```
-# Delete Smart alert
+# Update a Smart Alert
+
+### synctl update alert Syntax
+```
+synctl update alert <id> [options]
+```
+
+### synctl update alert Options
+```
+-h, --help                          show this help message and exit
+
+--name <string>                     friendly name of the Smart Alerts--description 
+--test [id ...]                     synthetic-test id, support multiple synthetic tests id
+--description, -d <string>          the description of Smart Alerts
+--severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
+--alert-channel [id ...]            alerting channel
+--violation-count <int>             the number of consecutive failures to trigger an alert
+
+--use-env, -e <name>                use a config hostname
+--host <host>                       set hostname
+--token <token>                     set token
+```
+
+### synctl update Examples
+```
+# set name to Smart-alert
+synctl update alert <alert-id> --name Smart-alert
+
+# set description to Synthetic test failed at least 3 times in sequence
+synctl update alert <alert-id> --description 'Synthetic test failed at least 3 times in sequence'
+
+# set violation count to 5
+synctl update alert <alert-id> --violation-count 5
+
+# set severity to 10
+synctl update alert <alert-id> --severity 10
+
+# update an alert with syncthetic tests
+synctl update alert <alert-id> --test <test_id1> <test_id2> ...
+
+# update an alert with alert channels
+synctl update alert <alert-id> --alert-channel <alert_channel_id1> <alert_channel_id2> ...
+```
+
+# Delete a Smart alert
 ### synctl delete alert Syntax
 ```
 synctl delete alert [id...] 
