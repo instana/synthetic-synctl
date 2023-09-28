@@ -1645,6 +1645,29 @@ class SyntheticTest(Base):
                 f'get alert failed, status code: {alert_result.status_code}')
             sys.exit(-1)
 
+    def retrieve_all_alerting_channel(self):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/events/settings/alertingChannels/"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        alert_channel_result = requests.get(retrieve_url, headers=headers,
+                                    timeout=60, verify=self.insecure)
+
+        if alert_channel_result.status_code == 200:
+            data = alert_channel_result.json()
+            return data
+        else:
+            print(
+                f'get alert failed, status code: {alert_channel_result.status_code}')
+            sys.exit(-1)
+
     def update_a_synthetic_test(self, test_id, new_payload):
         """API https://instana.github.io/openapi/#operation/updateSyntheticTest"""
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2073,6 +2096,19 @@ class SyntheticTest(Base):
                   self.fill_space(x["name"], max_label_length),
                   self.fill_space(str(x["severity"]), severity_length),
                   self.fill_space(test_str))
+
+    def print_alerting_channels(self, alert_channels):
+        id_length = 50
+        max_label_length = 55
+
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("label".upper(), max_label_length),
+              self.fill_space("kind").upper())
+
+        for channel in alert_channels:
+            print(self.fill_space(channel["id"], id_length),
+                  self.fill_space(channel["name"], max_label_length),
+                  self.fill_space(channel["kind"]))
 
     def print_tests_by_filter(self, tag_filter):
         test_result = self.retrieve_all_synthetic_tests()
@@ -3070,7 +3106,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alerting_channel'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -3402,6 +3438,10 @@ def main():
             if get_args.id is None:
                 alerts = syn_instance.retrieve_all_synthetic_alerts()
                 syn_instance.print_synthetic_alerts(alerts)
+        elif get_args.op_type == "alerting_channel":
+            if get_args.id is None:
+                alerting_channel = syn_instance.retrieve_all_alerting_channel()
+                syn_instance.print_alerting_channels(alerting_channel)
             else:
                 single_alert = syn_instance.retrieve_a_synthetic_alert(get_args.id)
                 syn_instance.print_synthetic_alerts(single_alert)
