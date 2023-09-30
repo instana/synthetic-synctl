@@ -2097,6 +2097,26 @@ class SyntheticTest(Base):
                   self.fill_space(str(x["severity"]), severity_length),
                   self.fill_space(test_str))
 
+    def print_a_alert_details(self, alert_id, single_alert, show_details=False, show_json=False):
+        """Show a smart alert details data"""
+        if single_alert is None or len(single_alert) == 0 or alert_id is None:
+            print("no smart alert")
+            return
+        elif show_json is True:
+            # print alert json
+            print(json.dumps(single_alert[0]))
+        elif show_details is True:
+            self.__print_a_alert_details(single_alert)
+
+    def __print_a_alert_details(self, single_alert):
+        a_single_alert = single_alert[0]
+        print(self.fill_space("Name".upper(), 30), "value".upper())
+        for key, value in a_single_alert.items():
+            if key == 'createdAt' or key == 'modifiedAt' or key == 'observedAt':
+                print(self.fill_space(key, 30), self.format_time(value))
+            else:
+                print(self.fill_space(key, 30), value)
+
     def print_alerting_channels(self, alert_channels):
         id_length = 50
         max_label_length = 55
@@ -2953,12 +2973,12 @@ class ParseParameter:
         self.parser_config._optionals.title = OPTIONS_PARAMS
 
         self.parser_create = sub_parsers.add_parser(
-            'create', help='create a Synthetic test or credential', add_help=True, usage=CREATE_USAGE)
+            'create', help='create a Synthetic test, credential or alert', add_help=True, usage=CREATE_USAGE)
         self.parser_create._positionals.title = POSITION_PARAMS
         self.parser_create._optionals.title = OPTIONS_PARAMS
 
         self.parser_get = sub_parsers.add_parser(
-            'get', help='get Synthetic test, location or credential', usage=GET_USAGE)
+            'get', help='get Synthetic test, location, credential or alert', usage=GET_USAGE)
         self.parser_get._positionals.title = POSITION_PARAMS
         self.parser_get._optionals.title = OPTIONS_PARAMS
 
@@ -2968,12 +2988,12 @@ class ParseParameter:
         self.parser_patch._optionals.title = OPTIONS_PARAMS
 
         self.parser_update = sub_parsers.add_parser(
-            'update', help='update a Synthetic test', usage=UPDATE_USAGE)
+            'update', help='update a Synthetic test or alert', usage=UPDATE_USAGE)
         self.parser_update._positionals.title = POSITION_PARAMS
         self.parser_update._optionals.title = OPTIONS_PARAMS
 
         self.parser_delete = sub_parsers.add_parser(
-            'delete', help='delete a Synthetic test, location or credential', usage=DELETE_USAGE)
+            'delete', help='delete a Synthetic test, location, credential or alert', usage=DELETE_USAGE)
         self.parser_delete._positionals.title = POSITION_PARAMS
         self.parser_delete._optionals.title = OPTIONS_PARAMS
 
@@ -3438,6 +3458,12 @@ def main():
             if get_args.id is None:
                 alerts = syn_instance.retrieve_all_synthetic_alerts()
                 syn_instance.print_synthetic_alerts(alerts)
+            else:
+                single_alert = syn_instance.retrieve_a_synthetic_alert(get_args.id)
+                if get_args.show_details is True:
+                    syn_instance.print_a_alert_details(get_args.id, single_alert, show_details=True)
+                elif get_args.show_json is True:
+                    syn_instance.print_a_alert_details(get_args.id, single_alert, show_json=True)
         elif get_args.op_type == "alert-channel":
             if get_args.id is None:
                 alerting_channel = syn_instance.retrieve_all_alerting_channel()

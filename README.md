@@ -659,12 +659,27 @@ synctl create test -t 0 --app-id <application-id> ...
 
 ### synctl get alert Syntax
 ```
-synctl get alert [id]
+synctl get alert [id] [options]
+```
+### synctl get alert Options
+```
+-h, --help             show this help message and exit
+--show-details         output alert details to terminal
+--show-json            output alert json to terminal
+--use-env, -e <name>   use a specified config
+--host <host>          set hostname
+--token <token>        set token
 ```
 ### synctl get alert Examples
 ```
 # Display all alert
 synctl get alert
+
+# show alert details
+synctl get alert <id> --show-details
+ 
+# show alert payload in json
+synctl get alert <id> --show-json
 ```
 # Create Smart alert
 `synctl create alert` is used to create Smart Alerts.
