@@ -2243,6 +2243,17 @@ class PatchSyntheticTest(SyntheticTest):
         except:
             print(f"Error: Test {test_id} not found")
 
+    def patch_custom_properties(self, key, value):
+        """update custom properties"""
+        payload = {"customProperties": {}}
+
+        if value is None:
+            print("Custom property value should not be None")
+            sys.exit(1)
+        else:
+            payload["customProperties"][key] = value
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
 
 class SyntheticResult(Base):
 
@@ -2856,6 +2867,10 @@ class ParseParameter:
             '--host', type=str, metavar="<host>", help='set hostname')
         self.parser_patch.add_argument(
             '--token', type=str, metavar="<token>", help='set token')
+        self.parser_patch.add_argument(
+            '--custom-key', type=str, metavar="<custom property key>", help="set custom property key")
+        self.parser_patch.add_argument(
+            '--custom-value', type=str, metavar="<custom property value>", help="set custom property value")
 
     def update_command_options(self):
         self.parser_update.add_argument(
@@ -3270,6 +3285,8 @@ def main():
             patch_instance.patch_validation_string(get_args.validation_string)
         elif get_args.bundle is not None:
             patch_instance.patch_bundle(get_args.id, get_args.bundle)
+        elif get_args.custom_key is not None:
+            patch_instance.patch_custom_properties(get_args.custom_key, get_args.custom_value)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.file is not None:
             with open(get_args.file, 'rb') as json_file:
