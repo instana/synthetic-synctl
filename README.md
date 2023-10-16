@@ -191,7 +191,7 @@ synctl config remove --name pink
 ```
 
 # Query Synthetic Test
-`synctl get test` can be used to query Synthetic tests. In the command options, we use number [0, 4] to represent different Synthetic type for simple. They are HTTPAction(0), HTTPScript(1), BrowserScript(2), WebpageScript(3), WebpageAction(4).
+`synctl get test` can be used to query Synthetic tests. In the command options, we use number [0, 4] to represent different Synthetic type for simple. They are API Simple(0), API Script(1), Browser Script(2), Webpage Script(3), Webpage Simple(4).
 
 ### synctl get test Syntax
 ```
@@ -201,7 +201,7 @@ synctl get test [id] [options]
 ### synctl get test Options
 ```
 -h, --help             show this help message and exit
---type, -t <int>       Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction
+--type, -t <int>       Synthetic type, 0 API Simple, 1 Api Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple
 --window-size <window> set synthetic result window size, support [1,60]m, [1-24]h
 --save-script          save script to local, default is test label
 --show-script          output test script to terminal
@@ -218,11 +218,11 @@ synctl get test [id] [options]
 synctl get test
 
 # filter test by synthetic type
-# HTTPAction(0), HTTPScript(1), BrowserScript(2) and WebpageScript(3), WebpageAction(4) are supported
+# API Simple(0), Api Script(1), Browser Script(2) and Webpage Script(3),  Webpage Simple(4) are supported
 # type is number of [0, 4]
 synctl get test -t <type>
 
-# get HTTPAction test, and specify its type 0
+# get API Simple test, and specify its type 0
 synctl get test -t 0
 
 
@@ -254,7 +254,7 @@ synctl create test [options]
 ### synctl create test Options
 ```
 -h, --help                          show this help message and exit
--t <int>, --type <int>              Synthetic type: 0 HTTPAction[0], 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction
+-t <int>, --type <int>              Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple
 --location id [id ...]              location id, support multiple locations id
 --label <string>                    friendly name of the Synthetic test
 --description, -d <string>          the description of Synthetic test
