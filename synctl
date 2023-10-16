@@ -1647,6 +1647,20 @@ class SyntheticTest(Base):
         else:
             return label_len if label_len > 10 else 10
 
+    def map_synthetic_type_label(self, syn_type):
+        if syn_type == "HTTPAction":
+            syn_type = "API Simple"
+        elif syn_type == "HTTPScript":
+            syn_type = "API Script"
+        elif syn_type == "WebpageAction":
+            syn_type = "Webpage Simple"
+        elif syn_type == "WebpageScript":
+            syn_type = "Webpage Script"
+        elif syn_type == "BrowserScript":
+            syn_type = "Browser Script"
+
+        return syn_type
+
     def __output_tests_to_terminal(self, tests: list, test_type="", summary_list=None):
         id_length = 22
         max_label_length = self.__get_max_label_length(tests)
@@ -1671,18 +1685,9 @@ class SyntheticTest(Base):
             for t in tests:
                 if t is None:
                     continue
-
                 syn_type = t['configuration']['syntheticType']
-                if syn_type == "HTTPAction":
-                    syn_type = "API Simple"
-                elif syn_type == "HTTPScript":
-                    syn_type = "API Script"
-                elif syn_type == "WebpageAction":
-                    syn_type = "Webpage Simple"
-                elif syn_type == "WebpageScript":
-                    syn_type = "Webpage Script"
-                elif syn_type == "BrowserScript":
-                    syn_type = "Browser Script"
+                syn_type = self.map_synthetic_type_label(syn_type)
+
                 current_type = t['configuration']['syntheticType']
                 if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
                     if len(t['locations']) > 0:
@@ -1741,16 +1746,8 @@ class SyntheticTest(Base):
                 # else:
                 #     print(t["id"], "not in summary list")
                 syn_type = t['configuration']['syntheticType']
-                if syn_type == "HTTPAction":
-                    syn_type = "API Simple"
-                elif syn_type == "HTTPScript":
-                    syn_type = "API Script"
-                elif syn_type == "WebpageAction":
-                    syn_type = "Webpage Simple"
-                elif syn_type == "WebpageScript":
-                    syn_type = "Webpage Script"
-                elif syn_type == "BrowserScript":
-                    syn_type = "Browser Script"
+                syn_type = self.map_synthetic_type_label(syn_type)
+
                 current_type = t['configuration']['syntheticType']
                 if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
                     if len(t['locations']) > 0:
@@ -1933,16 +1930,6 @@ class SyntheticTest(Base):
         # show script content
         script_str = None
         for key, value in config_details.items():
-            if value == "HTTPAction":
-                value = "API Simple"
-            elif value == "HTTPScript":
-                value = "API Script"
-            elif value == "WebpageAction":
-                value = "Webpage Simple"
-            elif value == "WebpageScript":
-                value = "Webpage Script"
-            elif value == "BrowserScript":
-                value = "Browser Script"
             # api script
             if key == "script":
                 script_str = value
@@ -1950,6 +1937,9 @@ class SyntheticTest(Base):
             elif key == "scripts":
                 for k1, v1 in value.items():
                     print(self.fill_space(k1, 30), v1)
+            elif key == "syntheticType":
+                syn_type = self.map_synthetic_type_label(value)
+                print(self.fill_space(key, 30), syn_type)
             else:
                 print(self.fill_space(key, 30), value)
         if script_str is not None:
@@ -3030,8 +3020,6 @@ def main():
             if get_args.id is None:
                 if get_args.filter is not None:
                     split_string = get_args.filter.split('=')
-                    #filtered_payload = syn_instance.get_all_tests_by_filter(split_string, syn_window_size)
-                    #syn_instance.print_tests_by_filter(filtered_payload,split_string[0])
                     syn_instance.print_tests_by_filter(split_string)
                     sys.exit(1)
 
