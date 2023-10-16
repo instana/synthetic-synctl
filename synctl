@@ -1933,6 +1933,16 @@ class SyntheticTest(Base):
         # show script content
         script_str = None
         for key, value in config_details.items():
+            if value == "HTTPAction":
+                value = "API Simple"
+            elif value == "HTTPScript":
+                value = "API Script"
+            elif value == "WebpageAction":
+                value = "Webpage Simple"
+            elif value == "WebpageScript":
+                value = "Webpage Script"
+            elif value == "BrowserScript":
+                value = "Browser Script"
             # api script
             if key == "script":
                 script_str = value
