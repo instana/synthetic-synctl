@@ -2243,17 +2243,20 @@ class PatchSyntheticTest(SyntheticTest):
         except:
             print(f"Error: Test {test_id} not found")
 
-    def patch_custom_properties(self, key, value):
+    def patch_custom_properties(self, test_id, key, value):
         """update custom properties"""
-        payload = {"customProperties": {}}
+        test_result = self.retrieve_a_synthetic_test(test_id)
+        payload = test_result[0]
 
         if value is None:
             print("Custom property value should not be None")
             sys.exit(1)
         else:
-            payload["customProperties"][key] = value
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-
+            if key in payload["customProperties"]:
+                payload["customProperties"][key] = value
+                self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+            else:
+                print("no such key in custom properties")
 
 class SyntheticResult(Base):
 
@@ -3286,7 +3289,7 @@ def main():
         elif get_args.bundle is not None:
             patch_instance.patch_bundle(get_args.id, get_args.bundle)
         elif get_args.custom_key is not None:
-            patch_instance.patch_custom_properties(get_args.custom_key, get_args.custom_value)
+            patch_instance.patch_custom_properties(get_args.id, get_args.custom_key, get_args.custom_value)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.file is not None:
             with open(get_args.file, 'rb') as json_file:
