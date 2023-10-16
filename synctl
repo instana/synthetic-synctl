@@ -1650,7 +1650,7 @@ class SyntheticTest(Base):
     def __output_tests_to_terminal(self, tests: list, test_type="", summary_list=None):
         id_length = 22
         max_label_length = self.__get_max_label_length(tests)
-        syn_type_length = 13
+        syn_type_length = 15
         test_frequency_length = 10
         active_length = 6
         success_rate_length = 12
@@ -1671,6 +1671,18 @@ class SyntheticTest(Base):
             for t in tests:
                 if t is None:
                     continue
+
+                syn_type = t['configuration']['syntheticType']
+                if syn_type == "HTTPAction":
+                    syn_type = "API Simple"
+                elif syn_type == "HTTPScript":
+                    syn_type = "API Script"
+                elif syn_type == "WebpageAction":
+                    syn_type = "Webpage Simple"
+                elif syn_type == "WebpageScript":
+                    syn_type = "Webpage Script"
+                elif syn_type == "BrowserScript":
+                    syn_type = "Browser Script"
                 current_type = t['configuration']['syntheticType']
                 if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
                     if len(t['locations']) > 0:
@@ -1681,8 +1693,7 @@ class SyntheticTest(Base):
                     if test_type == "" or (test_type != "" and current_type == test_type):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
-                              self.fill_space(t['configuration']
-                                              ['syntheticType'], syn_type_length),
+                              self.fill_space(syn_type, syn_type_length),
                               self.fill_space(str(t["testFrequency"])+"m",
                                               test_frequency_length),
                               self.fill_space(str(t["active"]), active_length),
@@ -1697,8 +1708,7 @@ class SyntheticTest(Base):
                     if test_type == "" or (test_type != "" and current_type == test_type):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
-                              self.fill_space(t['configuration']
-                                              ['syntheticType'], syn_type_length),
+                              self.fill_space(syn_type, syn_type_length),
                               self.fill_space(str(t["testFrequency"])+"m",
                                               test_frequency_length),
                               self.fill_space(str(t["active"]), active_length),
@@ -1730,6 +1740,17 @@ class SyntheticTest(Base):
                         summary_list[t["id"]]["response_time"])+"ms" if summary_list[t["id"]]["response_time"] != "N/A" else "N/A"
                 # else:
                 #     print(t["id"], "not in summary list")
+                syn_type = t['configuration']['syntheticType']
+                if syn_type == "HTTPAction":
+                    syn_type = "API Simple"
+                elif syn_type == "HTTPScript":
+                    syn_type = "API Script"
+                elif syn_type == "WebpageAction":
+                    syn_type = "Webpage Simple"
+                elif syn_type == "WebpageScript":
+                    syn_type = "Webpage Script"
+                elif syn_type == "BrowserScript":
+                    syn_type = "Browser Script"
                 current_type = t['configuration']['syntheticType']
                 if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
                     if len(t['locations']) > 0:
@@ -1740,8 +1761,7 @@ class SyntheticTest(Base):
                     if test_type == "" or (test_type != "" and current_type == test_type):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
-                              self.fill_space(t['configuration']
-                                              ['syntheticType'], syn_type_length),
+                              self.fill_space(syn_type, syn_type_length),
                               self.fill_space(str(t["testFrequency"])+"m",
                                               test_frequency_length),
                               self.fill_space(str(success_rate_value),
@@ -1760,8 +1780,7 @@ class SyntheticTest(Base):
                     if test_type == "" or (test_type != "" and current_type == test_type):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
-                              self.fill_space(t['configuration']
-                                              ['syntheticType'], syn_type_length),
+                              self.fill_space(syn_type, syn_type_length),
                               self.fill_space(str(t["testFrequency"])+"m",
                                               test_frequency_length),
                               self.fill_space(str(success_rate_value),
@@ -1781,7 +1800,7 @@ class SyntheticTest(Base):
         id_length = 25
         max_label_length = self.__get_max_label_length(test_result)
         loc_length = 30
-        syn_type_length = 13
+        syn_type_length = 15
         app_id_length = 15
         test_frequency_length = 10
         active_length = 6
@@ -1814,16 +1833,6 @@ class SyntheticTest(Base):
                         location_str = NOT_APPLICABLE
 
                     syn_type = i["testResultCommonProperties"]["testCommonProperties"]["type"]
-                    if syn_type == "API Simple":
-                        syn_type = "HTTPAction"
-                    elif syn_type == "API Script":
-                        syn_type = "HTTPScript"
-                    elif syn_type == "Webpage Simple":
-                        syn_type = "WebpageAction"
-                    elif syn_type == "Webpage Script":
-                        syn_type = "WebpageScript"
-                    elif syn_type == "Browser Script":
-                        syn_type = "BrowserScript"
 
                     if syn_type in ["HTTPAction", "WebpageAction"]:
                         url = syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['url']
