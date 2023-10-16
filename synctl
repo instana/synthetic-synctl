@@ -1016,7 +1016,7 @@ class SmartAlertConfiguration(Base):
             print("Error: no synthetic tests, set --test <test-id> at least a synthetic test")
             sys.exit(-1)
         if len(self.smart_alert_config["alertChannelIds"]) == 0:
-            print("Error: no alert channel, set --alert_channel <alert-channel-id> at least an alert channel ")
+            print("Error: no alert channel, set --alert-channel <alert-channel-id> at least an alert channel ")
             sys.exit(-1)
 
         result = json.dumps(self.smart_alert_config)
