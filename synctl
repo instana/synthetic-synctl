@@ -2243,20 +2243,17 @@ class PatchSyntheticTest(SyntheticTest):
         except:
             print(f"Error: Test {test_id} not found")
 
-    def patch_custom_properties(self, test_id, key, value):
+    def patch_custom_properties(self, test_id, custom_property):
         """update custom properties"""
         test_result = self.retrieve_a_synthetic_test(test_id)
         payload = test_result[0]
 
-        if value is None:
+        if custom_property[1] is None:
             print("Custom property value should not be None")
             sys.exit(1)
         else:
-            if key in payload["customProperties"]:
-                payload["customProperties"][key] = value
-                self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-            else:
-                print("no such key in custom properties")
+            payload["customProperties"][custom_property[0]] = custom_property[1]
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
 class SyntheticResult(Base):
 
@@ -2862,6 +2859,8 @@ class ParseParameter:
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         patch_exclusive_group.add_argument(
             '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
+        patch_exclusive_group.add_argument(
+            '--custom-property', type=str, metavar="<string>", help="custom property of a test")
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -2870,10 +2869,6 @@ class ParseParameter:
             '--host', type=str, metavar="<host>", help='set hostname')
         self.parser_patch.add_argument(
             '--token', type=str, metavar="<token>", help='set token')
-        self.parser_patch.add_argument(
-            '--custom-key', type=str, metavar="<custom property key>", help="set custom property key")
-        self.parser_patch.add_argument(
-            '--custom-value', type=str, metavar="<custom property value>", help="set custom property value")
 
     def update_command_options(self):
         self.parser_update.add_argument(
@@ -3288,8 +3283,9 @@ def main():
             patch_instance.patch_validation_string(get_args.validation_string)
         elif get_args.bundle is not None:
             patch_instance.patch_bundle(get_args.id, get_args.bundle)
-        elif get_args.custom_key is not None:
-            patch_instance.patch_custom_properties(get_args.id, get_args.custom_key, get_args.custom_value)
+        elif get_args.custom_property is not None:
+            split_string = get_args.custom_property.split('=')
+            patch_instance.patch_custom_properties(get_args.id, split_string)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.file is not None:
             with open(get_args.file, 'rb') as json_file:
