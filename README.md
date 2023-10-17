@@ -207,6 +207,7 @@ synctl get test [id] [options]
 --show-script          output test script to terminal
 --show-details         output test or location details to terminal
 --show-json            output test json to terminal
+--filter               filter tests based on locationId/applicationId
 --use-env, -e <name>   use a specified config
 --host <host>          set hostname
 --token <token>        set token
@@ -242,6 +243,12 @@ synctl get test <id> --show-script
 
 # show a test payload in json
 synctl get test <id> --show-json
+
+# filter tests based on locationId
+synctl get test --filter=locationid=<locationId>
+
+# filer tests based on applicationId
+synctl get test --filter=applicationid=<applicationId>
 ```
 
 # Create Synthetic test
