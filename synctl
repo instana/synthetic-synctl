@@ -2860,7 +2860,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
         patch_exclusive_group.add_argument(
-            '--custom-property', type=str, metavar="<string>", help="custom property of a test")
+            '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
