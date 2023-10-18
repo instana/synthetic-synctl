@@ -2081,11 +2081,13 @@ class SyntheticTest(Base):
         id_length = 25
         max_label_length = 50
         severity_length = 10
+        enable_length = 1
 
         print(self.fill_space("ID".upper(), id_length),
               self.fill_space("label".upper(), max_label_length),
               self.fill_space("severity".upper(), severity_length),
-              "Tests".upper())
+              self.fill_space("Enabled".upper()),
+              self.fill_space("Tests".upper()))
 
         for x in alerts:
             if len(x["syntheticTestIds"]) > 0:
@@ -2095,6 +2097,7 @@ class SyntheticTest(Base):
             print(self.fill_space(x["id"], id_length),
                   self.fill_space(x["name"], max_label_length),
                   self.fill_space(str(x["severity"]), severity_length),
+                  self.fill_space(str(x["enabled"])),
                   self.fill_space(test_str))
 
     def print_a_alert_details(self, alert_id, single_alert, show_details=False, show_json=False):
@@ -2112,7 +2115,7 @@ class SyntheticTest(Base):
         a_single_alert = single_alert[0]
         print(self.fill_space("Name".upper(), 30), "value".upper())
         for key, value in a_single_alert.items():
-            if key == 'createdAt' or key == 'modifiedAt' or key == 'observedAt':
+            if key == 'created' or key == 'initialCreated':
                 print(self.fill_space(key, 30), self.format_time(value))
             else:
                 print(self.fill_space(key, 30), value)
