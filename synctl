@@ -1620,14 +1620,6 @@ class SyntheticTest(Base):
         for cred in cred_list:
             self.delete_a_credential(cred)
 
-    def update_custom_properties(self, test_id, custom_properties):
-        payload = self.retrieve_a_synthetic_test(test_id)
-        payload[0]["customProperties"] = {}
-        for _, custom_property in enumerate(custom_properties):
-            a_single_custom_property = custom_property.split('=')
-            payload[0]["customProperties"][a_single_custom_property[0]] = a_single_custom_property[1]
-
-        self.update_a_synthetic_test(test_id, json.dumps(payload[0]))
     def __sort_synthetic_tests(self, syn_list):
         """sort Synthetic list by locationDisplayLabels"""
         new_list = sorted(
@@ -2886,8 +2878,6 @@ class ParseParameter:
 
         self.parser_update.add_argument(
             '--file', '-f', type=str, metavar="<file-name>", help='json payload')
-        self.parser_update.add_argument(
-            '--custom-properties', type=str, metavar="<string>", help="update custom property of a test")
 
         self.parser_update.add_argument(
             '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
@@ -3301,9 +3291,6 @@ def main():
             with open(get_args.file, 'rb') as json_file:
                 payload = json_file.read()
             syn_instance.update_a_synthetic_test(get_args.id, payload)
-        if get_args.custom_properties is not None:
-            split_string = get_args.custom_properties.split(' ')
-            syn_instance.update_custom_properties(get_args.id, split_string)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
