@@ -3242,19 +3242,6 @@ class ParseParameter:
             '--file', '-f', type=str, metavar="<file-name>", help='json payload')
 
         self.parser_update.add_argument(
-            '--name', type=str, metavar="<string>", help='name of smart alert')
-        self.parser_update.add_argument(
-            '--description', '-d', type=str, metavar="<string>", help='description of smart alert')
-        self.parser_update.add_argument(
-            '--severity', type=int, metavar="<int>", help='set severity')
-        self.parser_update.add_argument(
-            '--test', nargs="+", metavar="<id>", help="set synthetic test ids")
-        self.parser_update.add_argument(
-            '--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
-        self.parser_update.add_argument(
-            '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
-
-        self.parser_update.add_argument(
             '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
         self.parser_update.add_argument(
             '--host', type=str, metavar="<host>", help='set hostname')
@@ -3692,25 +3679,10 @@ def main():
         if get_args.file is not None:
             with open(get_args.file, 'rb') as json_file:
                 payload = json_file.read()
-            syn_instance.update_a_synthetic_test(get_args.id, payload)
-        if get_args.syn_type == SYN_ALERT:
-            if get_args.id is not None:
-                payload = syn_instance.retrieve_a_synthetic_alert(get_args.id)
-                if get_args.name is not None:
-                    payload[0]["name"] = get_args.name
-                if get_args.description is not None:
-                    payload[0]["description"] = get_args.description
-                if get_args.severity is not None:
-                    payload[0]["severity"] = get_args.severity
-                if get_args.test is not None:
-                    payload[0]["syntheticTestIds"] = get_args.test
-                if get_args.alert_channel is not None:
-                    payload[0]["alertChannelIds"] = get_args.alert_channel
-                if get_args.violation_count is not None:
-                    payload[0]["timeThreshold"]["violationsCount"] = get_args.violation_count
-
-                alert_payload = json.dumps(payload[0])
-                syn_instance.update_a_smart_alert(get_args.id, alert_payload)
+            if get_args.syn_type == SYN_TEST:
+                syn_instance.update_a_synthetic_test(get_args.id, payload)
+            if get_args.syn_type == SYN_ALERT:
+                syn_instance.update_a_smart_alert(get_args.id, payload)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
