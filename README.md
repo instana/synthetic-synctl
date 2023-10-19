@@ -51,12 +51,28 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 - [Manage Application](#manage-application)
     - [Get application Syntax](#get-application-syntax)
     - [Get application Examples](#get-application-examples)
-
+- [Query Smart Alerts](#query-smart-alerts)
+    - [synctl get alert Syntax](#synctl-get-alert-syntax)
+    - [synctl get alert Options](#synctl-get-alert-options)
+    - [synctl get alert Examples](#synctl-get-alert-examples)
+- [Create Smart alert](#create-smart-alert)
+    - [synctl create alert Syntax](#synctl-create-alert-syntax)
+    - [synctl create alert Options](#synctl-create-alert-options)
+    - [synctl create alert Examples](#synctl-create-alert-examples)
+- [Update a Smart Alert](#update-a-smart-alert)
+    - [synctl update alert Syntax](#synctl-update-alert-syntax)
+    - [synctl update alert Options](#synctl-update-alert-options)
+    - [synctl update Examples](#synctl-update-examples)
+- [Delete a Smart alert](#delete-a-smart-alert)
+    - [synctl delete alert Syntax](#synctl-delete-alert-syntax)
+    - [synctl delete alert Examples](#synctl-delete-alert-examples)
+  
 # Features
 - CRUD of Synthetic test, support API Simple, API Script, Browser Script, etc.
 - Query/delete of Synthetic location.
 - Query/create/delete of Synthetic credential.
 - Support multiple configurations of backend server.
+- CRUD of Smart alerts.
 
 # Prerequisites
 - [Python 3.6+](https://www.python.org/downloads/)
@@ -683,6 +699,11 @@ synctl get alert <id> --show-json
 ```
 # Create Smart alert
 `synctl create alert` is used to create Smart Alerts.
+
+### synctl create alert Syntax
+```
+synctl create alert [options]
+```
 
 ### synctl create alert Options
 ```
