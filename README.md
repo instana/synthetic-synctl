@@ -442,6 +442,7 @@ synctl patch test id [options]
 --validation-string <string>       set validation-string
 --bundle <bundle>                  set bundle content
 --entry-file <string>              entry file of a bundle test
+--custom-property <key>=<value>    set custom property, should be <key,value> pair
 
 --use-env, -e <name>               use a config hostname
 --host <host>                      set hostname
@@ -509,6 +510,9 @@ synctl patch test <synthetic-id> --bundle "${PATCH_BASE64_STR}"
 
 # set entry file of bundle test
 synctl patch test <synthetic-id> --entry-file bundle-test/index.js
+
+# set custom properties of a test
+synctl patch test <id> --custom-property key=value
 ```
 
 # Update Synthetic Test
