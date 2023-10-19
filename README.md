@@ -723,12 +723,7 @@ synctl update alert <id> [options]
 ```
 -h, --help                          show this help message and exit
 
---name <string>                     friendly name of the Smart Alerts--description 
---test [id ...]                     synthetic-test id, support multiple synthetic tests id
---description, -d <string>          the description of Smart Alerts
---severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
---alert-channel [id ...]            alerting channel
---violation-count <int>             the number of consecutive failures to trigger an alert
+--file,-f <file-name>               json payload
 
 --use-env, -e <name>                use a config hostname
 --host <host>                       set hostname
@@ -737,23 +732,12 @@ synctl update alert <id> [options]
 
 ### synctl update Examples
 ```
-# set name to Smart-alert
-synctl update alert <alert-id> --name Smart-alert
+# get smart alert configuration and save to alert.json
+synctl get alert <alert-id> --show-json > alert.json
 
-# set description to Synthetic test failed at least 3 times in sequence
-synctl update alert <alert-id> --description 'Synthetic test failed at least 3 times in sequence'
+# edit json file and update
+synctl update alert <alert-id> --file/-f alert.json
 
-# set violation count to 5
-synctl update alert <alert-id> --violation-count 5
-
-# set severity to 10
-synctl update alert <alert-id> --severity 10
-
-# update an alert with syncthetic tests
-synctl update alert <alert-id> --test <test_id1> <test_id2> ...
-
-# update an alert with alert channels
-synctl update alert <alert-id> --alert-channel <alert_channel_id1> <alert_channel_id2> ...
 ```
 
 # Delete a Smart alert
