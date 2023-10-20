@@ -201,6 +201,7 @@ synctl get test [id] [options]
 ### synctl get test Options
 ```
 -h, --help             show this help message and exit
+
 --type, -t <int>       Synthetic type, 0 API Simple, 1 Api Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple
 --window-size <window> set synthetic result window size, support [1,60]m, [1-24]h
 --save-script          save script to local, default is test label
@@ -262,6 +263,7 @@ synctl create test [options]
 ### synctl create test Options
 ```
 -h, --help                          show this help message and exit
+
 -t <int>, --type <int>              Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple
 --location id [id ...]              location id, support multiple locations id
 --label <string>                    friendly name of the Synthetic test
