@@ -325,7 +325,7 @@ synctl create test -t 0 \
     --frequency 5 \
     --app-id "$APPID" \
     --operation GET \
-    --headers '' \
+    --headers '{"content-type":"application/json"}' \
     --retries 2 \
     --retry-interval 2 \
     --follow-redirect true \
