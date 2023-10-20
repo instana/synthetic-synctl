@@ -369,7 +369,7 @@ synctl create test -t 0 \
 # expectMatch example
 synctl create test -t 0 \
     --label expect-match-test \
-    --url https://www.ibm.co \
+    --url https://www.ibm.com \
     --lo "$LOCATION1" \
     --expect-match ibm
 
