@@ -208,6 +208,7 @@ synctl get test [id] [options]
 --show-details         output test or location details to terminal
 --show-json            output test json to terminal
 --filter               filter tests based on locationId/applicationId
+
 --use-env, -e <name>   use a specified config
 --host <host>          set hostname
 --token <token>        set token
@@ -633,7 +634,6 @@ synctl delete {location,lo,test,cred} [id...] [options]
 --match-regex <regex> use a regex to match synthetic label
 --match-location <id> delete tests match this location id
 --no-locations        delete tests with no locations
-
 
 --use-env, -e <name>  specify a config name
 --host <host>         set hostname
