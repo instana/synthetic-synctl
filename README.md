@@ -217,6 +217,7 @@ synctl get test [id] [options]
 ### synctl get test Options
 ```
 -h, --help             show this help message and exit
+
 --type, -t <int>       Synthetic type, 0 API Simple, 1 Api Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple
 --window-size <window> set synthetic result window size, support [1,60]m, [1-24]h
 --save-script          save script to local, default is test label
@@ -224,6 +225,7 @@ synctl get test [id] [options]
 --show-details         output test or location details to terminal
 --show-json            output test json to terminal
 --filter               filter tests based on locationId/applicationId
+
 --use-env, -e <name>   use a specified config
 --host <host>          set hostname
 --token <token>        set token
@@ -277,6 +279,7 @@ synctl create test [options]
 ### synctl create test Options
 ```
 -h, --help                          show this help message and exit
+
 -t <int>, --type <int>              Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple
 --location id [id ...]              location id, support multiple locations id
 --label <string>                    friendly name of the Synthetic test
@@ -304,8 +307,6 @@ synctl create test [options]
 --browser <string>                  browser type, support chrome and firefox
 --record-video <boolean>            set true to record video
 --from-json <json>                  full Synthetic test payload, support json file
---key <key>                         set credential name
---value <value>                     set credential value
 
 --use-env <name>, -e <name>         use a specified configuration
 --host <host>                       set hostname
@@ -331,6 +332,77 @@ synctl create test -t 0 \
     --url "https://httpbin.org/get" \
     --location "$LOCATION1" "$LOCATION2" "$LOCATION3" ...
 
+# API Simple example
+synctl create test -t 0 \
+    --label "API-simple-test" \
+    --description "this is a test example" \
+    --url <url> \
+    --location "$LOCATION" \
+    --frequency 5 \
+    --app-id "$APPID" \
+    --operation GET \
+    --headers '{"content-type":"application/json"}' \
+    --retries 2 \
+    --retry-interval 2 \
+    --follow-redirect true \
+    --timeout 1m \
+    --allow-insecure true
+
+# expectStatus example
+synctl create test -t 0 \
+    --label "ping-expect-status-200" \
+    --url "https://httpbin.org/get" \
+    --location "$LOCATION1" \
+    --expect-status 200
+
+# expectJson example
+synctl create test -t 0 \
+    --label "ping-expect-json" \
+    --url "https://httpbin.org/json" \
+    --location "$LOCATION1" \
+    --expect-json '{
+      "slideshow": {
+        "author": "Yours Truly",
+        "date": "date of publication",
+        "slides": [
+          {
+            "title": "Wake up to WonderWidgets!",
+            "type": "all"
+          },
+          {
+            "items": [
+              "Why <em>WonderWidgets</em> are great",
+              "Who <em>buys</em> WonderWidgets"
+            ],
+            "title": "Overview",
+            "type": "all"
+          }
+        ],
+        "title": "Sample Slide Show"
+      }
+    }'
+
+# expectMatch example
+synctl create test -t 0 \
+    --label expect-match-test \
+    --url https://www.ibm.com \
+    --lo "$LOCATION1" \
+    --expect-match ibm
+
+# expectExists example
+synctl create test -t 0 \
+    --label expect-exists-test \
+    --url https://httpbin.org/json \
+    --location "$LOCATION1" \
+    --expect-exists '["slideshow"]'
+
+# expectNotEmpty example
+synctl create test -t 0 \
+    --label expect-not-empty-test \
+    --url https://httpbin.org/json \
+    --location "$LOCATION1" \
+    --expect-not-empty '["slideshow"]'
+
 ```
 
 #### Create API Script test  
@@ -342,6 +414,13 @@ synctl create test -t 1 \
     --from-file http-scripts/http-get.js \
     --location "$LOCATION" \
     --frequency 5
+
+# custom properties example
+synctl create test -t 1 \
+    --label custom-properties-test \
+    --from-file api-script.js \
+    --location "$LOCATION1" \
+    --custom-properties '{"key1":"value1"}'
 
 # create bundle test with a zip file
 synctl create test -t 1 --label syn-bundle-zip-test \
@@ -573,7 +652,6 @@ synctl delete {location,lo,test,cred} [id...] [options]
 --match-regex <regex> use a regex to match synthetic label
 --match-location <id> delete tests match this location id
 --no-locations        delete tests with no locations
-
 
 --use-env, -e <name>  specify a config name
 --host <host>         set hostname
