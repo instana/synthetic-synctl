@@ -51,12 +51,28 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 - [Manage Application](#manage-application)
     - [Get application Syntax](#get-application-syntax)
     - [Get application Examples](#get-application-examples)
-
+- [Query Smart Alerts](#query-smart-alerts)
+    - [synctl get alert Syntax](#synctl-get-alert-syntax)
+    - [synctl get alert Options](#synctl-get-alert-options)
+    - [synctl get alert Examples](#synctl-get-alert-examples)
+- [Create Smart alert](#create-smart-alert)
+    - [synctl create alert Syntax](#synctl-create-alert-syntax)
+    - [synctl create alert Options](#synctl-create-alert-options)
+    - [synctl create alert Examples](#synctl-create-alert-examples)
+- [Update a Smart Alert](#update-a-smart-alert)
+    - [synctl update alert Syntax](#synctl-update-alert-syntax)
+    - [synctl update alert Options](#synctl-update-alert-options)
+    - [synctl update Examples](#synctl-update-examples)
+- [Delete a Smart alert](#delete-a-smart-alert)
+    - [synctl delete alert Syntax](#synctl-delete-alert-syntax)
+    - [synctl delete alert Examples](#synctl-delete-alert-examples)
+  
 # Features
 - CRUD of Synthetic test, support API Simple, API Script, Browser Script, etc.
 - Query/delete of Synthetic location.
 - Query/create/delete of Synthetic credential.
 - Support multiple configurations of backend server.
+- CRUD of Smart alerts.
 
 # Prerequisites
 - [Python 3.6+](https://www.python.org/downloads/)
@@ -665,4 +681,107 @@ synctl get app --name-filter <application-name>
 # then create test with application id
 synctl create test -t 0 --app-id <application-id> ...
 ```
+# Query Smart Alerts
+`synctl get alert ` can be used to query Smart Alerts. 
 
+### synctl get alert Syntax
+```
+synctl get alert [id] [options]
+```
+### synctl get alert Options
+```
+-h, --help             show this help message and exit
+--show-details         output alert details to terminal
+--show-json            output alert json to terminal
+--use-env, -e <name>   use a specified config
+--host <host>          set hostname
+--token <token>        set token
+```
+### synctl get alert Examples
+```
+# Display all alert
+synctl get alert
+
+# show alert details
+synctl get alert <id> --show-details
+ 
+# show alert payload in json
+synctl get alert <id> --show-json
+```
+# Create Smart alert
+`synctl create alert` is used to create Smart Alerts.
+
+### synctl create alert Syntax
+```
+synctl create alert [options]
+```
+
+### synctl create alert Options
+```
+-h, --help                          show this help message and exit
+--test id [id ...]                  synthetic-test id, support multiple synthetic tests id
+--name <string>                     friendly name of the Smart Alerts
+--description, -d <string>          the description of Smart Alerts
+--severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
+--alert-channel <id>                alerting channel
+--violation-count <int>             the number of consecutive failures to trigger an alert
+```
+### synctl create alert Examples
+```
+# get synthetic test
+synctl get test 
+# get alert channel
+synctl get alert-channel
+
+synctl create alert --name "Smart-alert" \
+       --alert-channel "$ALERT_CHANNEL" \
+       --test "$SYNTHETIC_TEST" \
+       --violation-count 2
+
+# or schedule a smart alert for multiple synthetic tests
+synctl create alert --name "Smart-alert" \
+       --alert-channel "$ALERT_CHANNEL" \
+       --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ...  \
+       --violation-count 2
+```
+# Update a Smart Alert
+
+### synctl update alert Syntax
+```
+synctl update alert <id> [options]
+```
+
+### synctl update alert Options
+```
+-h, --help                          show this help message and exit
+
+--file,-f <file-name>               json payload
+
+--use-env, -e <name>                use a config hostname
+--host <host>                       set hostname
+--token <token>                     set token
+```
+
+### synctl update Examples
+```
+# get smart alert configuration and save to alert.json
+synctl get alert <alert-id> --show-json > alert.json
+
+# edit json file and update
+synctl update alert <alert-id> --file/-f alert.json
+
+```
+
+# Delete a Smart alert
+### synctl delete alert Syntax
+```
+synctl delete alert [id...] 
+```
+### synctl delete alert Examples
+```
+# delete a smart test
+synctl delete alert <alert-id>
+
+# delete several smart alert
+synctl delete alert <alert-id-1> <alert-id-2> <alert-id-3> ...
+```
