@@ -608,6 +608,9 @@ synctl patch test <synthetic-id> --entry-file bundle-test/index.js
 
 # set custom properties of a test
 synctl patch test <id> --custom-property key=value
+
+# set multiple custom properties of a test
+synctl patch test <id> --custom-property "key1=value1,key2=value2,key3=value3"
 ```
 
 # Update Synthetic Test
