@@ -934,7 +934,7 @@ class SmartAlertConfiguration(Base):
             # Name for the synthetic alert configuration, which is used as the title of the event when triggered.
             "name": "default-Synthetics-Smart-Alert",
             # Description for the synthetic alert configuration, which is used as the details of the triggerd event.
-            "description": "Synthetic test failed at least 3 times in sequence.",
+            "description": "Synthetic test failed.",
             # The severity of the alert when triggered, which is either 5 (Warning), or 10 (Critical).
             "severity": 5,
             # syntheticTestIds: It is an array of the synthetic test IDs this alert configuration is applied to.
@@ -2626,13 +2626,17 @@ class PatchSyntheticTest(SyntheticTest):
         """update custom properties"""
         test_result = self.retrieve_a_synthetic_test(test_id)
         payload = test_result[0]
-
-        if len(custom_property) <= 1 or custom_property[0] == '' or custom_property[1] == '':
+        if any(s == '' or s.isspace() for s in custom_property):
             print("Custom property should be <key>=<value>")
             sys.exit(1)
-        else:
-            payload["customProperties"][custom_property[0]] = custom_property[1]
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+        for item in custom_property:
+            key, value = item.split('=')
+            if key == '' or value == '':
+                print("Custom property should be <key>=<value>")
+                sys.exit(1)
+            payload["customProperties"][key] = value
+        self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
 class SyntheticResult(Base):
 
@@ -3708,7 +3712,7 @@ def main():
         elif get_args.bundle is not None:
             patch_instance.patch_bundle(get_args.id, get_args.bundle)
         elif get_args.custom_property is not None:
-            split_string = get_args.custom_property.split('=')
+            split_string = get_args.custom_property.split(',')
             patch_instance.patch_custom_properties(get_args.id, split_string)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.file is not None:
