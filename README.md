@@ -663,7 +663,7 @@ synctl update test <synthetic-id> \
     --frequency 5 \
     --label "simple-ping" \
     --location <id1> <id2> ... \
-    --retry-interval 3m \
+    --retry-interval 3 \
     --url https://www.ibm.com \
     --follow-redirect true \
     --validation-string "a synthetic test" \
