@@ -2501,7 +2501,6 @@ class UpdateSyntheticTest(SyntheticTest):
 
     def update_follow_redirect(self, payload, follow_redirect):
         """update follow-redirect"""
-        print("hello")
         follow_redirect_options = ["True", "true", "False", "false"]
         if follow_redirect is not None and follow_redirect in follow_redirect_options:
             payload["configuration"]["followRedirect"] = follow_redirect
