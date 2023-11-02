@@ -4001,7 +4001,7 @@ def main():
                     print("not supported by smart alert")
             if get_args.file is not None:
                 new_payload = update_instance.update_using_file(get_args.file)
-                update_instance.update_a_synthetic_test(get_args.id, new_payload)
+                update_instance.update_a_smart_alert(get_args.file, new_payload)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
