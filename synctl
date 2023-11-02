@@ -166,18 +166,6 @@ examples:
 synctl get test <id>  --show-json > test.json
 edit test.json
 synctl update test <id> --file/-f test.json
-
-# set name to Smart-alert
-synctl update alert <alert-id> --name Smart-alert
-
-# set violation count to 5
-synctl update alert <alert-id> --violation-count 5
-
-# set severity to 10
-synctl update alert <alert-id> --severity 10
-
-# update an alert with synthetic tests
-synctl update alert <alert-id> --test <test_id1> <test_id2> ...
 """
 
 DELETE_USAGE = """synctl delete {location,lo,test,cred,alert} [id...] [options]
