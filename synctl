@@ -2434,7 +2434,6 @@ class UpdateSyntheticTest(SyntheticTest):
             payload["configuration"]["retries"] = retry
         else:
             print("retry should be in [0, 2]")
-            return
             return payload
 
     def update_retry_interval(self, payload, interval: int):
