@@ -2340,7 +2340,7 @@ class UpdateSyntheticTest(SyntheticTest):
             sys.exit(-1)
 
         if alert_id is None or alert_id == "":
-            print("test id should not be empty")
+            print("alert id should not be empty")
             return
         else:
             update_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
@@ -2364,7 +2364,7 @@ class UpdateSyntheticTest(SyntheticTest):
             self.exit_synctl(-1, "Too Many Requests")
         else:
             print(
-                f'update test {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+                f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
 
     def update_using_file(self, file):
         with open(file, 'rb') as json_file:
@@ -3962,52 +3962,60 @@ def main():
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
             if get_args.file is not None:
                 new_payload = update_instance.update_using_file(get_args.file)
-            if get_args.label is not None:
-                new_payload = update_instance.update_label(payload[0], get_args.label)
-            if get_args.active is not None:
-                new_payload = update_instance.update_active(payload[0], get_args.active)
-            if get_args.timeout is not None:
-                new_payload = update_instance.update_config_timeout(payload[0], get_args.timeout)
-            if get_args.retries is not None:
-                new_payload = update_instance.update_retries(payload[0], get_args.retries)
-            if get_args.frequency is not None:
-                new_payload = update_instance.update_frequency(payload[0], get_args.frequency)
-            if get_args.retry_interval is not None:
-                new_payload = update_instance.update_retry_interval(payload[0], get_args.retry_interval)
-            if get_args.operation is not None:
-                new_payload = update_instance.update_ping_operation(payload[0], get_args.operation)
-            if get_args.script_file is not None:
-                new_payload = update_instance.update_config_script_file(payload[0], get_args.script_file)
-            if get_args.description is not None:
-                new_payload = update_instance.update_description(payload[0], get_args.description)
-            if get_args.record_video is not None:
-                new_payload = update_instance.update_record_video(payload[0], get_args.record_video)
-            if get_args.location is not None:
-                new_payload = update_instance.update_locations(payload[0], get_args.location)
-            if get_args.mark_synthetic_call:
-                new_payload = update_instance.update_mark_synthetic_call(payload[0],
-                                                                         get_args.mark_synthetic_call)
-            if get_args.entry_file is not None:
-                new_payload = update_instance.update_script_file(payload[0], get_args.entry_file)
-            if get_args.url is not None:
-                new_payload = update_instance.update_url(payload[0], get_args.url)
-            if get_args.follow_redirect is not None:
-                new_payload = update_instance.update_follow_redirect(payload[0], get_args.follow_redirect)
-            if get_args.expect_status is not None:
-                new_payload = update_instance.update_expect_status(payload[0], get_args.expect_status)
-            if get_args.validation_string is not None:
-                new_payload = update_instance.update_validation_string(payload[0], get_args.validation_string)
-            if get_args.bundle is not None:
-                new_payload = update_instance.update_bundle(payload[0], get_args.bundle)
-            if get_args.custom_property is not None:
-                split_string = get_args.custom_property.split(',')
-                new_payload = update_instance.update_custom_properties(payload[0], split_string)
-            update_instance.update_a_synthetic_test(get_args.id, json.dumps(new_payload))
+                update_instance.update_a_synthetic_test(get_args.id, new_payload)
+            else:
+                if get_args.label is not None:
+                    new_payload = update_instance.update_label(payload[0], get_args.label)
+                if get_args.active is not None:
+                    new_payload = update_instance.update_active(payload[0], get_args.active)
+                if get_args.timeout is not None:
+                    new_payload = update_instance.update_config_timeout(payload[0], get_args.timeout)
+                if get_args.retries is not None:
+                    new_payload = update_instance.update_retries(payload[0], get_args.retries)
+                if get_args.frequency is not None:
+                    new_payload = update_instance.update_frequency(payload[0], get_args.frequency)
+                if get_args.retry_interval is not None:
+                    new_payload = update_instance.update_retry_interval(payload[0], get_args.retry_interval)
+                if get_args.operation is not None:
+                    new_payload = update_instance.update_ping_operation(payload[0], get_args.operation)
+                if get_args.script_file is not None:
+                    new_payload = update_instance.update_config_script_file(payload[0], get_args.script_file)
+                if get_args.description is not None:
+                    new_payload = update_instance.update_description(payload[0], get_args.description)
+                if get_args.record_video is not None:
+                    new_payload = update_instance.update_record_video(payload[0], get_args.record_video)
+                if get_args.location is not None:
+                    new_payload = update_instance.update_locations(payload[0], get_args.location)
+                if get_args.mark_synthetic_call:
+                    new_payload = update_instance.update_mark_synthetic_call(payload[0],
+                                                                             get_args.mark_synthetic_call)
+                if get_args.entry_file is not None:
+                    new_payload = update_instance.update_script_file(payload[0], get_args.entry_file)
+                if get_args.url is not None:
+                    new_payload = update_instance.update_url(payload[0], get_args.url)
+                if get_args.follow_redirect is not None:
+                    new_payload = update_instance.update_follow_redirect(payload[0], get_args.follow_redirect)
+                if get_args.expect_status is not None:
+                    new_payload = update_instance.update_expect_status(payload[0], get_args.expect_status)
+                if get_args.validation_string is not None:
+                    new_payload = update_instance.update_validation_string(payload[0], get_args.validation_string)
+                if get_args.bundle is not None:
+                    new_payload = update_instance.update_bundle(payload[0], get_args.bundle)
+                if get_args.custom_property is not None:
+                    split_string = get_args.custom_property.split(',')
+                    new_payload = update_instance.update_custom_properties(payload[0], split_string)
+                update_instance.update_a_synthetic_test(get_args.id, json.dumps(new_payload))
         if get_args.syn_type == SYN_ALERT:
+            invalid_options = [get_args.active, get_args.frequency, get_args.timeout, get_args.retry_interval, get_args.retries,
+                               get_args.operation, get_args.script_file, get_args.location, get_args.record_video,
+                               get_args.mark_synthetic_call, get_args.entry_file, get_args.url, get_args.follow_redirect,
+                               get_args.expect_status, get_args.validation_string, get_args.bundle, get_args.custom_property]
+            for option in invalid_options:
+                if option is not None:
+                    print("not supported by smart alert")
             if get_args.file is not None:
-                with open(get_args.file, 'rb') as json_file:
-                    payload = json_file.read()
-                update_instance.update_a_smart_alert(get_args.id, payload)
+                new_payload = update_instance.update_using_file(get_args.file)
+                update_instance.update_a_synthetic_test(get_args.id, new_payload)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
