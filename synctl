@@ -2430,9 +2430,9 @@ class UpdateSyntheticTest(SyntheticTest):
             interval = 1
         if interval >= 1 and interval <= 10:
             payload["configuration"]["retryInterval"] = interval
+            return payload
         else:
             print("retryInterval should be in [1,10]")
-            return payload
 
     def update_ping_operation(self, payload, method: str = "GET"):
         """operation"""
