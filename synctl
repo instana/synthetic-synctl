@@ -2387,7 +2387,7 @@ class UpdateSyntheticTest(SyntheticTest):
             payload["active"] = False
         if active == "true":
             payload["active"] = True
-            return payload
+        return payload
 
     def update_frequency(self, payload, frequency):
         """patch frequency, 1, 120"""
