@@ -2275,11 +2275,18 @@ class UpdateSyntheticTest(SyntheticTest):
 
     def __init__(self) -> None:
         super().__init__()
+        self.update_test_config = None
         self.test_id = ""
+
+    def set_updated_payload(self, payload):
+        if payload is None:
+            print("payload should not be none")
+        else:
+            self.update_test_config = payload[0]
 
     def __ensure_test_id_not_none(self, test_id):
         if test_id is None or test_id == "":
-            print("Patch Error: test id is None")
+            print("Update Error: test id is None")
             sys.exit(-1)
 
     def update_a_synthetic_test(self, test_id, new_payload):
@@ -2359,109 +2366,98 @@ class UpdateSyntheticTest(SyntheticTest):
             payload = json_file.read()
             return payload
 
-    def update_label(self, payload, label):
+    def update_label(self, label):
         """label"""
         if label is None:
             print("no label")
         else:
-            payload["label"] = label
-            return payload
-    def update_description(self, payload, description):
+            self.update_test_config["label"] = label
+
+    def update_description(self, description):
         """description"""
         if description is None:
             print("no description")
         else:
-            payload["description"] = description
-            return payload
+            self.update_test_config["description"] = description
 
-    def update_record_video(self, payload, record_video=False):
+    def update_record_video(self, record_video=False):
         if record_video is not None and record_video.upper() in ("TRUE", "FALSE"):
-            payload["configuration"]["recordVideo"] = record_video
-            return payload
+            self.update_test_config["configuration"]["recordVideo"] = record_video
 
-    def update_active(self, payload, active):
+    def update_active(self, active):
         """active"""
         if active is None:
-            return
+            print("active should not be none")
         if active == "false":
-            payload["active"] = False
+            self.update_test_config["active"] = False
         if active == "true":
-            payload["active"] = True
-        return payload
+            self.update_test_config["active"] = True
 
-    def update_frequency(self, payload, frequency):
-        """patch frequency, 1, 120"""
+    def update_frequency(self, frequency):
+        """update frequency, 1, 120"""
         if frequency is None:
             frequency = 15
         if frequency > 0 and frequency <= 120:
-            payload["testFrequency"] = frequency
-            return payload
+            self.update_test_config["testFrequency"] = frequency
         else:
             print("frequency is not valid, it should be in [1,120]")
 
-    def update_locations(self, payload, locations):
-        """--locations patch locations"""
+    def update_locations(self, locations):
+        """--locations update locations"""
         if locations is None:
             print("no location")
             return
         else:
-            payload["locations"] = locations
-            return payload
+            self.update_test_config["locations"] = locations
 
-    def update_config_timeout(self, payload, timeout):
+    def update_config_timeout(self, timeout):
         """--timeout 2m, <number>(ms|s|m)"""
         if timeout is None:
             return
         else:
-            payload["configuration"]["timeout"] = timeout
-            return payload
+            self.update_test_config["configuration"]["timeout"] = timeout
 
-    def update_retries(self, payload, retry: int):
+    def update_retries(self, retry: int):
         """retries"""
         if retry >= 0 and retry <= 2:
-            payload["configuration"]["retries"] = retry
+            self.update_test_config["configuration"]["retries"] = retry
         else:
             print("retry should be in [0, 2]")
-            return payload
 
-    def update_retry_interval(self, payload, interval: int):
+    def update_retry_interval(self, interval: int):
         """retryInterval"""
         if interval is None:
             interval = 1
-        if interval >= 1 and interval <= 10:
-            payload["configuration"]["retryInterval"] = interval
-            return payload
+        if 1 <= interval <= 10:
+            self.update_test_config["configuration"]["retryInterval"] = interval
         else:
             print("retryInterval should be in [1,10]")
 
-    def update_ping_operation(self, payload, method: str = "GET"):
+    def update_ping_operation(self, method: str = "GET"):
         """operation"""
         valid_methods = ["GET", "HEAD", "POST", "PUT", "DELETE",
                          "CONNECT", "OPTIONS", "TRACE", "PATCH"]
         if method is not None and method.upper() in valid_methods:
-            payload["configuration"]["operation"] = method.upper()
-            return payload
+            self.update_test_config["configuration"]["operation"] = method.upper()
         else:
             print(f"{method} is not allowed")
             return
 
-    def update_mark_synthetic_call(self, payload, markSyntheticCall):
+    def update_mark_synthetic_call(self, mark_synthetic_call):
         """mark Synthetic call"""
-        markSyntheticCall_options = ["true", "false"]
-        if markSyntheticCall is not None and markSyntheticCall.lower() in markSyntheticCall_options:
-            payload["configuration"]["markSyntheticCall"] = markSyntheticCall
-            return payload
+        mark_synthetic_call_options = ["true", "false"]
+        if mark_synthetic_call is not None and mark_synthetic_call.lower() in mark_synthetic_call_options:
+            self.update_test_config["configuration"]["markSyntheticCall"] = mark_synthetic_call
         else:
             print("markSyntheticCall should be true or false")
 
-    def update_config_script_file(self, payload, script_name):
+    def update_config_script_file(self, script_name):
         """--script-file update script using script name"""
         try:
             with open(script_name, "r", encoding="utf-8") as script_file:
                 script = script_file.read()
                 if script is not None:
-                    payload["configuration"]["script"] = script
-                    return payload
+                    self.update_test_config["configuration"]["script"] = script
                 else:
                     print("script cannot be none")
                     return
@@ -2469,61 +2465,55 @@ class UpdateSyntheticTest(SyntheticTest):
             print(not_found_e)
             sys.exit(-1)
 
-    def update_script_file(self, payload, script_file):
+    def update_script_file(self, script_file):
         """--entry-file update scriptFile """
         if script_file == "" or script_file is None:
             print("script_file should not be None")
         else:
-            payload["configuration"]["scripts"]["scriptFile"] = script_file
-        return payload
+            self.update_test_config["configuration"]["scripts"]["scriptFile"] = script_file
 
-    def update_url(self, payload, url):
+    def update_url(self, url):
         """update url"""
         if url is not None:
-            payload["configuration"]["url"] = url
-            return payload
+            self.update_test_config["configuration"]["url"] = url
         else:
             print("url should not be none")
 
-    def update_follow_redirect(self, payload, follow_redirect):
+    def update_follow_redirect(self, follow_redirect):
         """update follow-redirect"""
         follow_redirect_options = ["True", "true", "False", "false"]
         if follow_redirect is not None and follow_redirect in follow_redirect_options:
-            payload["configuration"]["followRedirect"] = follow_redirect
-            return payload
+            self.update_test_config["configuration"]["followRedirect"] = follow_redirect
         else:
             print("followRedirect should be true/false ")
 
-    def update_expect_status(self, payload, expect_status):
+    def update_expect_status(self, expect_status):
         """update expect status"""
         if expect_status is not None:
-            payload["configuration"]["expectStatus"] = expect_status
-            return payload
+            self.update_test_config["configuration"]["expectStatus"] = expect_status
         else:
             print("expectStatus should not be none")
 
-    def update_validation_string(self, payload, validation_string):
+    def update_validation_string(self, validation_string):
         """update validation string"""
         if validation_string is None or validation_string == "":
             print("validation string should not be none")
         else:
-            payload["configuration"]["validationString"] = validation_string
-            return payload
+            self.update_test_config["configuration"]["validationString"] = validation_string
 
-    def update_bundle(self, payload, bundle):
+    def update_bundle(self, bundle):
         """update bundle"""
         if bundle.endswith('.zip'):
             with open(bundle, 'rb') as file1:
                 zip_content_byte = file1.read()
                 zip_content_byte_base64 = b64encode(zip_content_byte)
-                payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode(
+                self.update_test_config["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode(
                     'utf-8')
         else:
-            payload["configuration"]["scripts"]["bundle"] = bundle
-        return payload
+            self.update_test_config["configuration"]["scripts"]["bundle"] = bundle
 
 
-    def update_custom_properties(self, payload, custom_property):
+    def update_custom_properties(self, custom_property):
         """update custom properties"""
         if any(s == '' or s.isspace() for s in custom_property):
             print("Custom property should be <key>=<value>")
@@ -2534,9 +2524,12 @@ class UpdateSyntheticTest(SyntheticTest):
             if key == '' or value == '':
                 print("Custom property should be <key>=<value>")
                 sys.exit(1)
-            payload["customProperties"][key] = value
-        return payload
+            self.update_test_config["customProperties"][key] = value
 
+    def get_json(self, ):
+        """return payload as json"""
+        result = json.dumps(self.update_test_config)
+        return result
 
 class PatchSyntheticTest(SyntheticTest):
     """patch Synthetic test"""
@@ -3946,51 +3939,52 @@ def main():
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
+            update_instance.set_updated_payload(payload)
             if get_args.file is not None:
                 new_payload = update_instance.update_using_file(get_args.file)
                 update_instance.update_a_synthetic_test(get_args.id, new_payload)
             else:
                 if get_args.label is not None:
-                    new_payload = update_instance.update_label(payload[0], get_args.label)
+                    update_instance.update_label(get_args.label)
                 if get_args.active is not None:
-                    new_payload = update_instance.update_active(payload[0], get_args.active)
+                    update_instance.update_active(get_args.active)
                 if get_args.timeout is not None:
-                    new_payload = update_instance.update_config_timeout(payload[0], get_args.timeout)
+                    update_instance.update_config_timeout(get_args.timeout)
                 if get_args.retries is not None:
-                    new_payload = update_instance.update_retries(payload[0], get_args.retries)
+                    update_instance.update_retries(get_args.retries)
                 if get_args.frequency is not None:
-                    new_payload = update_instance.update_frequency(payload[0], get_args.frequency)
+                    update_instance.update_frequency(get_args.frequency)
                 if get_args.retry_interval is not None:
-                    new_payload = update_instance.update_retry_interval(payload[0], get_args.retry_interval)
+                    update_instance.update_retry_interval(get_args.retry_interval)
                 if get_args.operation is not None:
-                    new_payload = update_instance.update_ping_operation(payload[0], get_args.operation)
+                    update_instance.update_ping_operation(get_args.operation)
                 if get_args.script_file is not None:
-                    new_payload = update_instance.update_config_script_file(payload[0], get_args.script_file)
+                    update_instance.update_config_script_file(get_args.script_file)
                 if get_args.description is not None:
-                    new_payload = update_instance.update_description(payload[0], get_args.description)
+                    update_instance.update_description(get_args.description)
                 if get_args.record_video is not None:
-                    new_payload = update_instance.update_record_video(payload[0], get_args.record_video)
+                    update_instance.update_record_video(get_args.record_video)
                 if get_args.location is not None:
-                    new_payload = update_instance.update_locations(payload[0], get_args.location)
+                    update_instance.update_locations(get_args.location)
                 if get_args.mark_synthetic_call:
-                    new_payload = update_instance.update_mark_synthetic_call(payload[0],
-                                                                             get_args.mark_synthetic_call)
+                    update_instance.update_mark_synthetic_call(get_args.mark_synthetic_call)
                 if get_args.entry_file is not None:
-                    new_payload = update_instance.update_script_file(payload[0], get_args.entry_file)
+                    update_instance.update_script_file(get_args.entry_file)
                 if get_args.url is not None:
-                    new_payload = update_instance.update_url(payload[0], get_args.url)
+                    update_instance.update_url(get_args.url)
                 if get_args.follow_redirect is not None:
-                    new_payload = update_instance.update_follow_redirect(payload[0], get_args.follow_redirect)
+                    update_instance.update_follow_redirect(get_args.follow_redirect)
                 if get_args.expect_status is not None:
-                    new_payload = update_instance.update_expect_status(payload[0], get_args.expect_status)
+                    update_instance.update_expect_status(get_args.expect_status)
                 if get_args.validation_string is not None:
-                    new_payload = update_instance.update_validation_string(payload[0], get_args.validation_string)
+                    update_instance.update_validation_string(get_args.validation_string)
                 if get_args.bundle is not None:
-                    new_payload = update_instance.update_bundle(payload[0], get_args.bundle)
+                    update_instance.update_bundle(get_args.bundle)
                 if get_args.custom_property is not None:
                     split_string = get_args.custom_property.split(',')
-                    new_payload = update_instance.update_custom_properties(payload[0], split_string)
-                update_instance.update_a_synthetic_test(get_args.id, json.dumps(new_payload))
+                    update_instance.update_custom_properties(split_string)
+                updated_payload = update_instance.get_json()
+                update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:
             invalid_options = [get_args.active, get_args.frequency, get_args.timeout, get_args.retry_interval, get_args.retries,
                                get_args.operation, get_args.script_file, get_args.location, get_args.record_video,
