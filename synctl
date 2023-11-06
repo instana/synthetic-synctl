@@ -20,7 +20,7 @@ import time
 import requests
 import urllib3
 
-VERSION = "1.0.10"
+VERSION = "1.0.11"
 
 # disable warning when certificate is self signed
 # InsecureRequestWarning: Unverified HTTPS request is being made to host 'some url'.
@@ -1010,7 +1010,7 @@ class SmartAlertConfiguration(Base):
         result = json.dumps(self.smart_alert_config)
         return result
 
-class SyntheticPoP(Base):
+class SyntheticLocation(Base):
     def __init__(self) -> None:
         Base.__init__(self)
 
@@ -3572,7 +3572,7 @@ def main():
     syn_instance = SyntheticTest()
     patch_instance = PatchSyntheticTest()
     update_instance = UpdateSyntheticTest()
-    pop_instance = SyntheticPoP()
+    pop_instance = SyntheticLocation()
 
     summary_instance = SyntheticResult()
     app_instance = Application()
@@ -4021,6 +4021,8 @@ def main():
                     match_location=get_args.match_location)
             elif get_args.no_locations is True:
                 syn_instance.delete_tests_without_location()
+            else:
+                print('no synthetic test to delete')
 
         if get_args.delete_type in (SYN_LOCATION, SYN_LO):
             if get_args.id is not None:
@@ -4031,6 +4033,8 @@ def main():
         if get_args.delete_type == SYN_ALERT:
             if get_args.id is not None and len(get_args.id) > 0:
                 syn_instance.delete_multiple_smart_alerts(get_args.id)
+            else:
+                print('no smart alert to delete')
 
     else:
         print('unknown sub command:', get_args.sub_command)
