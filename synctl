@@ -2368,26 +2368,32 @@ class UpdateSyntheticTest(SyntheticTest):
 
     def update_label(self, label):
         """label"""
-        if label is None:
+        if label is None or label == "":
             print("no label")
+            sys.exit(1)
         else:
             self.update_test_config["label"] = label
 
     def update_description(self, description):
         """description"""
-        if description is None:
+        if description is None or description == "":
             print("no description")
+            sys.exit(1)
         else:
             self.update_test_config["description"] = description
 
     def update_record_video(self, record_video=False):
         if record_video is not None and record_video.upper() in ("TRUE", "FALSE"):
             self.update_test_config["configuration"]["recordVideo"] = record_video
+        else:
+            print("record video should not be None")
+            sys.exit(1)
 
     def update_active(self, active):
         """active"""
         if active is None:
             print("active should not be none")
+            sys.exit(1)
         if active == "false":
             self.update_test_config["active"] = False
         if active == "true":
@@ -2395,25 +2401,25 @@ class UpdateSyntheticTest(SyntheticTest):
 
     def update_frequency(self, frequency):
         """update frequency, 1, 120"""
-        if frequency is None:
-            frequency = 15
         if frequency > 0 and frequency <= 120:
             self.update_test_config["testFrequency"] = frequency
         else:
             print("frequency is not valid, it should be in [1,120]")
+            sys.exit(1)
 
     def update_locations(self, locations):
         """--locations update locations"""
         if locations is None:
             print("no location")
-            return
+            sys.exit(1)
         else:
             self.update_test_config["locations"] = locations
 
     def update_config_timeout(self, timeout):
         """--timeout 2m, <number>(ms|s|m)"""
-        if timeout is None:
-            return
+        if timeout is None or timeout == "":
+            print("timeout should not be None")
+            sys.exit(1)
         else:
             self.update_test_config["configuration"]["timeout"] = timeout
 
@@ -2423,15 +2429,15 @@ class UpdateSyntheticTest(SyntheticTest):
             self.update_test_config["configuration"]["retries"] = retry
         else:
             print("retry should be in [0, 2]")
+            sys.exit(1)
 
     def update_retry_interval(self, interval: int):
         """retryInterval"""
-        if interval is None:
-            interval = 1
         if 1 <= interval <= 10:
             self.update_test_config["configuration"]["retryInterval"] = interval
         else:
             print("retryInterval should be in [1,10]")
+            sys.exit(1)
 
     def update_ping_operation(self, method: str = "GET"):
         """operation"""
@@ -2441,7 +2447,7 @@ class UpdateSyntheticTest(SyntheticTest):
             self.update_test_config["configuration"]["operation"] = method.upper()
         else:
             print(f"{method} is not allowed")
-            return
+            sys.exit(1)
 
     def update_mark_synthetic_call(self, mark_synthetic_call):
         """mark Synthetic call"""
@@ -2450,6 +2456,7 @@ class UpdateSyntheticTest(SyntheticTest):
             self.update_test_config["configuration"]["markSyntheticCall"] = mark_synthetic_call
         else:
             print("markSyntheticCall should be true or false")
+            sys.exit(1)
 
     def update_config_script_file(self, script_name):
         """--script-file update script using script name"""
@@ -2460,7 +2467,7 @@ class UpdateSyntheticTest(SyntheticTest):
                     self.update_test_config["configuration"]["script"] = script
                 else:
                     print("script cannot be none")
-                    return
+                    sys.exit(1)
         except FileNotFoundError as not_found_e:
             print(not_found_e)
             sys.exit(-1)
@@ -2469,6 +2476,7 @@ class UpdateSyntheticTest(SyntheticTest):
         """--entry-file update scriptFile """
         if script_file == "" or script_file is None:
             print("script_file should not be None")
+            sys.exit(1)
         else:
             self.update_test_config["configuration"]["scripts"]["scriptFile"] = script_file
 
@@ -2478,6 +2486,7 @@ class UpdateSyntheticTest(SyntheticTest):
             self.update_test_config["configuration"]["url"] = url
         else:
             print("url should not be none")
+            sys.exit(1)
 
     def update_follow_redirect(self, follow_redirect):
         """update follow-redirect"""
@@ -2486,6 +2495,7 @@ class UpdateSyntheticTest(SyntheticTest):
             self.update_test_config["configuration"]["followRedirect"] = follow_redirect
         else:
             print("followRedirect should be true/false ")
+            sys.exit(1)
 
     def update_expect_status(self, expect_status):
         """update expect status"""
@@ -2493,11 +2503,13 @@ class UpdateSyntheticTest(SyntheticTest):
             self.update_test_config["configuration"]["expectStatus"] = expect_status
         else:
             print("expectStatus should not be none")
+            sys.exit(1)
 
     def update_validation_string(self, validation_string):
         """update validation string"""
         if validation_string is None or validation_string == "":
             print("validation string should not be none")
+            sys.exit(1)
         else:
             self.update_test_config["configuration"]["validationString"] = validation_string
 
