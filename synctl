@@ -2649,7 +2649,7 @@ class UpdateSyntheticTest(SyntheticTest):
 
     def update_tests(self, synthetic_tests):
         """update synthetic tests"""
-        if synthetic_tests is None or synthetic_tests == "":
+        if any(s == '' or s.isspace() for s in synthetic_tests):
             print("synthetic tests should not be none")
             sys.exit(1)
         else:
