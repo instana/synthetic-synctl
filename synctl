@@ -2316,7 +2316,7 @@ class UpdateSyntheticTest(SyntheticTest):
                                      verify=self.insecure)
 
         if update_result.status_code == 200:
-            print(f"{test_id} updated")
+            print(f"test {test_id} updated")
         elif update_result.status_code == 400:
             print(f'Error: {update_result}', update_result.content)
         elif update_result.status_code == 429:
@@ -2352,7 +2352,71 @@ class UpdateSyntheticTest(SyntheticTest):
                                       verify=self.insecure)
 
         if update_result.status_code == 200:
-            print(f"{alert_id} updated")
+            print(f"alert {alert_id} updated")
+        elif update_result.status_code == 400:
+            print(f'Error: {update_result}', update_result.content)
+        elif update_result.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
+        else:
+            print(
+                f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+
+    def enable_smart_alert(self, alert_id):
+        """API https://instana.github.io/openapi/#operation/enableSyntheticAlertConfig"""
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        if alert_id is None:
+            print("alert id should not be none")
+            sys.exit(1)
+        else:
+            put_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}/enable"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        update_result = requests.put(put_url,
+                                     headers=headers,
+                                     timeout=60,
+                                     verify=self.insecure)
+
+        if update_result.status_code == 204:
+            print(f"alert {alert_id} enabled")
+        elif update_result.status_code == 400:
+            print(f'Error: {update_result}', update_result.content)
+        elif update_result.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
+        else:
+            print(
+                f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+
+    def disable_smart_alert(self, alert_id):
+        """API https://instana.github.io/openapi/#operation/disableSyntheticAlertConfig"""
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        if alert_id is None:
+            print("alert id should not be none")
+            sys.exit(1)
+        else:
+            put_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}/disable"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        update_result = requests.put(put_url,
+                                     headers=headers,
+                                     timeout=60,
+                                     verify=self.insecure)
+
+        if update_result.status_code == 204:
+            print(f"alert {alert_id} disabled")
         elif update_result.status_code == 400:
             print(f'Error: {update_result}', update_result.content)
         elif update_result.status_code == 429:
@@ -2552,7 +2616,7 @@ class UpdateSyntheticTest(SyntheticTest):
             print("severity should not be none")
             sys.exit(1)
         else:
-            self.update_payload[severity] = severity
+            self.update_payload["severity"] = severity
 
     def update_alert_channel(self, alert_channel):
         """update alerting channels"""
@@ -3555,6 +3619,12 @@ class ParseParameter:
             '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
         update_group.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
+        # enable/disable smart alerts
+        self.parser_update.add_argument(
+            '--enable', action='store_true', help='enable smart alert')
+        self.parser_update.add_argument(
+            '--disable', action='store_true', help='disable smart alert')
+
 
         self.parser_update.add_argument(
             '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
@@ -4073,6 +4143,11 @@ def main():
                     update_instance.update_tests(get_args.test)
                 if get_args.violation_count is not None:
                     update_instance.update_violation_count(get_args.violation_count)
+                if get_args.enable is True:
+                    update_instance.enable_smart_alert(get_args.id)
+                elif get_args.disable is True:
+                    update_instance.disable_smart_alert(get_args.id)
+                    sys.exit(1)
                 updated_payload = update_instance.get_json()
                 update_instance.update_a_smart_alert(get_args.id, updated_payload)
     elif COMMAND_DELETE == get_args.sub_command:
