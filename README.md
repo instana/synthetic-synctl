@@ -878,6 +878,8 @@ synctl update alert <id> [options]
 --severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
 --alert-channel <id>                alerting channel
 --violation-count <int>             the number of consecutive failures to trigger an alert
+--enable                            enable smart alert
+--disable                           disable smart alert
 
 --use-env, -e <name>                use a config hostname
 --host <host>                       set hostname
@@ -897,7 +899,8 @@ synctl update alert <alert-id> --name "Smart-alert" \
     --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \
     --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \
     --violation-count 2 \
-    --severity 10
+    --severity 10 \ 
+    --enable
 ```
 
 # Delete a Smart alert
