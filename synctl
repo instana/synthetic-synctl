@@ -162,10 +162,31 @@ synctl patch test <id> --frequency 5"""
 UPDATE_USAGE = """synctl update {test,alert} <id> [options]
 
 examples:
-# update Synthetic test
-synctl get test <id>  --show-json > test.json
-edit test.json
-synctl update test <id> --file/-f test.json
+# update synthetic test/smart alert using file
+synctl get test/alert <id>  --show-json > <file-name>.json
+edit <file-name>.json
+synctl update test/alert <id> --file/-f <file-name>.json
+
+# update test with multiple options
+synctl update test <test-id> --label "simple-ping" \
+    --description "this is a test example" \
+    --url "https://www.ibm.com" \
+    --location "$LOCATION1" "$LOCATION2" "$LOCATION3" ... \
+    --retries 2 \
+    --retry-interval 2 \
+    --follow-redirect true \
+    --timeout 1m \
+    --allow-insecure true \
+    --frequency 5 \
+    --app-id "$APP-ID" \
+    --custom-property "key1=value1,key2=value2"
+
+# update alert with multiple options
+synctl update alert <alert-id> --name "Smart-alert" \
+       --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \
+       --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \
+       --violation-count 2 \
+       --severity 10
 """
 
 DELETE_USAGE = """synctl delete {location,lo,test,cred,alert} [id...] [options]
