@@ -2586,7 +2586,8 @@ class UpdateSmartAlert(SyntheticTest):
             if toggle == 'enable':
                 put_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}/enable"
             elif toggle == 'disable':
-                put_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}/disable"
+                if toggle in ('enable', 'disable'):
+                    put_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}/{toggle}"
 
         headers = {
             'Content-Type': 'application/json',
