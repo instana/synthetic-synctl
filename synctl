@@ -58,6 +58,7 @@ OPTIONS_PARAMS = "options"
 
 NOT_APPLICABLE = "N/A"
 
+ERROR_CODE = 1
 
 def show_version():
     """show synctl version"""
@@ -1531,8 +1532,7 @@ class SyntheticTest(Base):
                 "operator": "EQUALS"
             }]}
         else:
-            print(f"Invalid filter : {tag_filter[0]}")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, f"Invalid filter : {tag_filter[0]}")
 
         test_summary_list_url = f"{host}/api/synthetics/results/testsummarylist"
 
@@ -1596,9 +1596,7 @@ class SyntheticTest(Base):
             data = json.loads(cred_result.content.decode())
             return data
         else:
-            print(
-                f'get cred failed, status code: {cred_result.status_code}')
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
 
     def retrieve_all_smart_alerts(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1619,9 +1617,7 @@ class SyntheticTest(Base):
             data = alert_result.json()
             return data
         else:
-            print(
-                f'get alert failed, status code: {alert_result.status_code}')
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
 
     def retrieve_a_smart_alert(self, alert_id=""):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1653,9 +1649,7 @@ class SyntheticTest(Base):
             self.exit_synctl(error_code=-1,
                              message=f'alert {alert_id} not found')
         else:
-            print(
-                f'get alert failed, status code: {alert_result.status_code}')
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
 
     def retrieve_all_alerting_channel(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1676,9 +1670,7 @@ class SyntheticTest(Base):
             data = alert_channel_result.json()
             return data
         else:
-            print(
-                f'get alert channel failed, status code: {alert_channel_result.status_code}')
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
 
 
     def delete_a_synthetic_test(self, test_id=""):
@@ -1811,8 +1803,7 @@ class SyntheticTest(Base):
                 print(
                     f"Fail to delete {cred}, status code {delete_res.status_code}")
         else:
-            print(f"no credential {cred}")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, f"no credential {cred}")
 
     def delete_credentials(self, cred_list):
         if cred_list is None:
@@ -1849,8 +1840,7 @@ class SyntheticTest(Base):
         elif result.status_code == 429:
             self.exit_synctl(-1, "Too Many Requests")
         else:
-            print(f"Failed to delete {alert_id}, status code {result.status_code}")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, f"Failed to delete {alert_id}, status code {result.status_code}")
 
     def delete_multiple_smart_alerts(self, alert_list):
         start_time = time.time()
@@ -2305,14 +2295,20 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.update_test_config = payload[0]
 
+    def invalid_update_options(self, invalid_options, items):
+        for option in invalid_options:
+            for key, value in items:
+                if option == key:
+                    if value is not None:
+                        self.exit_synctl(ERROR_CODE, f"option: --{key} not supported by synthetic tests")
+
     def update_a_synthetic_test(self, test_id, new_payload):
         """API https://instana.github.io/openapi/#operation/updateSyntheticTest"""
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
         if new_payload is None:
-            print("config cannot be empty")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "config cannot be empty")
 
         if test_id is None or test_id == "":
             print("test id should not be empty")
@@ -2349,16 +2345,14 @@ class UpdateSyntheticTest(SyntheticTest):
     def update_label(self, label):
         """label"""
         if label is None or label == "":
-            print("no label")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "no label")
         else:
             self.update_test_config["label"] = label
 
     def update_description(self, description):
         """description"""
         if description is None or description == "":
-            print("no description")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "no description")
         else:
             self.update_test_config["description"] = description
 
@@ -2366,14 +2360,12 @@ class UpdateSyntheticTest(SyntheticTest):
         if record_video is not None and record_video.upper() in ("TRUE", "FALSE"):
             self.update_test_config["configuration"]["recordVideo"] = record_video
         else:
-            print("record video should not be None")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "record video should not be None")
 
     def update_active(self, active):
         """active"""
         if active is None:
-            print("active should not be none")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "active should not be none")
         if active == "false":
             self.update_test_config["active"] = False
         if active == "true":
@@ -2381,43 +2373,38 @@ class UpdateSyntheticTest(SyntheticTest):
 
     def update_frequency(self, frequency):
         """update frequency, 1, 120"""
-        if frequency > 0 and frequency <= 120:
+        if 0 < frequency <= 120:
             self.update_test_config["testFrequency"] = frequency
         else:
-            print("frequency is not valid, it should be in [1,120]")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,120]")
 
     def update_locations(self, locations):
         """--locations update locations"""
         if locations is None:
-            print("no location")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "no location")
         else:
             self.update_test_config["locations"] = locations
 
     def update_config_timeout(self, timeout):
         """--timeout 2m, <number>(ms|s|m)"""
         if timeout is None or timeout == "":
-            print("timeout should not be None")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "timeout should not be None")
         else:
             self.update_test_config["configuration"]["timeout"] = timeout
 
     def update_retries(self, retry: int):
         """retries"""
-        if retry >= 0 and retry <= 2:
+        if 0 <= retry <= 2:
             self.update_test_config["configuration"]["retries"] = retry
         else:
-            print("retry should be in [0, 2]")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "retry should be in [0, 2]")
 
     def update_retry_interval(self, interval: int):
         """retryInterval"""
         if 1 <= interval <= 10:
             self.update_test_config["configuration"]["retryInterval"] = interval
         else:
-            print("retryInterval should be in [1,10]")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "retryInterval should be in [1,10]")
 
     def update_ping_operation(self, method: str = "GET"):
         """operation"""
@@ -2426,8 +2413,7 @@ class UpdateSyntheticTest(SyntheticTest):
         if method is not None and method.upper() in valid_methods:
             self.update_test_config["configuration"]["operation"] = method.upper()
         else:
-            print(f"{method} is not allowed")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, f"{method} is not allowed")
 
     def update_mark_synthetic_call(self, mark_synthetic_call):
         """mark Synthetic call"""
@@ -2435,8 +2421,7 @@ class UpdateSyntheticTest(SyntheticTest):
         if mark_synthetic_call is not None and mark_synthetic_call.lower() in mark_synthetic_call_options:
             self.update_test_config["configuration"]["markSyntheticCall"] = mark_synthetic_call
         else:
-            print("markSyntheticCall should be true or false")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "markSyntheticCall should be true or false")
 
     def update_config_script_file(self, script_name):
         """--script-file update script using script name"""
@@ -2446,8 +2431,7 @@ class UpdateSyntheticTest(SyntheticTest):
                 if script is not None:
                     self.update_test_config["configuration"]["script"] = script
                 else:
-                    print("script cannot be none")
-                    sys.exit(1)
+                    self.exit_synctl(ERROR_CODE, "script cannot be none")
         except FileNotFoundError as not_found_e:
             print(not_found_e)
             sys.exit(-1)
@@ -2455,8 +2439,7 @@ class UpdateSyntheticTest(SyntheticTest):
     def update_script_file(self, script_file):
         """--entry-file update scriptFile """
         if script_file == "" or script_file is None:
-            print("script_file should not be None")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "script file should not be None")
         else:
             self.update_test_config["configuration"]["scripts"]["scriptFile"] = script_file
 
@@ -2465,8 +2448,7 @@ class UpdateSyntheticTest(SyntheticTest):
         if url is not None:
             self.update_test_config["configuration"]["url"] = url
         else:
-            print("url should not be none")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "url should not be none")
 
     def update_follow_redirect(self, follow_redirect):
         """update follow-redirect"""
@@ -2474,22 +2456,19 @@ class UpdateSyntheticTest(SyntheticTest):
         if follow_redirect is not None and follow_redirect in follow_redirect_options:
             self.update_test_config["configuration"]["followRedirect"] = follow_redirect
         else:
-            print("followRedirect should be true/false ")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "followRedirect should be true/false ")
 
     def update_expect_status(self, expect_status):
         """update expect status"""
         if expect_status is not None:
             self.update_test_config["configuration"]["expectStatus"] = expect_status
         else:
-            print("expectStatus should not be none")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "expectStatus should not be none")
 
     def update_validation_string(self, validation_string):
         """update validation string"""
         if validation_string is None or validation_string == "":
-            print("validation string should not be none")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "validation string should not be none")
         else:
             self.update_test_config["configuration"]["validationString"] = validation_string
 
@@ -2508,14 +2487,12 @@ class UpdateSyntheticTest(SyntheticTest):
     def update_custom_properties(self, custom_property):
         """update custom properties"""
         if any(s == '' or s.isspace() for s in custom_property):
-            print("Custom property should be <key>=<value>")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
 
         for item in custom_property:
             key, value = item.split('=')
             if key == '' or value == '':
-                print("Custom property should be <key>=<value>")
-                sys.exit(1)
+                self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
             self.update_test_config["customProperties"][key] = value
 
     def get_updated_test_config(self, ):
@@ -2541,12 +2518,10 @@ class UpdateSmartAlert(SyntheticTest):
         host = self.auth["host"]
         token = self.auth["token"]
         if new_payload is None:
-            print("config cannot be empty")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "config cannot be empty")
 
         if alert_id is None or alert_id == "":
-            print("alert id should not be empty")
-            return
+            self.exit_synctl(ERROR_CODE, "alert id should not be none")
         else:
             update_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
 
@@ -2580,14 +2555,10 @@ class UpdateSmartAlert(SyntheticTest):
         token = self.auth["token"]
 
         if alert_id is None:
-            print("alert id should not be none")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "alert id should not be none")
         else:
-            if toggle == 'enable':
-                put_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}/enable"
-            elif toggle == 'disable':
-                if toggle in ('enable', 'disable'):
-                    put_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}/{toggle}"
+            if toggle in ('enable', 'disable'):
+                put_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}/{toggle}"
 
         headers = {
             'Content-Type': 'application/json',
@@ -2612,40 +2583,35 @@ class UpdateSmartAlert(SyntheticTest):
     def update_alert_name(self, name):
         """update alert name"""
         if name == "" or name is None:
-            print("name should not be none")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "name should not be none")
         else:
             self.update_alert_config["name"] = name
 
     def update_alert_severity(self, severity):
         """update severity"""
         if severity is None:
-            print("severity should not be none")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "severity should not be none")
         else:
             self.update_alert_config["severity"] = severity
 
     def update_alert_channel(self, alert_channel):
         """update alerting channels"""
         if alert_channel is None or alert_channel == "":
-            print("alert channels should not be none")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "alert channels should not be none")
         else:
             self.update_alert_config["alertChannelIds"] = alert_channel
 
     def update_tests(self, synthetic_tests):
         """update synthetic tests"""
         if any(s == '' or s.isspace() for s in synthetic_tests):
-            print("synthetic tests should not be none")
-            self.exit_synctl(1, "synthetic tests should not be none")
+            self.exit_synctl(ERROR_CODE, "synthetic tests should not be none")
         else:
             self.update_alert_config["syntheticTestIds"] = synthetic_tests
 
     def update_violation_count(self, violation_count):
         """update violation count"""
         if violation_count is None:
-            print("violation count should not be none")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "violation count should not be none")
         else:
             self.update_alert_config["timeThreshold"]["violationsCount"] = violation_count
 
@@ -3683,6 +3649,7 @@ def main():
     para_instanace = ParseParameter()
     para_instanace.set_options()
     get_args = para_instanace.get_parser().parse_args()
+    update_args = get_args.__dict__.items()
 
     sys_args = sys.argv
 
@@ -4084,12 +4051,7 @@ def main():
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
-            for option in invalid_options:
-                for key, value in get_args.__dict__.items():
-                    if option == key:
-                        if value is not None:
-                            print(f"option: --{key} not supported by synthetic tests")
-                            sys.exit(1)
+            update_instance.invalid_update_options(invalid_options, update_args)
             if get_args.enable is True or get_args.disable is True:
                 print("--enable/--disable not supported by synthetic test")
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
@@ -4140,16 +4102,10 @@ def main():
                 updated_payload = update_instance.get_updated_test_config()
                 update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:
-            invalid_options = [get_args.active, get_args.frequency, get_args.timeout, get_args.retry_interval, get_args.retries,
-                               get_args.operation, get_args.script_file, get_args.location, get_args.record_video,
-                               get_args.mark_synthetic_call, get_args.entry_file, get_args.url, get_args.follow_redirect,
-                               get_args.expect_status, get_args.validation_string, get_args.bundle, get_args.custom_property]
-            for option in invalid_options:
-                if option is not None:
-                    for key, value in get_args.__dict__.items():
-                        if option == value:
-                            print(f"option: --{key} not supported by smart alerts")
-                            sys.exit(1)
+            invalid_options = ["label", "active", "frequency", "timeout", "retry_interval", "retries", "operation", "script_file",
+                               "location", "record_video", "mark_synthetic_call", "entry_file", "url", "follow_redirect",
+                               "expect_status", "validation_string", "bundle", "custom_property"]
+            update_instance.invalid_update_options(invalid_options, update_args)
             payload = syn_instance.retrieve_a_smart_alert(get_args.id)
             update_alert.set_alert_config(payload)
             if get_args.file is not None:
