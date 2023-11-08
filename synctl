@@ -4090,7 +4090,7 @@ def main():
                             print(f"option: --{key} not supported by synthetic tests")
                             sys.exit(1)
             if get_args.enable is True or get_args.disable is True:
-                print("enable/disable not supported by synthetic test")
+                print("--enable/--disable not supported by synthetic test")
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
             update_instance.set_updated_payload(payload)
             if get_args.file is not None:
