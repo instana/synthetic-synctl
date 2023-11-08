@@ -178,7 +178,7 @@ synctl update test <test-id> --label "simple-ping" \\
     --follow-redirect true \\
     --timeout 1m \\
     --frequency 5 \\
-    --app-id "$APP-ID" \\
+    --app-id "$APP_ID" \\
     --custom-property "key1=value1,key2=value2"
 
 # update alert with multiple options
