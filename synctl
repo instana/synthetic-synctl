@@ -2636,7 +2636,7 @@ class UpdateSmartAlert(SyntheticTest):
         """update synthetic tests"""
         if any(s == '' or s.isspace() for s in synthetic_tests):
             print("synthetic tests should not be none")
-            sys.exit(1)
+            self.exit_synctl(1, "synthetic tests should not be none")
         else:
             self.update_alert_config["syntheticTestIds"] = synthetic_tests
 
