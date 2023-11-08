@@ -2296,11 +2296,9 @@ class UpdateSyntheticTest(SyntheticTest):
             self.update_test_config = payload[0]
 
     def invalid_update_options(self, invalid_options, items):
-        for option in invalid_options:
-            for key, value in items:
-                if option == key:
-                    if value is not None:
-                        self.exit_synctl(ERROR_CODE, f"option: --{key} not supported by synthetic tests")
+        for key, value in items:
+            if key in invalid_options and value is not None:
+                self.exit_synctl(ERROR_CODE, f"option: --{key} is not supported")
 
     def update_a_synthetic_test(self, test_id, new_payload):
         """API https://instana.github.io/openapi/#operation/updateSyntheticTest"""
