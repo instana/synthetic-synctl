@@ -4147,7 +4147,7 @@ def main():
                 if option is not None:
                     for key, value in get_args.__dict__.items():
                         if option == value:
-                            print(f"{key} not supported by smart alerts")
+                            print(f"option: --{key} not supported by smart alerts")
                             sys.exit(1)
             payload = syn_instance.retrieve_a_smart_alert(get_args.id)
             update_alert.set_alert_config(payload)
