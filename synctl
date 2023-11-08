@@ -4087,7 +4087,7 @@ def main():
                 for key, value in get_args.__dict__.items():
                     if option == key:
                         if value is not None:
-                            print(f"{key} not supported by synthetic tests")
+                            print(f"option: --{key} not supported by synthetic tests")
                             sys.exit(1)
             if get_args.enable is True or get_args.disable is True:
                 print("enable/disable not supported by synthetic test")
