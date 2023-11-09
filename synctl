@@ -2525,7 +2525,7 @@ class UpdateSyntheticTest(SyntheticTest):
                 self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
             self.update_config["customProperties"][key] = value
 
-    def get_updated_test_config(self, ):
+    def get_updated_test_config(self):
         """return payload as json"""
         result = json.dumps(self.update_config)
         return result
