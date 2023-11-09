@@ -2230,7 +2230,7 @@ class SmartAlert(Base):
         if result.status_code == 204:
             print(f'alert \"{alert_id}\" deleted')
         elif result.status_code == 404:
-            print(f"{alert_id} not found")
+            self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
         elif result.status_code == 429:
             self.exit_synctl(-1, "Too Many Requests")
         else:
@@ -2239,10 +2239,8 @@ class SmartAlert(Base):
     def delete_multiple_smart_alerts(self, alert_list):
         start_time = time.time()
         total_number = 0
-        if alert_list is None:
-            alert_list = []
 
-        if len(alert_list) == 0:
+        if alert_list is None or len(alert_list) == 0:
             print("No alerts to delete")
             return
 
@@ -3587,6 +3585,7 @@ class ParseParameter:
         self.parser_update.add_argument(
             '--file', '-f', type=str, metavar="<file-name>", help='json payload')
 
+        update_exclusive_group = self.parser_update.add_mutually_exclusive_group()
         update_group = self.parser_update.add_argument_group()
         update_group.add_argument(
             '--active', type=str, metavar="<boolean>", help='set active')
@@ -3641,9 +3640,9 @@ class ParseParameter:
         update_group.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
         # enable/disable smart alerts
-        self.parser_update.add_argument(
+        update_exclusive_group.add_argument(
             '--enable', action='store_true', help='enable smart alert')
-        self.parser_update.add_argument(
+        update_exclusive_group.add_argument(
             '--disable', action='store_true', help='disable smart alert')
 
 
@@ -4165,6 +4164,9 @@ def main():
             if get_args.file is not None:
                 new_payload = update_alert.update_using_file(get_args.file)
                 update_alert.update_a_smart_alert(get_args.id, new_payload)
+            elif get_args.enable is True or get_args.disable is True:
+                operation = "enable" if get_args.enable else "disable"
+                update_alert.toggle_smart_alert(get_args.id, operation)
             else:
                 if get_args.name is not None:
                     update_alert.update_alert_name(get_args.name)
@@ -4180,9 +4182,6 @@ def main():
                     update_alert.update_violation_count(get_args.violation_count)
                 updated_alert_config = update_alert.get_updated_alert_config()
                 update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
-                operation = "enable" if get_args.enable else "disable" if get_args.disable else None
-                if operation is not None:
-                    update_alert.toggle_smart_alert(get_args.id, operation)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
