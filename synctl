@@ -186,8 +186,11 @@ synctl update alert <alert-id> --name "Smart-alert" \\
        --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \\
        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \\
        --violation-count 2 \\
-       --severity 10 \\
-       --enable
+       --severity 10 
+       
+# enable/disable a smart alert
+synctl update alert <alert-id> --enable
+synctl update alert <alert-id> --disable
 """
 
 DELETE_USAGE = """synctl delete {location,lo,test,cred,alert} [id...] [options]
@@ -2321,10 +2324,13 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.update_config = payload[0]
 
-    def invalid_update_options(self, invalid_options, items):
+    def invalid_update_options(self, invalid_options, items, syn_type=None, toggle=None):
         for key, value in items:
             if key in invalid_options and value is not None:
-                self.exit_synctl(ERROR_CODE, f"option: --{key} is not supported")
+                if toggle is not None:
+                    self.exit_synctl(ERROR_CODE, f"option: --{key} is not allowed with --{toggle}")
+                elif syn_type == SYN_TEST or syn_type == SYN_ALERT:
+                    self.exit_synctl(ERROR_CODE, f"option: --{key} is not supported with {syn_type}s")
 
     def update_a_synthetic_test(self, test_id, new_payload):
         """API https://instana.github.io/openapi/#operation/updateSyntheticTest"""
@@ -4102,9 +4108,9 @@ def main():
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
-            update_instance.invalid_update_options(invalid_options, update_args)
+            update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
             if get_args.enable is True or get_args.disable is True:
-                print("--enable/--disable not supported by synthetic test")
+                update_instance.exit_synctl(ERROR_CODE, "option: --enable/--disable not supported by synthetic tests")
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
             update_instance.set_updated_payload(payload)
             if get_args.file is not None:
@@ -4158,7 +4164,7 @@ def main():
             invalid_options = ["label", "active", "frequency", "timeout", "retry_interval", "retries", "operation", "script_file",
                                "location", "record_video", "mark_synthetic_call", "entry_file", "url", "follow_redirect",
                                "expect_status", "validation_string", "bundle", "custom_property"]
-            update_instance.invalid_update_options(invalid_options, update_args)
+            update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
             payload = alert_instance.retrieve_a_smart_alert(get_args.id)
             update_alert.set_updated_payload(payload)
             if get_args.file is not None:
@@ -4166,6 +4172,8 @@ def main():
                 update_alert.update_a_smart_alert(get_args.id, new_payload)
             elif get_args.enable is True or get_args.disable is True:
                 operation = "enable" if get_args.enable else "disable"
+                invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
+                update_instance.invalid_update_options(invalid_options, update_args, toggle=operation)
                 update_alert.toggle_smart_alert(get_args.id, operation)
             else:
                 if get_args.name is not None:

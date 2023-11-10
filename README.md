@@ -899,8 +899,11 @@ synctl update alert <alert-id> --name "Smart-alert" \
     --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \
     --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \
     --violation-count 2 \
-    --severity 10 \ 
-    --enable
+    --severity 10
+    
+# enable/disable a smart alert
+synctl update alert <alert-id> --enable
+synctl update alert <alert-id> --disable
 ```
 
 # Delete a Smart alert
