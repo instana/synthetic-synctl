@@ -58,7 +58,18 @@ OPTIONS_PARAMS = "options"
 
 NOT_APPLICABLE = "N/A"
 
-ERROR_CODE = 1
+NORMAL_CODE, ERROR_CODE = (0, 1)
+
+TOO_MANY_REQUEST_ERROR="Too Many Requests"
+
+def status_is_200(status):
+    return status == 200
+
+def status_is_204(status):
+    return status == 204
+
+def status_is_400(status):
+    return status == 400
 
 def show_version():
     """show synctl version"""
@@ -81,7 +92,7 @@ Commands:
     update              update a Synthetic test and smart alert
     delete              delete Synthetic tests, locations credentials and smart alert
 
-Use "synctl <command> --help" for more information about a command.
+Use "synctl <command> -h/--help" for more information about a command.
     """
     print(m)
 
@@ -243,8 +254,7 @@ class Base:
 
     def check_host_and_token(self, host, token):
         if host == "" or token == "":
-            print("host or token should not be empty")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "host or token should not be empty")
 
     def set_insecure(self, verify=False):
         self.insecure = verify
@@ -452,8 +462,7 @@ class ConfigurationFile(Base):
                 "token": self.config_json[0]["token"]
             }
         else:
-            print("no configurations")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "no configurations")
 
     def get_auth_by_name(self, name):
         if len(self.config_json) > 0:
@@ -463,7 +472,7 @@ class ConfigurationFile(Base):
                         "host": self.__remove_right_slash(item["host"]),
                         "token": item["token"]
                     }
-            raise ValueError(f"no config named {name}")
+            raise ValueError(f"no config named \"{name}\"")
         else:
             return {"host": "", "token": ""}
 
@@ -684,15 +693,13 @@ class SyntheticConfiguration(Base):
     def __ensure_script_not_empty(self):
         if "script" in self.syn_test_config["configuration"]:
             if self.syn_test_config["configuration"]["script"] is None or self.syn_test_config["configuration"]["script"] == "":
-                print("Error: script cannot be empty")
-                sys.exit(-1)
+                self.exit_synctl(ERROR_CODE, "Error: script cannot be empty")
 
     def __ensure_bundle_script_not_empty(self):
         if "scripts" in self.syn_test_config["configuration"]:
             bundle_scripts = self.syn_test_config["configuration"]["scripts"]["bundle"]
             if bundle_scripts is None or bundle_scripts == "":
-                print("Error: bundle script cannot be empty")
-                sys.exit(-1)
+                self.exit_synctl(ERROR_CODE, "Error: bundle script cannot be empty")
 
     def set_application_id(self, application_id: str):
         """set application id"""
@@ -763,8 +770,7 @@ class SyntheticConfiguration(Base):
     def set_api_script_script(self, script_str: str) -> None:
         """set script"""
         if script_str is None:
-            print(f"script content: {script_str}")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, f"script content: {script_str}")
 
         if self.syn_type in (HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE) and script_str != "":
             self.syn_test_config["configuration"]["script"] = script_str
@@ -779,8 +785,7 @@ class SyntheticConfiguration(Base):
     def set_api_bundle_script(self, script_str: str, script_file: str = "index.js") -> None:
         """set bundle script and scriptFile"""
         if script_str is None:
-            print("bundle script is None")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "bundle script is None")
 
         if self.syn_type in self.script_type and self.is_bundle is True:
             self.syn_test_config["configuration"]["scripts"]["bundle"] = script_str
@@ -866,8 +871,7 @@ class SyntheticConfiguration(Base):
                 info = file1.read()
                 return info
         except FileNotFoundError as not_found_e:
-            print(not_found_e)
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, not_found_e)
 
     def get_test_conf_ins(self):
         if len(self.syn_test_config["locations"]) == 0:
@@ -880,8 +884,7 @@ class SyntheticConfiguration(Base):
                 json_payload = json_file1.read()
                 self.syn_test_config = json.loads(json_payload)
         except FileNotFoundError as not_found_e:
-            print(not_found_e)
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, not_found_e)
 
     def is_zip_file(self, file_name):
         """check zip file name"""
@@ -900,16 +903,14 @@ class SyntheticConfiguration(Base):
     def get_json(self):
         """return payload as json"""
         if len(self.syn_test_config["locations"]) == 0:
-            print("Error: no location, set --location <location-id> at least a location")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "Error: no location, set --location <location-id> at least a location")
 
         # script should not be empty
         self.__ensure_script_not_empty()
         # bundle script should not be empty
         self.__ensure_bundle_script_not_empty()
 
-        result = json.dumps(self.syn_test_config)
-        return result
+        return json.dumps(self.syn_test_config)
 
 
 class CredentialConfiguration(Base):
@@ -929,11 +930,9 @@ class CredentialConfiguration(Base):
     def get_json(self):
         """return payload as json"""
         if len(self.credential_config["credentialName"]) == 0:
-            print("Error: no credential name, set --key <credential-name>")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "Error: no credential name, set --key <credential-name>")
         elif len(self.credential_config["credentialValue"]) == 0:
-            print("Error: no credential value, set --value <credential-value> ")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "Error: no credential value, set --value <credential-value> ")
 
         result = json.dumps(self.credential_config)
         return result
@@ -1027,14 +1026,11 @@ class SmartAlertConfiguration(Base):
     def get_json(self):
         """return payload as json"""
         if len(self.smart_alert_config["syntheticTestIds"]) == 0:
-            print("Error: no synthetic tests, set --test <test-id> at least a synthetic test")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "Error: no synthetic tests, set --test <test-id> at least a synthetic test")
         if len(self.smart_alert_config["alertChannelIds"]) == 0:
-            print("Error: no alert channel, set --alert-channel <alert-channel-id> at least an alert channel ")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "Error: no alert channel, set --alert-channel <alert-channel-id> at least an alert channel ")
 
-        result = json.dumps(self.smart_alert_config)
-        return result
+        return  json.dumps(self.smart_alert_config)
 
 class SyntheticLocation(Base):
     def __init__(self) -> None:
@@ -1069,9 +1065,8 @@ class SyntheticLocation(Base):
         elif retrieve_res.status_code == 429:
             self.exit_synctl(-1, "Too Many Request")
         else:
-            print(
+            self.exit_synctl(ERROR_CODE,
                 f"Failed to get locations, status code {retrieve_res.status_code}")
-            sys.exit(-1)
 
     def get_location_summary_list(self,  page=1, page_size=200, window_size=60*60*1000):
         """curl --request POST 'http://{host}/api/synthetics/results/locationsummarylist'
@@ -1202,7 +1197,7 @@ class SyntheticLocation(Base):
         elif r.status_code == 404:
             print(f"{location_id} not found")
         elif r.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
         else:
             print(f"Fail to delete {location_id}, status code {r.status_code}")
 
@@ -1325,7 +1320,7 @@ class SyntheticTest(Base):
             test_label = data["label"]
             print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
         elif create_res.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print('create test failed, status code:', create_res.status_code)
             if create_res.text:
@@ -1406,18 +1401,17 @@ class SyntheticTest(Base):
             else:
                 print('unknown data:', data)
         elif result.status_code == 403:
-            self.exit_synctl(error_code=-1,
+            self.exit_synctl(error_code=ERROR_CODE,
                              message='Insufficient access rights for resource')
         elif result.status_code == 404:
-            self.exit_synctl(error_code=-1,
+            self.exit_synctl(error_code=ERROR_CODE,
                              message=f'test {test_id} not found')
         elif result.status_code == 429:
-            self.exit_synctl(error_code=-1,
-                             message='Too Many Requests')
+            self.exit_synctl(error_code=ERROR_CODE,
+                             message=TOO_MANY_REQUEST_ERROR)
         else:
-            print(
+            self.exit_synctl(ERROR_CODE,
                 f'get test {test_id} failed, status code: {result.status_code}')
-            sys.exit(-1)
 
     def retrieve_all_synthetic_tests(self, syn_type=None):
         # API doc: https://instana.github.io/openapi/#operation/getSyntheticTests
@@ -1453,18 +1447,15 @@ class SyntheticTest(Base):
                     return [data]
                 return []
             else:
-                print(f'unknown data: {data}')
-                sys.exit(-1)
+                self.exit_synctl(ERROR_CODE, f'unknown data: {data}')
         elif query_result.status_code == 403:
-            print('Insufficient access rights for resource')
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, 'Insufficient access rights for resource')
         elif query_result.status_code == 404:
-            self.exit_synctl(-1, 'test not found')
+            self.exit_synctl(ERROR_CODE, 'test not found')
         elif query_result.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
-            print(f'get test failed, status code: {query_result.status_code}')
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, f'get test failed, status code: {query_result.status_code}')
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
         host = self.auth["host"]
@@ -1472,7 +1463,9 @@ class SyntheticTest(Base):
         self.check_host_and_token(host, token)
 
         if isinstance(tag_filter[0], str) and tag_filter[0].lower() == "locationid":
-            summary_config = {"syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"], "metrics": [{
+            summary_config = {
+                "syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"], 
+                "metrics": [{
                 "aggregation": "SUM",
                 "granularity": 600,
                 "metric": "synthetic.metricsStatus"
@@ -1593,7 +1586,7 @@ class SyntheticTest(Base):
         if del_result.status_code == 204:
             print(f'test \"{test_id}\" deleted')
         elif del_result.status_code == 429:
-            print("Too Many Requests")
+            print(TOO_MANY_REQUEST_ERROR)
         else:
             print(
                 f"Fail to delete {test_id}, status code {del_result.status_code}")
@@ -1695,7 +1688,7 @@ class SyntheticTest(Base):
             if delete_res.status_code == 204:
                 print(f'credential \"{cred}\" deleted')
             elif delete_res.status_code == 429:
-                print("Too Many Requests")
+                print(TOO_MANY_REQUEST_ERROR)
             else:
                 print(
                     f"Fail to delete {cred}, status code {delete_res.status_code}")
@@ -2207,7 +2200,7 @@ class SmartAlert(Base):
             alert_name = data["name"]
             print(f"smart alert \"{alert_name}\" created, id is \"{alert_id}\"")
         elif create_res.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
         else:
             print('create test failed, status code:', create_res.status_code)
             if create_res.text:
@@ -2235,7 +2228,7 @@ class SmartAlert(Base):
         elif result.status_code == 404:
             self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
         elif result.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
         else:
             self.exit_synctl(ERROR_CODE, f"Failed to delete {alert_id}, status code {result.status_code}")
 
@@ -2362,7 +2355,7 @@ class UpdateSyntheticTest(SyntheticTest):
         elif update_result.status_code == 400:
             print(f'Error: {update_result}', update_result.content)
         elif update_result.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
         else:
             print(
                 f'update test {test_id} failed, status code: {update_result.status_code}')
@@ -2461,8 +2454,7 @@ class UpdateSyntheticTest(SyntheticTest):
                 else:
                     self.exit_synctl(ERROR_CODE, "script cannot be none")
         except FileNotFoundError as not_found_e:
-            print(not_found_e)
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, not_found_e)
 
     def update_script_file(self, script_file):
         """--entry-file update scriptFile """
@@ -2589,7 +2581,7 @@ class UpdateSmartAlert(SmartAlert):
         elif update_result.status_code == 400:
             print(f'Error: {update_result}', update_result.content)
         elif update_result.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print(
                 f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
@@ -2623,7 +2615,7 @@ class UpdateSmartAlert(SmartAlert):
         elif update_result.status_code == 400:
             print(f'Error: {update_result}', update_result.content)
         elif update_result.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print(
                 f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
@@ -2678,8 +2670,7 @@ class PatchSyntheticTest(SyntheticTest):
 
     def __ensure_test_id_not_none(self, test_id):
         if test_id is None or test_id == "":
-            print("Patch Error: test id is None")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "Patch Error: test id is None")
 
     def __patch_a_synthetic_test(self, test_id, data):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2690,8 +2681,7 @@ class PatchSyntheticTest(SyntheticTest):
         patch_url = f"{host}/api/synthetics/settings/tests/{test_id}"
 
         if data is None:
-            print("Patch Error:data cannot be empty")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "Patch Error:data cannot be empty")
 
         headers = {
             'Content-Type': 'application/json',
@@ -2709,7 +2699,7 @@ class PatchSyntheticTest(SyntheticTest):
         elif patch_result.status_code == 400:
             print(f'Patch Error: {patch_result}', patch_result.json())
         elif patch_result.status_code == 429:
-            print('Too Many Requests')
+            print(TOO_MANY_REQUEST_ERROR)
         else:
             print(
                 f'patch test {test_id} failed, status code: {patch_result.status_code}')
@@ -2845,8 +2835,7 @@ class PatchSyntheticTest(SyntheticTest):
                 script_str = script_file.read()
                 self.patch_config_script(script_str)
         except FileNotFoundError as not_found_e:
-            print(not_found_e)
-            sys.exit(-1)
+            print(ERROR_CODE, not_found_e)
 
     def patch_script_file(self, script_file, test_id):
         """--entry-file update scriptFile """
@@ -2940,14 +2929,13 @@ class PatchSyntheticTest(SyntheticTest):
         test_result = self.retrieve_a_synthetic_test(test_id)
         payload = test_result[0]
         if any(s == '' or s.isspace() for s in custom_property):
-            print("Custom property should be <key>=<value>")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
 
         for item in custom_property:
             key, value = item.split('=')
             if key == '' or value == '':
-                print("Custom property should be <key>=<value>")
-                sys.exit(1)
+                self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
+
             payload["customProperties"][key] = value
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
@@ -2963,8 +2951,7 @@ class SyntheticResult(Base):
         if match1 is not None:
             return int(match1.group())
         else:
-            print(f"{num} is not correct, use <num>m, <num>h")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, f"{num} is not correct, use <num>m, <num>h")
 
     def get_window_size(self, window_size: str):
         re_min = re.compile("^[1-9]+[0-9]*m$")
@@ -2985,8 +2972,7 @@ class SyntheticResult(Base):
             else:
                 print("hours should be in [1, 24]")
         else:
-            print(f"{window_size} for --window-size is not supported")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, f"{window_size} for --window-size is not supported")
 
         # got an error when retrieve test summary list failed, status code: 400
         # {"code":400,"message":"'synthetic.metricsStatus' metric: the granularity in relation to the windowSize provides too many values"}
@@ -3077,15 +3063,15 @@ class SyntheticResult(Base):
             print(f'Bad Request: status code: {summary_res.status_code}')
             if summary_res.text:
                 print("Error Message:", summary_res.text)
-            sys.exit(-1)
+            self.exit_synctl(error_code=ERROR_CODE)
         elif summary_res.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print('retrieve test summary list failed, status code:',
                   summary_res.status_code)
             if summary_res.text:
                 print("Error Message:", summary_res.text)
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE)
 
     def convert_summary_list_dict(self, summary_result, metrics_summary):
         if summary_result is None or not isinstance(summary_result, dict):
@@ -3208,13 +3194,13 @@ class Application(Base):
             data = app_res.json()
             return data
         elif app_res.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print('retrieve test summary list failed, status code:',
                   app_res.status_code)
             if app_res.text:
                 print(app_res.text)
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE)
 
     def __get_all_application(self,
                               name_filter=None,
@@ -3712,7 +3698,7 @@ def main():
     # show synctl version
     if '-v' in sys_args or '--version' in sys_args:
         show_version()
-        return
+        sys.exit(NORMAL_CODE)
 
     auth_instance = Authentication()
 
@@ -3814,13 +3800,13 @@ def main():
                 if get_args.filter is not None:
                     split_string = get_args.filter.split('=')
                     syn_instance.print_tests_by_filter(split_string)
-                    sys.exit(1)
+                    sys.exit(ERROR_CODE)
 
                 out_list = syn_instance.retrieve_all_synthetic_tests(
                     syn_type_t)
                 if get_args.no_result is True:
                     syn_instance.print_synthetic_test(out_list=out_list)
-                    sys.exit(1)
+                    sys.exit(NORMAL_CODE)
                 summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                    test_id=get_args.id)
                 syn_instance.print_synthetic_test(out_list=out_list,
@@ -3939,7 +3925,7 @@ def main():
                         payload.set_ping_url(get_args.url)
                     else:
                         print("url is required")
-                        sys.exit(-1)
+                        sys.exit(ERROR_CODE)
                     if get_args.operation is not None:
                         payload.set_ping_operation(get_args.operation)
                     if get_args.headers is not None:
@@ -3993,7 +3979,7 @@ def main():
                             script_str=script_content)
                     if payload.get_api_script_script() == "":
                         print("script should not be empty")
-                        sys.exit(-1)
+                        sys.exit(ERROR_CODE)
 
                 # bundle script
                 elif get_args.type in (1, 2) and get_args.bundle is not None:
@@ -4060,7 +4046,7 @@ def main():
 
             else:
                 print('The following arguments are required: -t/--type')
-                sys.exit(1)
+                sys.exit(ERROR_CODE)
     elif COMMAND_PATCH == get_args.sub_command:
         if get_args.id is not None:
             patch_instance.set_test_id(get_args.id)
@@ -4219,7 +4205,7 @@ def main():
                 print('no smart alert to delete')
 
     else:
-        print('unknown sub command:', get_args.sub_command)
+        print('unknown command:', get_args.sub_command)
 
 
 if __name__ == "__main__":
