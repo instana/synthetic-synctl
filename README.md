@@ -834,13 +834,21 @@ synctl create alert [options]
 
 ### synctl create alert Options
 ```
--h, --help                          show this help message and exit
---test id [id ...]                  synthetic-test id, support multiple synthetic tests id
---name <string>                     friendly name of the Smart Alerts
---description, -d <string>          the description of Smart Alerts
---severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
---alert-channel <id>                alerting channel
---violation-count <int>             the number of consecutive failures to trigger an alert
+-h, --help                            show this help message and exit
+--test id [id ...]                    synthetic-test id, support multiple synthetic tests id
+--name <string>                       friendly name of the Smart Alerts
+--description, -d <string>            the description of Smart Alerts
+--severity <int>                      the severity of alert is either 5 (Warning), or 10 (Critical)
+--alert-channel <id>                  alerting channel
+--violation-count <int>               the number of consecutive failures to trigger an alert
+--tag-filter-type <string>            type of tagFilterExpression
+--tag-filter-name <string>            name of tagFilterExpression type TAG_FILTER 
+--tag-filter-string-value <string>    set string value for tagFilterExpression type TAG_FILTER
+--tag-filter-value <string>           Tag value to filter on. Can be a string, number, or boolean value.
+--tag-filter-operator <string>        operator - EQUALS, CONTAINS, LESS_THAN, LESS_OR_EQUAL_THAN, NOT_EMPTY etc.
+--tag-filter-entity <string>          entity - "NOT_APPLICABLE" or "DESTINATION" or "SOURCE"
+--logical-operator <string>           set logical operator, AND, OR 
+--elements <string>                   set elements, array of objects 
 ```
 ### synctl create alert Examples
 ```
@@ -859,6 +867,28 @@ synctl create alert --name "Smart-alert" \
        --alert-channel "$ALERT_CHANNEL" \
        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ...  \
        --violation-count 2
+
+# create alert with tagFilterExpression       
+synctl create alert --name "smart alert" \
+        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2"... \
+        --alert-channel "$ALERT_CHANNEL" \ 
+        --severity 5 \
+        --violation-count 3 \
+        --tag-filter-type TAG_FILTER \
+        --tag-filter-name synthetic.syntheticType \
+        --tag-filter-string-value HTTPAction 
+        --tag-filter-value HTTPAction \ 
+        --tag-filter-operator EQUALS \
+        --tag-filter-entity NOT_APPLICABLE
+        
+synctl create alert --name "smart alert" \
+        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2"... \
+        --alert-channel "$ALERT_CHANNEL" \ 
+        --severity 5 \
+        --violation-count 3 \
+        --tag-filter-type EXPRESSION \
+        --logical-operator OR \
+        --tag-filter-operator EQUAL
 ```
 # Update a Smart Alert
 

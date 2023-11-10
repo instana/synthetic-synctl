@@ -958,8 +958,6 @@ class SmartAlertConfiguration(Base):
             # This boolean metric requires no threshold to be specified, because value of status=0 indicates a test failure.
             "rule": {
                 "alertType": 'failure',
-                "metricName": "status",
-                "aggregation": "SUM"
             },
             # Defines the triggering condition in time, such as how many consecutive test failures are required to open an event.
             "timeThreshold": {
@@ -969,12 +967,9 @@ class SmartAlertConfiguration(Base):
             # alertChannelIds: It is an array of alert channels defined in Instana.
             "alertChannelIds": [],
             "tagFilterExpression": {
-                "type": "TAG_FILTER",
-                "name": "synthetic.syntheticType",
-                "stringValue": "API Simple",
-                "value": "API Simple",
-                "operator": "EQUALS",
-                "entity": "NOT_APPLICABLE"
+                "type": 'EXPRESSION',
+                "logicalOperator": 'AND',
+                "elements": []
             }
         }
 
@@ -1023,6 +1018,30 @@ class SmartAlertConfiguration(Base):
     def set_alert_channel(self, alert_channels):
         """set alert channels"""
         self.smart_alert_config["alertChannelIds"] = alert_channels
+
+    def set_tag_filter_type(self, type):
+        self.smart_alert_config["tagFilterExpression"]["type"] = type
+
+    def set_tag_filter_name(self, filter_name):
+        self.smart_alert_config["tagFilterExpression"]["name"] = filter_name
+
+    def set_string_value(self, string_value):
+        self.smart_alert_config["tagFilterExpression"]["stringValue"] = string_value
+
+    def set_value(self, value):
+        self.smart_alert_config["tagFilterExpression"]["value"] = value
+
+    def set_operator(self, operator):
+        self.smart_alert_config["tagFilterExpression"]["operator"] = operator
+
+    def set_entity(self, entity):
+        self.smart_alert_config["tagFilterExpression"]["entity"] = entity
+
+    def set_logical_operator(self, logical_operator):
+        self.smart_alert_config["tagFilterExpression"]["logicalOperator"] = logical_operator
+
+    def set_elements(self, elements):
+        self.smart_alert_config["tagFilterExpression"]["elements"] = elements
 
     def get_json(self):
         """return payload as json"""
@@ -2213,6 +2232,11 @@ class SmartAlert(Base):
             if create_res.text:
                 print(create_res.text)
 
+    def invalid_create_options(self, invalid_options, items, tag_filter_type=None):
+        for key, value in items:
+            if key in invalid_options and value is not None:
+                self.exit_synctl(ERROR_CODE, f"option: --{key} is not supported with tagFilterExpression type: {tag_filter_type}")
+
     def __delete_a_smart_alert(self, alert_id=""):
         """delete a smart alert"""
         if alert_id == "":
@@ -2233,7 +2257,7 @@ class SmartAlert(Base):
         if result.status_code == 204:
             print(f'alert \"{alert_id}\" deleted')
         elif result.status_code == 404:
-            self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
+            print(f"{alert_id} not found")
         elif result.status_code == 429:
             self.exit_synctl(-1, "Too Many Requests")
         else:
@@ -2276,6 +2300,7 @@ class SmartAlert(Base):
                   self.fill_space(str(x["severity"]), severity_length),
                   self.fill_space(str(x["enabled"])),
                   self.fill_space(test_str))
+        print('Total:', len(alerts))
 
     def print_a_alert_details(self, alert_id, single_alert, show_details=False, show_json=False):
         """Show a smart alert details data"""
@@ -3450,20 +3475,45 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--value', type=str, metavar="<value>", help='set credential value')
 
+        # smart alerts
         self.parser_create.add_argument(
             '--name', type=str, metavar="<string>", help='friendly name for smart alert')
 
         self.parser_create.add_argument(
-            '--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
+            '--test', type=str, nargs='+', metavar="<id>", help="test id, support multiple test id")
 
         self.parser_create.add_argument(
-            '--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
+            '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
 
         self.parser_create.add_argument(
             '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
 
         self.parser_create.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
+
+        self.parser_create.add_argument(
+            '--tag-filter-type', type=str, choices=["TAG_FILTER", "EXPRESSION"], metavar="<string>", help="tag filter type")
+
+        self.parser_create.add_argument(
+            '--tag-filter-name', type=str, metavar="<string>", help="set tag-filter name")
+
+        self.parser_create.add_argument(
+            '--tag-filter-string-value', type=str, metavar="<string>", help="set string value")
+
+        self.parser_create.add_argument(
+            '--tag-filter-value', type=str, metavar="<string>", help="set value")
+
+        self.parser_create.add_argument(
+            '--tag-filter-operator', type=str, metavar="<string>", help="set operator")
+
+        self.parser_create.add_argument(
+            '--tag-filter-entity', type=str, metavar="<string>", help="set entity")
+
+        self.parser_create.add_argument(
+            '--logical-operator', type=str, metavar="<string>", help="set logical operator")
+
+        self.parser_create.add_argument(
+            '--elements', type=str, metavar="<string>", help="set elements")
 
 
         # set auth
@@ -3911,7 +3961,29 @@ def main():
                 alert_payload.set_violations_count(get_args.violation_count)
             if get_args.severity is not None:
                 alert_payload.set_severity(get_args.severity)
-
+            if get_args.tag_filter_type is not None:
+                alert_payload.set_tag_filter_type(get_args.tag_filter_type)
+                if get_args.tag_filter_type == "TAG_FILTER":
+                    invalid_options = ["logical_operator", "elements"]
+                    alert_instance.invalid_create_options(invalid_options, update_args, get_args.tag_filter_type)
+                    if get_args.tag_filter_name is not None:
+                        alert_payload.set_tag_filter_name(get_args.tag_filter_name)
+                    if get_args.tag_filter_string_value is not None:
+                        alert_payload.set_string_value(get_args.tag_filter_string_value)
+                    if get_args.tag_filter_value is not None:
+                        alert_payload.set_value(get_args.tag_filter_value)
+                    if get_args.tag_filter_operator is not None:
+                        alert_payload.set_operator(get_args.tag_filter_operator)
+                    if get_args.tag_filter_entity is not None:
+                        alert_payload.set_entity(get_args.tag_filter_entity)
+                elif get_args.tag_filter_type == "EXPRESSION":
+                    invalid_options = ["tag_filter_name", "string_value", "tag_filter_value",
+                                       "tag_filter_operator", "tag_filter_entity"]
+                    alert_instance.invalid_create_options(invalid_options, update_args, get_args.tag_filter_type)
+                    if get_args.logical_operator is not None:
+                        alert_payload.set_logical_operator(get_args.logical_operator)
+                    if get_args.elements is not None:
+                        alert_payload.set_elements(get_args.elements)
             alert_instance.set_alert_payload(alert_payload.get_json())
             alert_instance.create_synthetic_alert()
         elif get_args.syn_type == SYN_TEST:
