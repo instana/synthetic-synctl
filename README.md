@@ -676,7 +676,6 @@ synctl update test <synthetic-id> \
     --custom-property "key1=value1,key2=value2"
 ```
 
-
 # Delete synthetic test
 
 ### synctl delete test Syntax
@@ -873,6 +872,14 @@ synctl update alert <id> [options]
 -h, --help                          show this help message and exit
 
 --file,-f <file-name>               json payload
+--test id [id ...]                  synthetic-test id, support multiple synthetic tests id
+--name <string>                     friendly name of the Smart Alerts
+--description, -d <string>          the description of Smart Alerts
+--severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
+--alert-channel <id>                alerting channel
+--violation-count <int>             the number of consecutive failures to trigger an alert
+--enable                            enable smart alert
+--disable                           disable smart alert
 
 --use-env, -e <name>                use a config hostname
 --host <host>                       set hostname
@@ -887,6 +894,16 @@ synctl get alert <alert-id> --show-json > alert.json
 # edit json file and update
 synctl update alert <alert-id> --file/-f alert.json
 
+# update a smart alert with multiple options
+synctl update alert <alert-id> --name "Smart-alert" \
+    --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \
+    --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \
+    --violation-count 2 \
+    --severity 10
+    
+# enable/disable a smart alert
+synctl update alert <alert-id> --enable
+synctl update alert <alert-id> --disable
 ```
 
 # Delete a Smart alert

@@ -58,6 +58,7 @@ OPTIONS_PARAMS = "options"
 
 NOT_APPLICABLE = "N/A"
 
+ERROR_CODE = 1
 
 def show_version():
     """show synctl version"""
@@ -162,10 +163,34 @@ synctl patch test <id> --frequency 5"""
 UPDATE_USAGE = """synctl update {test,alert} <id> [options]
 
 examples:
-# update Synthetic test
-synctl get test <id>  --show-json > test.json
-edit test.json
-synctl update test <id> --file/-f test.json
+# update synthetic test/smart alert using file
+synctl get test/alert <id>  --show-json > <file-name>.json
+edit <file-name>.json
+synctl update test/alert <id> --file/-f <file-name>.json
+
+# update test with multiple options
+synctl update test <test-id> --label "simple-ping" \\
+    --description "this is a test example" \\
+    --url "https://www.ibm.com" \\
+    --location "$LOCATION1" "$LOCATION2" "$LOCATION3" ... \\
+    --retries 2 \\
+    --retry-interval 2 \\
+    --follow-redirect true \\
+    --timeout 1m \\
+    --frequency 5 \\
+    --app-id "$APP_ID" \\
+    --custom-property "key1=value1,key2=value2"
+
+# update alert with multiple options
+synctl update alert <alert-id> --name "Smart-alert" \\
+       --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \\
+       --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \\
+       --violation-count 2 \\
+       --severity 10 
+       
+# enable/disable a smart alert
+synctl update alert <alert-id> --enable
+synctl update alert <alert-id> --disable
 """
 
 DELETE_USAGE = """synctl delete {location,lo,test,cred,alert} [id...] [options]
@@ -913,6 +938,7 @@ class CredentialConfiguration(Base):
         result = json.dumps(self.credential_config)
         return result
 
+
 class SmartAlertConfiguration(Base):
     def __init__(self):
         Base.__init__(self)
@@ -1341,38 +1367,6 @@ class SyntheticTest(Base):
         else:
             print("Credential already exists")
 
-    def create_synthetic_alert(self):
-        alert_payload = self.payload
-        self.check_host_and_token(self.auth["host"], self.auth["token"])
-        host = self.auth["host"]
-        token = self.auth["token"]
-
-        create_url = f"{host}/api/events/settings/global-alert-configs/synthetics"
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"apiToken {token}"
-        }
-
-        create_res = requests.post(create_url,
-                                   headers=headers,
-                                   data=alert_payload,
-                                   timeout=60,
-                                   verify=self.insecure)
-
-        if create_res.status_code == 200:
-            # extracting data in json format
-            data = create_res.json()
-            alert_id = data["id"]
-            alert_name = data["name"]
-            print(f"smart alert \"{alert_name}\" created, id is \"{alert_id}\"")
-        elif create_res.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
-        else:
-            print('create test failed, status code:', create_res.status_code)
-            if create_res.text:
-                print(create_res.text)
-
     def __generate_random_str(self, num=5):
         # using random.choices()
         # generating random strings
@@ -1510,8 +1504,7 @@ class SyntheticTest(Base):
                 "operator": "EQUALS"
             }]}
         else:
-            print(f"Invalid filter : {tag_filter[0]}")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, f"Invalid filter : {tag_filter[0]}")
 
         test_summary_list_url = f"{host}/api/synthetics/results/testsummarylist"
 
@@ -1575,90 +1568,7 @@ class SyntheticTest(Base):
             data = json.loads(cred_result.content.decode())
             return data
         else:
-            print(
-                f'get cred failed, status code: {cred_result.status_code}')
-            sys.exit(-1)
-
-    def retrieve_all_synthetic_alerts(self):
-        self.check_host_and_token(self.auth["host"], self.auth["token"])
-        host = self.auth["host"]
-        token = self.auth["token"]
-
-        retrieve_url = f"{host}/api/events/settings/global-alert-configs/synthetics/"
-
-        headers = {
-            'Content-Type': 'application/json',
-            "Authorization": f"apiToken {token}"
-        }
-
-        alert_result = requests.get(retrieve_url, headers=headers,
-                                    timeout=60, verify=self.insecure)
-
-        if alert_result.status_code == 200:
-            data = alert_result.json()
-            return data
-        else:
-            print(
-                f'get alert failed, status code: {alert_result.status_code}')
-            sys.exit(-1)
-
-    def retrieve_a_synthetic_alert(self, alert_id=""):
-        self.check_host_and_token(self.auth["host"], self.auth["token"])
-        host = self.auth["host"]
-        token = self.auth["token"]
-
-        retrieve_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
-
-        headers = {
-            'Content-Type': 'application/json',
-            "Authorization": f"apiToken {token}"
-        }
-
-        alert_result = requests.get(retrieve_url, headers=headers,
-                                    timeout=60, verify=self.insecure)
-
-        if alert_result.status_code == 200:
-            data = alert_result.json()
-
-            if isinstance(data, list):
-                self.alert_lists = data
-                return data
-            elif isinstance(data, dict):
-                self.alert_lists = [data]
-                return [data]
-            else:
-                print('unknown data:', data)
-        elif alert_result.status_code == 404:
-            self.exit_synctl(error_code=-1,
-                             message=f'alert {alert_id} not found')
-        else:
-            print(
-                f'get alert failed, status code: {alert_result.status_code}')
-            sys.exit(-1)
-
-    def retrieve_all_alerting_channel(self):
-        self.check_host_and_token(self.auth["host"], self.auth["token"])
-        host = self.auth["host"]
-        token = self.auth["token"]
-
-        retrieve_url = f"{host}/api/events/settings/alertingChannels/"
-
-        headers = {
-            'Content-Type': 'application/json',
-            "Authorization": f"apiToken {token}"
-        }
-
-        alert_channel_result = requests.get(retrieve_url, headers=headers,
-                                    timeout=60, verify=self.insecure)
-
-        if alert_channel_result.status_code == 200:
-            data = alert_channel_result.json()
-            return data
-        else:
-            print(
-                f'get alert channel failed, status code: {alert_channel_result.status_code}')
-            sys.exit(-1)
-
+            self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
 
     def delete_a_synthetic_test(self, test_id=""):
         """delete a Synthetic by id"""
@@ -1790,8 +1700,7 @@ class SyntheticTest(Base):
                 print(
                     f"Fail to delete {cred}, status code {delete_res.status_code}")
         else:
-            print(f"no credential {cred}")
-            sys.exit(1)
+            self.exit_synctl(ERROR_CODE, f"no credential {cred}")
 
     def delete_credentials(self, cred_list):
         if cred_list is None:
@@ -1803,51 +1712,6 @@ class SyntheticTest(Base):
 
         for cred in cred_list:
             self.delete_a_credential(cred)
-
-    def __delete_a_smart_alert(self, alert_id=""):
-        """delete a smart alert"""
-        if alert_id == "":
-            print("alert id should not be empty")
-            return
-        self.check_host_and_token(self.auth["host"], self.auth["token"])
-        host = self.auth["host"]
-
-        delete_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "apiToken %s" % (self.auth["token"])
-        }
-
-        result = requests.delete(delete_url, headers=headers,
-                                 timeout=60, verify=self.insecure)
-
-        if result.status_code == 204:
-            print(f'alert \"{alert_id}\" deleted')
-        elif result.status_code == 404:
-            print(f"{alert_id} not found")
-        elif result.status_code == 429:
-            self.exit_synctl(-1, "Too Many Requests")
-        else:
-            print(f"Failed to delete {alert_id}, status code {result.status_code}")
-            sys.exit(1)
-
-    def delete_multiple_smart_alerts(self, alert_list):
-        start_time = time.time()
-        total_number = 0
-        if alert_list is None:
-            alert_list = []
-
-        if len(alert_list) == 0:
-            print("No alerts to delete")
-            return
-
-        for alert in alert_list:
-            self.__delete_a_smart_alert(alert)
-            total_number += 1
-        end_time = time.time()
-        total_time = round((end_time-start_time)*1000, 3)
-        print(
-            f"total deleted: {total_number}, time used: {total_time}ms")
 
     def __sort_synthetic_tests(self, syn_list):
         """sort Synthetic list by locationDisplayLabels"""
@@ -2020,60 +1884,6 @@ class SyntheticTest(Base):
         print('total:', len(output_lists))
 
 
-    def print_synthetic_alerts(self, alerts):
-        id_length = 25
-        max_label_length = 50
-        severity_length = 10
-
-        print(self.fill_space("ID".upper(), id_length),
-              self.fill_space("label".upper(), max_label_length),
-              self.fill_space("severity".upper(), severity_length),
-              self.fill_space("Enabled".upper()),
-              self.fill_space("Tests".upper()))
-
-        for x in alerts:
-            if len(x["syntheticTestIds"]) > 0:
-                test_str = ','.join(x['syntheticTestIds'])
-            else:
-                test_str = NOT_APPLICABLE
-            print(self.fill_space(x["id"], id_length),
-                  self.fill_space(x["name"], max_label_length),
-                  self.fill_space(str(x["severity"]), severity_length),
-                  self.fill_space(str(x["enabled"])),
-                  self.fill_space(test_str))
-
-    def print_a_alert_details(self, alert_id, single_alert, show_details=False, show_json=False):
-        """Show a smart alert details data"""
-        if single_alert is None or len(single_alert) == 0 or alert_id is None:
-            print("no smart alert")
-            return
-        elif show_json is True:
-            # print alert json
-            print(json.dumps(single_alert[0]))
-        elif show_details is True:
-            self.__print_a_alert_details(single_alert)
-
-    def __print_a_alert_details(self, single_alert):
-        a_single_alert = single_alert[0]
-        print(self.fill_space("Name".upper(), 30), "value".upper())
-        for key, value in a_single_alert.items():
-            if key == 'created' or key == 'initialCreated':
-                print(self.fill_space(key, 30), self.format_time(value))
-            else:
-                print(self.fill_space(key, 30), value)
-
-    def print_alerting_channels(self, alert_channels):
-        id_length = 50
-        max_label_length = 55
-
-        print(self.fill_space("ID".upper(), id_length),
-              self.fill_space("label".upper(), max_label_length),
-              self.fill_space("kind").upper())
-
-        for channel in alert_channels:
-            print(self.fill_space(channel["id"], id_length),
-                  self.fill_space(channel["name"], max_label_length),
-                  self.fill_space(channel["kind"]))
 
     def print_tests_by_filter(self, tag_filter):
         test_result = self.retrieve_all_synthetic_tests()
@@ -2271,23 +2081,256 @@ class SyntheticTest(Base):
                 print(f"// Label: {single_test['label']}.js")
             print(script_str)
 
+
+class SmartAlert(Base):
+    """create, query, update and delete Smart alerts"""
+
+    def __init__(self) -> None:
+        Base.__init__(self)
+
+        self.payload = None
+        self.alert_id = ""
+        self.alert_lists = []
+
+    def set_alert_id(self, alert_id):
+        self.alert_id = alert_id
+
+    def get_alert_id(self):
+        return self.alert_id
+
+    def set_alert_payload(self, payload=None):
+        if payload is None:
+            print("payload should not be none")
+        else:
+            self.payload = payload
+
+    def get_alert_payload(self):
+        return self.payload
+
+    def retrieve_all_smart_alerts(self):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/events/settings/global-alert-configs/synthetics/"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        alert_result = requests.get(retrieve_url, headers=headers,
+                                    timeout=60, verify=self.insecure)
+
+        if alert_result.status_code == 200:
+            data = alert_result.json()
+            return data
+        else:
+            self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+
+    def retrieve_a_smart_alert(self, alert_id=""):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        alert_result = requests.get(retrieve_url, headers=headers,
+                                    timeout=60, verify=self.insecure)
+
+        if alert_result.status_code == 200:
+            data = alert_result.json()
+
+            if isinstance(data, list):
+                self.alert_lists = data
+                return data
+            elif isinstance(data, dict):
+                self.alert_lists = [data]
+                return [data]
+            else:
+                print('unknown data:', data)
+        elif alert_result.status_code == 404:
+            self.exit_synctl(error_code=-1,
+                             message=f'alert {alert_id} not found')
+        else:
+            self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+
+    def retrieve_all_alerting_channel(self):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/events/settings/alertingChannels/"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        alert_channel_result = requests.get(retrieve_url, headers=headers,
+                                            timeout=60, verify=self.insecure)
+
+        if alert_channel_result.status_code == 200:
+            data = alert_channel_result.json()
+            return data
+        else:
+            self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
+
+    def create_synthetic_alert(self):
+        alert_payload = self.payload
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        create_url = f"{host}/api/events/settings/global-alert-configs/synthetics"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        create_res = requests.post(create_url,
+                                   headers=headers,
+                                   data=alert_payload,
+                                   timeout=60,
+                                   verify=self.insecure)
+
+        if create_res.status_code == 200:
+            # extracting data in json format
+            data = create_res.json()
+            alert_id = data["id"]
+            alert_name = data["name"]
+            print(f"smart alert \"{alert_name}\" created, id is \"{alert_id}\"")
+        elif create_res.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
+        else:
+            print('create test failed, status code:', create_res.status_code)
+            if create_res.text:
+                print(create_res.text)
+
+    def __delete_a_smart_alert(self, alert_id=""):
+        """delete a smart alert"""
+        if alert_id == "":
+            print("alert id should not be empty")
+            return
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+
+        delete_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "apiToken %s" % (self.auth["token"])
+        }
+
+        result = requests.delete(delete_url, headers=headers,
+                                 timeout=60, verify=self.insecure)
+
+        if result.status_code == 204:
+            print(f'alert \"{alert_id}\" deleted')
+        elif result.status_code == 404:
+            self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
+        elif result.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
+        else:
+            self.exit_synctl(ERROR_CODE, f"Failed to delete {alert_id}, status code {result.status_code}")
+
+    def delete_multiple_smart_alerts(self, alert_list):
+        start_time = time.time()
+        total_number = 0
+
+        if alert_list is None or len(alert_list) == 0:
+            print("No alerts to delete")
+            return
+
+        for alert in alert_list:
+            self.__delete_a_smart_alert(alert)
+            total_number += 1
+        end_time = time.time()
+        total_time = round((end_time-start_time)*1000, 3)
+        print(
+            f"total deleted: {total_number}, time used: {total_time}ms")
+
+    def print_synthetic_alerts(self, alerts):
+        id_length = 25
+        max_label_length = 50
+        severity_length = 10
+
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("label".upper(), max_label_length),
+              self.fill_space("severity".upper(), severity_length),
+              self.fill_space("Enabled".upper()),
+              self.fill_space("Tests".upper()))
+
+        for x in alerts:
+            if len(x["syntheticTestIds"]) > 0:
+                test_str = ','.join(x['syntheticTestIds'])
+            else:
+                test_str = NOT_APPLICABLE
+            print(self.fill_space(x["id"], id_length),
+                  self.fill_space(x["name"], max_label_length),
+                  self.fill_space(str(x["severity"]), severity_length),
+                  self.fill_space(str(x["enabled"])),
+                  self.fill_space(test_str))
+
+    def print_a_alert_details(self, alert_id, single_alert, show_details=False, show_json=False):
+        """Show a smart alert details data"""
+        if single_alert is None or len(single_alert) == 0 or alert_id is None:
+            print("no smart alert")
+            return
+        elif show_json is True:
+            # print alert json
+            print(json.dumps(single_alert[0]))
+        elif show_details is True:
+            self.__print_a_alert_details(single_alert)
+
+    def __print_a_alert_details(self, single_alert):
+        a_single_alert = single_alert[0]
+        print(self.fill_space("Name".upper(), 30), "value".upper())
+        for key, value in a_single_alert.items():
+            if key == 'created' or key == 'initialCreated':
+                print(self.fill_space(key, 30), self.format_time(value))
+            else:
+                print(self.fill_space(key, 30), value)
+
+    def print_alerting_channels(self, alert_channels):
+        id_length = 50
+        max_label_length = 55
+
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("label".upper(), max_label_length),
+              self.fill_space("kind").upper())
+
+        for channel in alert_channels:
+            print(self.fill_space(channel["id"], id_length),
+                  self.fill_space(channel["name"], max_label_length),
+                  self.fill_space(channel["kind"]))
+
+
 class UpdateSyntheticTest(SyntheticTest):
 
     def __init__(self) -> None:
         super().__init__()
-        self.update_test_config = None
+        self.update_config = None
         self.test_id = ""
 
     def set_updated_payload(self, payload):
         if payload is None:
             print("payload should not be none")
         else:
-            self.update_test_config = payload[0]
+            self.update_config = payload[0]
 
-    def __ensure_test_id_not_none(self, test_id):
-        if test_id is None or test_id == "":
-            print("Update Error: test id is None")
-            sys.exit(-1)
+    def invalid_update_options(self, invalid_options, items, syn_type=None, toggle=None):
+        for key, value in items:
+            if key in invalid_options and value is not None:
+                if toggle is not None:
+                    self.exit_synctl(ERROR_CODE, f"option: --{key} is not allowed with --{toggle}")
+                elif syn_type == SYN_TEST or syn_type == SYN_ALERT:
+                    self.exit_synctl(ERROR_CODE, f"option: --{key} is not supported with {syn_type}s")
 
     def update_a_synthetic_test(self, test_id, new_payload):
         """API https://instana.github.io/openapi/#operation/updateSyntheticTest"""
@@ -2295,8 +2338,7 @@ class UpdateSyntheticTest(SyntheticTest):
         host = self.auth["host"]
         token = self.auth["token"]
         if new_payload is None:
-            print("config cannot be empty")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "config cannot be empty")
 
         if test_id is None or test_id == "":
             print("test id should not be empty")
@@ -2316,7 +2358,7 @@ class UpdateSyntheticTest(SyntheticTest):
                                      verify=self.insecure)
 
         if update_result.status_code == 200:
-            print(f"{test_id} updated")
+            print(f"test {test_id} updated")
         elif update_result.status_code == 400:
             print(f'Error: {update_result}', update_result.content)
         elif update_result.status_code == 429:
@@ -2325,18 +2367,207 @@ class UpdateSyntheticTest(SyntheticTest):
             print(
                 f'update test {test_id} failed, status code: {update_result.status_code}')
 
+    def update_using_file(self, file):
+        with open(file, 'rb') as json_file:
+            payload = json_file.read()
+            return payload
+
+    def update_label(self, label):
+        """label"""
+        if label is None or label == "":
+            self.exit_synctl(ERROR_CODE, "no label")
+        else:
+            self.update_config["label"] = label
+
+    def update_description(self, description):
+        """description"""
+        if description is None or description == "":
+            self.exit_synctl(ERROR_CODE, "no description")
+        else:
+            self.update_config["description"] = description
+
+    def update_record_video(self, record_video=False):
+        if record_video is not None and record_video.upper() in ("TRUE", "FALSE"):
+            self.update_config["configuration"]["recordVideo"] = record_video
+        else:
+            self.exit_synctl(ERROR_CODE, "record video should not be None")
+
+    def update_active(self, active):
+        """active"""
+        if active is not None and active.upper() in ("TRUE", "FALSE"):
+            self.update_config["active"] = active
+        else:
+            self.exit_synctl(ERROR_CODE, "active should not be none")
+
+    def update_frequency(self, frequency):
+        """update frequency, 1, 120"""
+        if 0 < frequency <= 120:
+            self.update_config["testFrequency"] = frequency
+        else:
+            self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,120]")
+
+    def update_locations(self, locations):
+        """--locations update locations"""
+        if locations is None:
+            self.exit_synctl(ERROR_CODE, "no location")
+        else:
+            self.update_config["locations"] = locations
+
+    def update_config_timeout(self, timeout):
+        """--timeout 2m, <number>(ms|s|m)"""
+        if timeout is None or timeout == "":
+            self.exit_synctl(ERROR_CODE, "timeout should not be None")
+        else:
+            self.update_config["configuration"]["timeout"] = timeout
+
+    def update_retries(self, retry: int):
+        """retries"""
+        if 0 <= retry <= 2:
+            self.update_config["configuration"]["retries"] = retry
+        else:
+            self.exit_synctl(ERROR_CODE, "retry should be in [0, 2]")
+
+    def update_retry_interval(self, interval: int):
+        """retryInterval"""
+        if 1 <= interval <= 10:
+            self.update_config["configuration"]["retryInterval"] = interval
+        else:
+            self.exit_synctl(ERROR_CODE, "retryInterval should be in [1,10]")
+
+    def update_ping_operation(self, method: str = "GET"):
+        """operation"""
+        valid_methods = ["GET", "HEAD", "POST", "PUT", "DELETE",
+                         "CONNECT", "OPTIONS", "TRACE", "PATCH"]
+        if method is not None and method.upper() in valid_methods:
+            self.update_config["configuration"]["operation"] = method.upper()
+        else:
+            self.exit_synctl(ERROR_CODE, f"{method} is not allowed")
+
+    def update_mark_synthetic_call(self, mark_synthetic_call):
+        """mark Synthetic call"""
+        mark_synthetic_call_options = ["true", "false"]
+        if mark_synthetic_call is not None and mark_synthetic_call.lower() in mark_synthetic_call_options:
+            self.update_config["configuration"]["markSyntheticCall"] = mark_synthetic_call
+        else:
+            self.exit_synctl(ERROR_CODE, "markSyntheticCall should be true or false")
+
+    def update_config_script_file(self, script_name):
+        """--script-file update script using script name"""
+        try:
+            with open(script_name, "r", encoding="utf-8") as script_file:
+                script = script_file.read()
+                if script is not None:
+                    self.update_config["configuration"]["script"] = script
+                else:
+                    self.exit_synctl(ERROR_CODE, "script cannot be none")
+        except FileNotFoundError as not_found_e:
+            print(not_found_e)
+            sys.exit(-1)
+
+    def update_script_file(self, script_file):
+        """--entry-file update scriptFile """
+        if script_file == "" or script_file is None:
+            self.exit_synctl(ERROR_CODE, "script file should not be None")
+        else:
+            self.update_config["configuration"]["scripts"]["scriptFile"] = script_file
+
+    def update_url(self, url):
+        """update url"""
+        if url is not None:
+            self.update_config["configuration"]["url"] = url
+        else:
+            self.exit_synctl(ERROR_CODE, "url should not be none")
+
+    def update_follow_redirect(self, follow_redirect):
+        """update follow-redirect"""
+        follow_redirect_options = ["True", "true", "False", "false"]
+        if follow_redirect is not None and follow_redirect in follow_redirect_options:
+            self.update_config["configuration"]["followRedirect"] = follow_redirect
+        else:
+            self.exit_synctl(ERROR_CODE, "followRedirect should be true/false ")
+
+    def update_application_id(self, app_id):
+        """update application id"""
+        if app_id is not None:
+            self.update_config["applicationId"] = app_id
+        else:
+            self.exit_synctl(ERROR_CODE, "application id should not be none")
+
+    def update_expect_status(self, expect_status):
+        """update expect status"""
+        if expect_status is not None:
+            self.update_config["configuration"]["expectStatus"] = expect_status
+        else:
+            self.exit_synctl(ERROR_CODE, "expectStatus should not be none")
+
+    def update_validation_string(self, validation_string):
+        """update validation string"""
+        if validation_string is None or validation_string == "":
+            self.exit_synctl(ERROR_CODE, "validation string should not be none")
+        else:
+            self.update_config["configuration"]["validationString"] = validation_string
+
+    def update_bundle(self, bundle):
+        """update bundle"""
+        if bundle.endswith('.zip'):
+            with open(bundle, 'rb') as file1:
+                zip_content_byte = file1.read()
+                zip_content_byte_base64 = b64encode(zip_content_byte)
+                self.update_config["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode(
+                    'utf-8')
+        else:
+            self.update_config["configuration"]["scripts"]["bundle"] = bundle
+
+    def update_custom_properties(self, custom_property):
+        """update custom properties"""
+        if any(s == '' or s.isspace() for s in custom_property):
+            self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
+
+        for item in custom_property:
+            key, value = item.split('=')
+            if key == '' or value == '':
+                self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
+            self.update_config["customProperties"][key] = value
+
+    def get_updated_test_config(self):
+        """return payload as json"""
+        result = json.dumps(self.update_config)
+        return result
+
+
+class UpdateSmartAlert(SmartAlert):
+    def __init__(self) -> None:
+        super().__init__()
+        self.update_config = None
+
+    def set_updated_payload(self, payload):
+        if payload is None:
+            print("payload should not be none")
+        else:
+            self.update_config = payload[0]
+
+    def update_using_file(self, file):
+        with open(file, 'rb') as json_file:
+            payload = json_file.read()
+            return payload
+
+    def update_description(self, description):
+        """description"""
+        if description is None or description == "":
+            self.exit_synctl(ERROR_CODE, "no description")
+        else:
+            self.update_config["description"] = description
+
     def update_a_smart_alert(self, alert_id, new_payload):
         """API https://instana.github.io/openapi/#operation/updateSyntheticAlertConfig"""
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
         if new_payload is None:
-            print("config cannot be empty")
-            sys.exit(-1)
+            self.exit_synctl(ERROR_CODE, "config cannot be empty")
 
         if alert_id is None or alert_id == "":
-            print("alert id should not be empty")
-            return
+            self.exit_synctl(ERROR_CODE, "alert id should not be none")
         else:
             update_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}"
 
@@ -2352,7 +2583,9 @@ class UpdateSyntheticTest(SyntheticTest):
                                       verify=self.insecure)
 
         if update_result.status_code == 200:
-            print(f"{alert_id} updated")
+            print(f"alert {alert_id} updated")
+        elif update_result.status_code == 204:
+            print(f"alert {alert_id} did not change")
         elif update_result.status_code == 400:
             print(f'Error: {update_result}', update_result.content)
         elif update_result.status_code == 429:
@@ -2361,187 +2594,80 @@ class UpdateSyntheticTest(SyntheticTest):
             print(
                 f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
 
-    def update_using_file(self, file):
-        with open(file, 'rb') as json_file:
-            payload = json_file.read()
-            return payload
+    def toggle_smart_alert(self, alert_id, toggle):
+        """API https://instana.github.io/openapi/#operation/enableSyntheticAlertConfig
+               https://instana.github.io/openapi/#operation/disableSyntheticAlertConfig"""
 
-    def update_label(self, label):
-        """label"""
-        if label is None or label == "":
-            print("no label")
-            sys.exit(1)
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        if alert_id is None:
+            self.exit_synctl(ERROR_CODE, "alert id should not be none")
         else:
-            self.update_test_config["label"] = label
+            if toggle in ('enable', 'disable'):
+                put_url = f"{host}/api/events/settings/global-alert-configs/synthetics/{alert_id}/{toggle}"
 
-    def update_description(self, description):
-        """description"""
-        if description is None or description == "":
-            print("no description")
-            sys.exit(1)
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        update_result = requests.put(put_url,
+                                     headers=headers,
+                                     timeout=60,
+                                     verify=self.insecure)
+
+        if update_result.status_code == 204:
+            print(f"alert {alert_id} {toggle}d")
+        elif update_result.status_code == 400:
+            print(f'Error: {update_result}', update_result.content)
+        elif update_result.status_code == 429:
+            self.exit_synctl(-1, "Too Many Requests")
         else:
-            self.update_test_config["description"] = description
+            print(
+                f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
 
-    def update_record_video(self, record_video=False):
-        if record_video is not None and record_video.upper() in ("TRUE", "FALSE"):
-            self.update_test_config["configuration"]["recordVideo"] = record_video
+    def update_alert_name(self, name):
+        """update alert name"""
+        if name == "" or name is None:
+            self.exit_synctl(ERROR_CODE, "name should not be none")
         else:
-            print("record video should not be None")
-            sys.exit(1)
+            self.update_config["name"] = name
 
-    def update_active(self, active):
-        """active"""
-        if active is None:
-            print("active should not be none")
-            sys.exit(1)
-        if active == "false":
-            self.update_test_config["active"] = False
-        if active == "true":
-            self.update_test_config["active"] = True
-
-    def update_frequency(self, frequency):
-        """update frequency, 1, 120"""
-        if frequency > 0 and frequency <= 120:
-            self.update_test_config["testFrequency"] = frequency
+    def update_alert_severity(self, severity):
+        """update severity"""
+        if severity is None:
+            self.exit_synctl(ERROR_CODE, "severity should not be none")
         else:
-            print("frequency is not valid, it should be in [1,120]")
-            sys.exit(1)
+            self.update_config["severity"] = severity
 
-    def update_locations(self, locations):
-        """--locations update locations"""
-        if locations is None:
-            print("no location")
-            sys.exit(1)
+    def update_alert_channel(self, alert_channel):
+        """update alerting channels"""
+        if alert_channel is None or alert_channel == "":
+            self.exit_synctl(ERROR_CODE, "alert channels should not be none")
         else:
-            self.update_test_config["locations"] = locations
+            self.update_config["alertChannelIds"] = alert_channel
 
-    def update_config_timeout(self, timeout):
-        """--timeout 2m, <number>(ms|s|m)"""
-        if timeout is None or timeout == "":
-            print("timeout should not be None")
-            sys.exit(1)
+    def update_tests(self, synthetic_tests):
+        """update synthetic tests"""
+        if any(s == '' or s.isspace() for s in synthetic_tests):
+            self.exit_synctl(ERROR_CODE, "synthetic tests should not be none")
         else:
-            self.update_test_config["configuration"]["timeout"] = timeout
+            self.update_config["syntheticTestIds"] = synthetic_tests
 
-    def update_retries(self, retry: int):
-        """retries"""
-        if retry >= 0 and retry <= 2:
-            self.update_test_config["configuration"]["retries"] = retry
+    def update_violation_count(self, violation_count):
+        """update violation count"""
+        if violation_count is None:
+            self.exit_synctl(ERROR_CODE, "violation count should not be none")
         else:
-            print("retry should be in [0, 2]")
-            sys.exit(1)
+            self.update_config["timeThreshold"]["violationsCount"] = violation_count
 
-    def update_retry_interval(self, interval: int):
-        """retryInterval"""
-        if 1 <= interval <= 10:
-            self.update_test_config["configuration"]["retryInterval"] = interval
-        else:
-            print("retryInterval should be in [1,10]")
-            sys.exit(1)
-
-    def update_ping_operation(self, method: str = "GET"):
-        """operation"""
-        valid_methods = ["GET", "HEAD", "POST", "PUT", "DELETE",
-                         "CONNECT", "OPTIONS", "TRACE", "PATCH"]
-        if method is not None and method.upper() in valid_methods:
-            self.update_test_config["configuration"]["operation"] = method.upper()
-        else:
-            print(f"{method} is not allowed")
-            sys.exit(1)
-
-    def update_mark_synthetic_call(self, mark_synthetic_call):
-        """mark Synthetic call"""
-        mark_synthetic_call_options = ["true", "false"]
-        if mark_synthetic_call is not None and mark_synthetic_call.lower() in mark_synthetic_call_options:
-            self.update_test_config["configuration"]["markSyntheticCall"] = mark_synthetic_call
-        else:
-            print("markSyntheticCall should be true or false")
-            sys.exit(1)
-
-    def update_config_script_file(self, script_name):
-        """--script-file update script using script name"""
-        try:
-            with open(script_name, "r", encoding="utf-8") as script_file:
-                script = script_file.read()
-                if script is not None:
-                    self.update_test_config["configuration"]["script"] = script
-                else:
-                    print("script cannot be none")
-                    sys.exit(1)
-        except FileNotFoundError as not_found_e:
-            print(not_found_e)
-            sys.exit(-1)
-
-    def update_script_file(self, script_file):
-        """--entry-file update scriptFile """
-        if script_file == "" or script_file is None:
-            print("script_file should not be None")
-            sys.exit(1)
-        else:
-            self.update_test_config["configuration"]["scripts"]["scriptFile"] = script_file
-
-    def update_url(self, url):
-        """update url"""
-        if url is not None:
-            self.update_test_config["configuration"]["url"] = url
-        else:
-            print("url should not be none")
-            sys.exit(1)
-
-    def update_follow_redirect(self, follow_redirect):
-        """update follow-redirect"""
-        follow_redirect_options = ["True", "true", "False", "false"]
-        if follow_redirect is not None and follow_redirect in follow_redirect_options:
-            self.update_test_config["configuration"]["followRedirect"] = follow_redirect
-        else:
-            print("followRedirect should be true/false ")
-            sys.exit(1)
-
-    def update_expect_status(self, expect_status):
-        """update expect status"""
-        if expect_status is not None:
-            self.update_test_config["configuration"]["expectStatus"] = expect_status
-        else:
-            print("expectStatus should not be none")
-            sys.exit(1)
-
-    def update_validation_string(self, validation_string):
-        """update validation string"""
-        if validation_string is None or validation_string == "":
-            print("validation string should not be none")
-            sys.exit(1)
-        else:
-            self.update_test_config["configuration"]["validationString"] = validation_string
-
-    def update_bundle(self, bundle):
-        """update bundle"""
-        if bundle.endswith('.zip'):
-            with open(bundle, 'rb') as file1:
-                zip_content_byte = file1.read()
-                zip_content_byte_base64 = b64encode(zip_content_byte)
-                self.update_test_config["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode(
-                    'utf-8')
-        else:
-            self.update_test_config["configuration"]["scripts"]["bundle"] = bundle
-
-
-    def update_custom_properties(self, custom_property):
-        """update custom properties"""
-        if any(s == '' or s.isspace() for s in custom_property):
-            print("Custom property should be <key>=<value>")
-            sys.exit(1)
-
-        for item in custom_property:
-            key, value = item.split('=')
-            if key == '' or value == '':
-                print("Custom property should be <key>=<value>")
-                sys.exit(1)
-            self.update_test_config["customProperties"][key] = value
-
-    def get_json(self, ):
+    def get_updated_alert_config(self):
         """return payload as json"""
-        result = json.dumps(self.update_test_config)
+        result = json.dumps(self.update_config)
         return result
+
 
 class PatchSyntheticTest(SyntheticTest):
     """patch Synthetic test"""
@@ -2824,6 +2950,7 @@ class PatchSyntheticTest(SyntheticTest):
                 sys.exit(1)
             payload["customProperties"][key] = value
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
 
 class SyntheticResult(Base):
 
@@ -3464,9 +3591,10 @@ class ParseParameter:
         self.parser_update.add_argument(
             '--file', '-f', type=str, metavar="<file-name>", help='json payload')
 
+        update_exclusive_group = self.parser_update.add_mutually_exclusive_group()
         update_group = self.parser_update.add_argument_group()
         update_group.add_argument(
-            '--active', type=str, choices=["false", "true"], metavar="<boolean>", help='set active')
+            '--active', type=str, metavar="<boolean>", help='set active')
         update_group.add_argument(
             '--frequency', type=int, metavar="<int>", help='set frequency')
         update_group.add_argument(
@@ -3485,8 +3613,8 @@ class ParseParameter:
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
         update_group.add_argument(
             '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
-
-        # timeout Expected <number>(ms|s|m)
+        update_group.add_argument(
+            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
         update_group.add_argument(
             '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
         update_group.add_argument(
@@ -3505,6 +3633,24 @@ class ParseParameter:
             '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
         update_group.add_argument(
             '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
+
+        # update alert
+        update_group.add_argument(
+            '--name', type=str, metavar="<string>", help='friendly name for smart alert')
+        update_group.add_argument(
+            '--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
+        update_group.add_argument(
+            '--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
+        update_group.add_argument(
+            '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
+        update_group.add_argument(
+            '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
+        # enable/disable smart alerts
+        update_exclusive_group.add_argument(
+            '--enable', action='store_true', help='enable smart alert')
+        update_exclusive_group.add_argument(
+            '--disable', action='store_true', help='disable smart alert')
+
 
         self.parser_update.add_argument(
             '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
@@ -3555,6 +3701,7 @@ def main():
     para_instanace = ParseParameter()
     para_instanace.set_options()
     get_args = para_instanace.get_parser().parse_args()
+    update_args = get_args.__dict__.items()
 
     sys_args = sys.argv
 
@@ -3570,8 +3717,10 @@ def main():
     auth_instance = Authentication()
 
     syn_instance = SyntheticTest()
+    alert_instance = SmartAlert()
     patch_instance = PatchSyntheticTest()
     update_instance = UpdateSyntheticTest()
+    update_alert = UpdateSmartAlert()
     pop_instance = SyntheticLocation()
 
     summary_instance = SyntheticResult()
@@ -3580,8 +3729,10 @@ def main():
     # set --verify-tls
     if get_args.verify_tls is not None:
         syn_instance.set_insecure(get_args.verify_tls)
+        alert_instance.set_insecure(get_args.verify_tls)
         patch_instance.set_insecure(get_args.verify_tls)
         update_instance.set_insecure(get_args.verify_tls)
+        update_alert.set_insecure(get_args.verify_tls)
         pop_instance.set_insecure(get_args.verify_tls)
         app_instance.set_insecure(get_args.verify_tls)
 
@@ -3589,11 +3740,15 @@ def main():
     if get_args.host is not None and get_args.token is not None:
         syn_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
+        alert_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
         pop_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         patch_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         update_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
+        update_alert.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         summary_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
@@ -3604,9 +3759,11 @@ def main():
         if COMMAND_CONFIG != get_args.sub_command:
             auth = auth_instance.get_auth(get_args.use_env)
             syn_instance.set_auth(auth)
+            alert_instance.set_auth(auth)
             pop_instance.set_auth(auth)
             patch_instance.set_auth(auth)
             update_instance.set_auth(auth)
+            update_alert.set_auth(auth)
             summary_instance.set_auth(auth)
             app_instance.set_auth(auth)
 
@@ -3716,21 +3873,21 @@ def main():
             pop_instance.print_credentials(credentials)
         elif get_args.op_type == SYN_ALERT:
             if get_args.id is None:
-                alerts = syn_instance.retrieve_all_synthetic_alerts()
-                syn_instance.print_synthetic_alerts(alerts)
+                alerts = alert_instance.retrieve_all_smart_alerts()
+                alert_instance.print_synthetic_alerts(alerts)
             else:
-                single_alert = syn_instance.retrieve_a_synthetic_alert(get_args.id)
+                single_alert = alert_instance.retrieve_a_smart_alert(get_args.id)
                 if get_args.show_details is True:
-                    syn_instance.print_a_alert_details(get_args.id, single_alert, show_details=True)
+                    alert_instance.print_a_alert_details(get_args.id, single_alert, show_details=True)
                 elif get_args.show_json is True:
-                    syn_instance.print_a_alert_details(get_args.id, single_alert, show_json=True)
+                    alert_instance.print_a_alert_details(get_args.id, single_alert, show_json=True)
         elif get_args.op_type == "alert-channel":
             if get_args.id is None:
-                alerting_channel = syn_instance.retrieve_all_alerting_channel()
-                syn_instance.print_alerting_channels(alerting_channel)
+                alerting_channel = alert_instance.retrieve_all_alerting_channel()
+                alert_instance.print_alerting_channels(alerting_channel)
             else:
-                single_alert = syn_instance.retrieve_a_synthetic_alert(get_args.id)
-                syn_instance.print_synthetic_alerts(single_alert)
+                single_alert = alert_instance.retrieve_a_smart_alert(get_args.id)
+                alert_instance.print_synthetic_alerts(single_alert)
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
@@ -3755,8 +3912,8 @@ def main():
             if get_args.severity is not None:
                 alert_payload.set_severity(get_args.severity)
 
-            syn_instance.set_synthetic_payload(alert_payload.get_json())
-            syn_instance.create_synthetic_alert()
+            alert_instance.set_alert_payload(alert_payload.get_json())
+            alert_instance.create_synthetic_alert()
         elif get_args.syn_type == SYN_TEST:
             if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4]:
                 syn_type_t = synthetic_type[get_args.type]
@@ -3950,6 +4107,10 @@ def main():
             patch_instance.patch_custom_properties(get_args.id, split_string)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
+            invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
+            update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
+            if get_args.enable is True or get_args.disable is True:
+                update_instance.exit_synctl(ERROR_CODE, "option: --enable/--disable not supported by synthetic tests")
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
             update_instance.set_updated_payload(payload)
             if get_args.file is not None:
@@ -3986,6 +4147,8 @@ def main():
                     update_instance.update_url(get_args.url)
                 if get_args.follow_redirect is not None:
                     update_instance.update_follow_redirect(get_args.follow_redirect)
+                if get_args.app_id is not None:
+                    update_instance.update_application_id(get_args.app_id)
                 if get_args.expect_status is not None:
                     update_instance.update_expect_status(get_args.expect_status)
                 if get_args.validation_string is not None:
@@ -3995,19 +4158,38 @@ def main():
                 if get_args.custom_property is not None:
                     split_string = get_args.custom_property.split(',')
                     update_instance.update_custom_properties(split_string)
-                updated_payload = update_instance.get_json()
+                updated_payload = update_instance.get_updated_test_config()
                 update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:
-            invalid_options = [get_args.active, get_args.frequency, get_args.timeout, get_args.retry_interval, get_args.retries,
-                               get_args.operation, get_args.script_file, get_args.location, get_args.record_video,
-                               get_args.mark_synthetic_call, get_args.entry_file, get_args.url, get_args.follow_redirect,
-                               get_args.expect_status, get_args.validation_string, get_args.bundle, get_args.custom_property]
-            for option in invalid_options:
-                if option is not None:
-                    print("not supported by smart alert")
+            invalid_options = ["label", "active", "frequency", "timeout", "retry_interval", "retries", "operation", "script_file",
+                               "location", "record_video", "mark_synthetic_call", "entry_file", "url", "follow_redirect",
+                               "expect_status", "validation_string", "bundle", "custom_property"]
+            update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
+            payload = alert_instance.retrieve_a_smart_alert(get_args.id)
+            update_alert.set_updated_payload(payload)
             if get_args.file is not None:
-                new_payload = update_instance.update_using_file(get_args.file)
-                update_instance.update_a_smart_alert(get_args.file, new_payload)
+                new_payload = update_alert.update_using_file(get_args.file)
+                update_alert.update_a_smart_alert(get_args.id, new_payload)
+            elif get_args.enable is True or get_args.disable is True:
+                operation = "enable" if get_args.enable else "disable"
+                invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
+                update_instance.invalid_update_options(invalid_options, update_args, toggle=operation)
+                update_alert.toggle_smart_alert(get_args.id, operation)
+            else:
+                if get_args.name is not None:
+                    update_alert.update_alert_name(get_args.name)
+                if get_args.description is not None:
+                    update_alert.update_description(get_args.description)
+                if get_args.severity is not None:
+                    update_alert.update_alert_severity(get_args.severity)
+                if get_args.alert_channel is not None:
+                    update_alert.update_alert_channel(get_args.alert_channel)
+                if get_args.test is not None:
+                    update_alert.update_tests(get_args.test)
+                if get_args.violation_count is not None:
+                    update_alert.update_violation_count(get_args.violation_count)
+                updated_alert_config = update_alert.get_updated_alert_config()
+                update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
@@ -4032,7 +4214,7 @@ def main():
                 syn_instance.delete_credentials(get_args.id)
         if get_args.delete_type == SYN_ALERT:
             if get_args.id is not None and len(get_args.id) > 0:
-                syn_instance.delete_multiple_smart_alerts(get_args.id)
+                alert_instance.delete_multiple_smart_alerts(get_args.id)
             else:
                 print('no smart alert to delete')
 
