@@ -62,14 +62,17 @@ NORMAL_CODE, ERROR_CODE = (0, 1)
 
 TOO_MANY_REQUEST_ERROR="Too Many Requests"
 
-def status_is_200(status):
+def _status_is_200(status):
     return status == 200
 
-def status_is_204(status):
+def _status_is_204(status):
     return status == 204
 
-def status_is_400(status):
+def _status_is_400(status):
     return status == 400
+
+def _status_is_429(status):
+    return status == 429
 
 def show_version():
     """show synctl version"""
@@ -1055,15 +1058,16 @@ class SyntheticLocation(Base):
                                     timeout=60,
                                     verify=self.insecure)
 
-        if retrieve_res.status_code == 200:
+        if _status_is_200(retrieve_res.status_code):
+            print('use new check status')
             data = retrieve_res.json()
 
             if isinstance(data, dict):
                 return [data]
             else:
                 return data
-        elif retrieve_res.status_code == 429:
-            self.exit_synctl(-1, "Too Many Request")
+        elif _status_is_429(retrieve_res.status_code):
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             self.exit_synctl(ERROR_CODE,
                 f"Failed to get locations, status code {retrieve_res.status_code}")
