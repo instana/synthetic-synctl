@@ -10,9 +10,7 @@ from base64 import b64encode, b64decode
 import json
 from pathlib import Path
 import os
-import random
 import re
-import string
 import sys
 # import textwrap
 import time
@@ -65,11 +63,20 @@ TOO_MANY_REQUEST_ERROR="Too Many Requests"
 def _status_is_200(status):
     return status == 200
 
+def _status_is_201(status):
+    return status == 200
+
 def _status_is_204(status):
     return status == 204
 
 def _status_is_400(status):
     return status == 400
+
+def _status_is_403(status):
+    return status == 403
+
+def _status_is_404(status):
+    return status == 404
 
 def _status_is_429(status):
     return status == 429
@@ -558,7 +565,7 @@ class SyntheticConfiguration(Base):
             }
         }
 
-        http_action_con = {
+        http_action_conf = {
             # The type of the Synthetic test.
             # Supported values are HTTPAction, HTTScript, BrowserScript, WebpageAction, WebpageScript, and DNSAction.
             # The locations assigned to execute this Synthetic test must support this syntheticType, i.e
@@ -597,7 +604,7 @@ class SyntheticConfiguration(Base):
             "expectNotEmpty": None  # list
         }
 
-        http_script_con = {
+        http_script_conf = {
             "syntheticType": HTTPScript_TYPE,
             "script": "",  # api script
             "retries": 0,  # [0,2]
@@ -605,7 +612,7 @@ class SyntheticConfiguration(Base):
             "scriptType": "Basic"  # ["Jest", "Basic"]
         }
 
-        http_bundle_con = {
+        http_bundle_conf = {
             "syntheticType": HTTPScript_TYPE,
             "scripts": {
                 "scriptFile": "index.js",
@@ -665,14 +672,14 @@ class SyntheticConfiguration(Base):
             self.is_bundle = True
         if syn_type == HTTPAction_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
-                self.syn_test_config["configuration"], http_action_con)
+                self.syn_test_config["configuration"], http_action_conf)
 
         if bundle_type is True and syn_type == HTTPScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
-                self.syn_test_config["configuration"], http_bundle_con)
+                self.syn_test_config["configuration"], http_bundle_conf)
         elif bundle_type is False and syn_type == HTTPScript_TYPE:
             self.syn_test_config["configuration"] = self.merge_json(
-                self.syn_test_config["configuration"], http_script_con)
+                self.syn_test_config["configuration"], http_script_conf)
 
         # BrowserScript support simple script and bundle type
         if bundle_type is True and syn_type == BrowserScript_TYPE:
@@ -1114,7 +1121,7 @@ class SyntheticLocation(Base):
                                      timeout=60,
                                      verify=self.insecure)
 
-        if retrieve_res.status_code == 200:
+        if _status_is_200(retrieve_res.status_code):
             data = retrieve_res.json()
             return data
         else:
@@ -1193,15 +1200,17 @@ class SyntheticLocation(Base):
             "Authorization": "apiToken %s" % (self.auth["token"])
         }
 
-        r = requests.delete(delete_url, headers=headers,
-                            timeout=60, verify=self.insecure)
+        r = requests.delete(delete_url,
+                            headers=headers,
+                            timeout=60,
+                            verify=self.insecure)
 
-        if r.status_code == 204:
+        if _status_is_204(r.status_code):
             print(f'location \"{location_id}\" deleted')
-        elif r.status_code == 404:
+        elif _status_is_404(r.status_code):
             print(f"{location_id} not found")
-        elif r.status_code == 429:
-            self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
+        elif _status_is_429(r.status_code):
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print(f"Fail to delete {location_id}, status code {r.status_code}")
 
@@ -1317,13 +1326,13 @@ class SyntheticTest(Base):
                                    timeout=60,
                                    verify=self.insecure)
 
-        if create_res.status_code == 201:
+        if _status_is_201(create_res.status_code):
             # extracting data in json format
             data = create_res.json()
             test_id = data["id"]
             test_label = data["label"]
             print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
-        elif create_res.status_code == 429:
+        elif _status_is_429(create_res.status_code):
             self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print('create test failed, status code:', create_res.status_code)
@@ -1355,9 +1364,9 @@ class SyntheticTest(Base):
                                             data=cred_payload,
                                             timeout=60,
                                             verify=self.insecure)
-            if create_cred_res.status_code == 201:
+            if _status_is_201(create_cred_res.status_code):
                 print(f"credential \"{cred_key}\" created")
-            elif create_cred_res.status_code == 400:
+            elif _status_is_400(create_cred_res.status_code):
                 print(f'Create Error: {create_cred_res}\n',
                       create_cred_res.json())
             else:
@@ -1365,14 +1374,6 @@ class SyntheticTest(Base):
                       create_cred_res.status_code)
         else:
             print("Credential already exists")
-
-    def __generate_random_str(self, num=5):
-        # using random.choices()
-        # generating random strings
-        res = ''.join(
-            random.choices(string.ascii_lowercase + string.digits, k=num)
-        )
-        return res
 
     def retrieve_a_synthetic_test(self, test_id=""):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1389,10 +1390,12 @@ class SyntheticTest(Base):
             "Authorization": f"apiToken {token}"
         }
 
-        result = requests.get(retrieve_url, headers=headers,
-                              timeout=60, verify=self.insecure)
+        result = requests.get(retrieve_url,
+                              headers=headers,
+                              timeout=60,
+                              verify=self.insecure)
 
-        if result.status_code == 200:
+        if _status_is_200(result.status_code):
             # extracting data in json format
             data = result.json()
 
@@ -1404,13 +1407,13 @@ class SyntheticTest(Base):
                 return [data]
             else:
                 print('unknown data:', data)
-        elif result.status_code == 403:
+        elif _status_is_403(result.status_code):
             self.exit_synctl(error_code=ERROR_CODE,
                              message='Insufficient access rights for resource')
-        elif result.status_code == 404:
+        elif _status_is_404(result.status_code):
             self.exit_synctl(error_code=ERROR_CODE,
                              message=f'test {test_id} not found')
-        elif result.status_code == 429:
+        elif _status_is_429(result.status_code):
             self.exit_synctl(error_code=ERROR_CODE,
                              message=TOO_MANY_REQUEST_ERROR)
         else:
@@ -1430,9 +1433,11 @@ class SyntheticTest(Base):
             "Authorization": f"apiToken {token}"
         }
 
-        query_result = requests.get(retrieve_url, headers=headers,
-                                    timeout=60, verify=self.insecure)
-        if query_result.status_code == 200:
+        query_result = requests.get(retrieve_url,
+                                    headers=headers,
+                                    timeout=60,
+                                    verify=self.insecure)
+        if _status_is_200(query_result.status_code):
             # extracting data in json format
             data = query_result.json()
             syn_type_list = []
@@ -1452,11 +1457,11 @@ class SyntheticTest(Base):
                 return []
             else:
                 self.exit_synctl(ERROR_CODE, f'unknown data: {data}')
-        elif query_result.status_code == 403:
+        elif _status_is_403(query_result.status_code):
             self.exit_synctl(ERROR_CODE, 'Insufficient access rights for resource')
-        elif query_result.status_code == 404:
+        elif _status_is_404(query_result.status_code):
             self.exit_synctl(ERROR_CODE, 'test not found')
-        elif query_result.status_code == 429:
+        elif _status_is_429(query_result.status_code):
             self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             self.exit_synctl(ERROR_CODE, f'get test failed, status code: {query_result.status_code}')
@@ -1516,7 +1521,7 @@ class SyntheticTest(Base):
                                      timeout=60,
                                      verify=self.insecure)
 
-        if retrieve_res.status_code == 200:
+        if _status_is_200(retrieve_res.status_code):
             data = retrieve_res.json()
             return data
         else:
@@ -1558,10 +1563,12 @@ class SyntheticTest(Base):
             "Authorization": f"apiToken {token}"
         }
 
-        cred_result = requests.get(retrieve_url, headers=headers,
-                                   timeout=60, verify=self.insecure)
+        cred_result = requests.get(retrieve_url,
+                                   headers=headers,
+                                   timeout=60,
+                                   verify=self.insecure)
 
-        if cred_result.status_code == 200:
+        if _status_is_200(cred_result.status_code):
             data = json.loads(cred_result.content.decode())
             return data
         else:
@@ -1584,12 +1591,14 @@ class SyntheticTest(Base):
             "Authorization": "apiToken %s" % (self.auth["token"])
         }
 
-        del_result = requests.delete(delete_url, headers=headers,
-                                     timeout=60, verify=self.insecure)
+        del_result = requests.delete(delete_url,
+                                     headers=headers,
+                                     timeout=60,
+                                     verify=self.insecure)
 
-        if del_result.status_code == 204:
+        if _status_is_204(del_result.status_code):
             print(f'test \"{test_id}\" deleted')
-        elif del_result.status_code == 429:
+        elif _status_is_429(del_result.status_code):
             print(TOO_MANY_REQUEST_ERROR)
         else:
             print(
@@ -1603,8 +1612,7 @@ class SyntheticTest(Base):
             total_number += 1
         end_time = time.time()
         total_time = round((end_time-start_time)*1000, 3)
-        print(
-            f"total deleted: {total_number}, time used: {total_time}ms")
+        print(f"total deleted: {total_number}, time used: {total_time}ms")
 
     def delete_tests_label_match_regex(self, label_regex=None):
         """delete all tests which match regex"""
@@ -1687,11 +1695,13 @@ class SyntheticTest(Base):
         }
 
         if cred in credential:
-            delete_res = requests.delete(delete_url, headers=headers,
-                                         timeout=60, verify=self.insecure)
-            if delete_res.status_code == 204:
+            delete_res = requests.delete(delete_url,
+                                         headers=headers,
+                                         timeout=60,
+                                         verify=self.insecure)
+            if _status_is_204(delete_res.status_code):
                 print(f'credential \"{cred}\" deleted')
-            elif delete_res.status_code == 429:
+            elif _status_is_429(delete_res.status_code):
                 print(TOO_MANY_REQUEST_ERROR)
             else:
                 print(
@@ -1738,15 +1748,15 @@ class SyntheticTest(Base):
             return label_len if label_len > 10 else 10
 
     def map_synthetic_type_label(self, syn_type):
-        if syn_type == "HTTPAction":
+        if syn_type == HTTPAction_TYPE:
             syn_type = "API Simple"
-        elif syn_type == "HTTPScript":
+        elif syn_type == HTTPScript_TYPE:
             syn_type = "API Script"
-        elif syn_type == "WebpageAction":
+        elif syn_type == WebpageAction_TYPE:
             syn_type = "Webpage Simple"
-        elif syn_type == "WebpageScript":
+        elif syn_type == WebpageScript_TYPE:
             syn_type = "Webpage Script"
-        elif syn_type == "BrowserScript":
+        elif syn_type == BrowserScript_TYPE:
             syn_type = "Browser Script"
 
         return syn_type
@@ -2116,10 +2126,12 @@ class SmartAlert(Base):
             "Authorization": f"apiToken {token}"
         }
 
-        alert_result = requests.get(retrieve_url, headers=headers,
-                                    timeout=60, verify=self.insecure)
+        alert_result = requests.get(retrieve_url,
+                                    headers=headers,
+                                    timeout=60,
+                                    verify=self.insecure)
 
-        if alert_result.status_code == 200:
+        if _status_is_200(alert_result.status_code):
             data = alert_result.json()
             return data
         else:
@@ -2137,10 +2149,12 @@ class SmartAlert(Base):
             "Authorization": f"apiToken {token}"
         }
 
-        alert_result = requests.get(retrieve_url, headers=headers,
-                                    timeout=60, verify=self.insecure)
+        alert_result = requests.get(retrieve_url,
+                                    headers=headers,
+                                    timeout=60,
+                                    verify=self.insecure)
 
-        if alert_result.status_code == 200:
+        if _status_is_200(alert_result.status_code):
             data = alert_result.json()
 
             if isinstance(data, list):
@@ -2151,8 +2165,8 @@ class SmartAlert(Base):
                 return [data]
             else:
                 print('unknown data:', data)
-        elif alert_result.status_code == 404:
-            self.exit_synctl(error_code=-1,
+        elif _status_is_404(alert_result.status_code):
+            self.exit_synctl(ERROR_CODE,
                              message=f'alert {alert_id} not found')
         else:
             self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
@@ -2169,10 +2183,12 @@ class SmartAlert(Base):
             "Authorization": f"apiToken {token}"
         }
 
-        alert_channel_result = requests.get(retrieve_url, headers=headers,
-                                            timeout=60, verify=self.insecure)
+        alert_channel_result = requests.get(retrieve_url,
+                                            headers=headers,
+                                            timeout=60,
+                                            verify=self.insecure)
 
-        if alert_channel_result.status_code == 200:
+        if _status_is_200(alert_channel_result.status_code):
             data = alert_channel_result.json()
             return data
         else:
@@ -2197,13 +2213,13 @@ class SmartAlert(Base):
                                    timeout=60,
                                    verify=self.insecure)
 
-        if create_res.status_code == 200:
+        if _status_is_200(create_res.status_code):
             # extracting data in json format
             data = create_res.json()
             alert_id = data["id"]
             alert_name = data["name"]
             print(f"smart alert \"{alert_name}\" created, id is \"{alert_id}\"")
-        elif create_res.status_code == 429:
+        elif _status_is_429(create_res.status_code):
             self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
         else:
             print('create test failed, status code:', create_res.status_code)
@@ -2224,15 +2240,17 @@ class SmartAlert(Base):
             "Authorization": "apiToken %s" % (self.auth["token"])
         }
 
-        result = requests.delete(delete_url, headers=headers,
-                                 timeout=60, verify=self.insecure)
+        result = requests.delete(delete_url,
+                                 headers=headers,
+                                 timeout=60,
+                                 verify=self.insecure)
 
-        if result.status_code == 204:
+        if _status_is_204(result.status_code):
             print(f'alert \"{alert_id}\" deleted')
-        elif result.status_code == 404:
+        elif _status_is_404(result.status_code):
             self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
-        elif result.status_code == 429:
-            self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
+        elif _status_is_429(result.status_code):
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             self.exit_synctl(ERROR_CODE, f"Failed to delete {alert_id}, status code {result.status_code}")
 
@@ -2354,12 +2372,12 @@ class UpdateSyntheticTest(SyntheticTest):
                                      timeout=60,
                                      verify=self.insecure)
 
-        if update_result.status_code == 200:
+        if _status_is_200(update_result.status_code):
             print(f"test {test_id} updated")
-        elif update_result.status_code == 400:
+        elif _status_is_400(update_result.status_code):
             print(f'Error: {update_result}', update_result.content)
-        elif update_result.status_code == 429:
-            self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
+        elif _status_is_429(update_result.status_code):
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print(
                 f'update test {test_id} failed, status code: {update_result.status_code}')
@@ -2578,13 +2596,13 @@ class UpdateSmartAlert(SmartAlert):
                                       timeout=60,
                                       verify=self.insecure)
 
-        if update_result.status_code == 200:
+        if _status_is_200(update_result.status_code):
             print(f"alert {alert_id} updated")
-        elif update_result.status_code == 204:
+        elif _status_is_204(update_result.status_code):
             print(f"alert {alert_id} did not change")
-        elif update_result.status_code == 400:
+        elif _status_is_400(update_result.status_code):
             print(f'Error: {update_result}', update_result.content)
-        elif update_result.status_code == 429:
+        elif _status_is_429(update_result.status_code):
             self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print(
@@ -2614,11 +2632,11 @@ class UpdateSmartAlert(SmartAlert):
                                      timeout=60,
                                      verify=self.insecure)
 
-        if update_result.status_code == 204:
+        if _status_is_204(update_result.status_code):
             print(f"alert {alert_id} {toggle}d")
-        elif update_result.status_code == 400:
+        elif _status_is_400(update_result.status_code):
             print(f'Error: {update_result}', update_result.content)
-        elif update_result.status_code == 429:
+        elif _status_is_429(update_result.status_code):
             self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print(
@@ -2698,11 +2716,11 @@ class PatchSyntheticTest(SyntheticTest):
                                       timeout=60,
                                       verify=self.insecure)
 
-        if patch_result.status_code == 200:
+        if _status_is_200(patch_result.status_code):
             print(f"{test_id} updated")
-        elif patch_result.status_code == 400:
+        elif _status_is_400(patch_result.status_code):
             print(f'Patch Error: {patch_result}', patch_result.json())
-        elif patch_result.status_code == 429:
+        elif _status_is_429(patch_result.status_code):
             print(TOO_MANY_REQUEST_ERROR)
         else:
             print(
@@ -2925,8 +2943,8 @@ class PatchSyntheticTest(SyntheticTest):
             else:
                 payload["configuration"]["scripts"]["bundle"] = bundle
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-        except:
-            print(f"Error: Test {test_id} not found")
+        except Exception as e:
+            print(f"Error: Test {test_id} not found, exception {e}")
 
     def patch_custom_properties(self, test_id, custom_property):
         """update custom properties"""
@@ -3059,16 +3077,16 @@ class SyntheticResult(Base):
                                     timeout=60,
                                     verify=self.insecure)
 
-        if summary_res.status_code == 200:
+        if _status_is_200(summary_res.status_code):
             # extracting data in json format
             data = summary_res.json()
             return data
-        elif summary_res.status_code == 400:
+        elif _status_is_400(summary_res.status_code):
             print(f'Bad Request: status code: {summary_res.status_code}')
             if summary_res.text:
                 print("Error Message:", summary_res.text)
             self.exit_synctl(error_code=ERROR_CODE)
-        elif summary_res.status_code == 429:
+        elif _status_is_429(summary_res.status_code):
             self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print('retrieve test summary list failed, status code:',
@@ -3193,11 +3211,11 @@ class Application(Base):
                                timeout=60,
                                verify=False)
 
-        if app_res.status_code == 200:
+        if _status_is_200(app_res.status_code):
             # extracting data in json format
             data = app_res.json()
             return data
-        elif app_res.status_code == 429:
+        elif _status_is_429(app_res.status_code):
             self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print('retrieve test summary list failed, status code:',
