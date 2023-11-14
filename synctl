@@ -3863,7 +3863,7 @@ def main():
                     get_args.id)
                 pop_instance.print_a_location_details(
                     get_args.id, pop_location, show_details=True)
-                sys.exit(-1)
+                syn_instance.exit_synctl(ERROR_CODE)
             if get_args.id is None:
                 pop_locations_json = pop_instance.retrieve_synthetic_locations()
             else:
@@ -3946,8 +3946,7 @@ def main():
                     if get_args.url is not None:
                         payload.set_ping_url(get_args.url)
                     else:
-                        print("url is required")
-                        sys.exit(ERROR_CODE)
+                        payload.exit_synctl(ERROR_CODE, "URL is required")
                     if get_args.operation is not None:
                         payload.set_ping_operation(get_args.operation)
                     if get_args.headers is not None:
@@ -4000,8 +3999,7 @@ def main():
                         payload.set_api_script_script(
                             script_str=script_content)
                     if payload.get_api_script_script() == "":
-                        print("script should not be empty")
-                        sys.exit(ERROR_CODE)
+                        syn_instance.exit_synctl(ERROR_CODE, "script should not be empty")
 
                 # bundle script
                 elif get_args.type in (1, 2) and get_args.bundle is not None:
@@ -4033,7 +4031,7 @@ def main():
                     if get_args.url is not None:
                         payload.set_ping_url(get_args.url)
                     else:
-                        print("url is required")
+                        print("URL is required")
 
                 # global operation, add label, location, description, frequency, etc.
                 if get_args.label is not None:
@@ -4067,8 +4065,7 @@ def main():
                 syn_instance.create_a_synthetic_test()
 
             else:
-                print('The following arguments are required: -t/--type')
-                sys.exit(ERROR_CODE)
+                syn_instance.exit_synctl(ERROR_CODE, 'The following arguments are required: -t/--type')
     elif COMMAND_PATCH == get_args.sub_command:
         if get_args.id is not None:
             patch_instance.set_test_id(get_args.id)
