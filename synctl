@@ -64,7 +64,7 @@ def _status_is_200(status):
     return status == 200
 
 def _status_is_201(status):
-    return status == 200
+    return status == 201
 
 def _status_is_204(status):
     return status == 204
@@ -1599,7 +1599,7 @@ class SyntheticTest(Base):
         if _status_is_204(del_result.status_code):
             print(f'test \"{test_id}\" deleted')
         elif _status_is_429(del_result.status_code):
-            print(TOO_MANY_REQUEST_ERROR)
+            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             print(
                 f"Fail to delete {test_id}, status code {del_result.status_code}")
@@ -4065,7 +4065,7 @@ def main():
                 syn_instance.create_a_synthetic_test()
 
             else:
-                syn_instance.exit_synctl(ERROR_CODE, 'The following arguments are required: -t/--type')
+                syn_instance.exit_synctl(ERROR_CODE, '-t/--type is required to create synthetic test')
     elif COMMAND_PATCH == get_args.sub_command:
         if get_args.id is not None:
             patch_instance.set_test_id(get_args.id)
