@@ -1066,7 +1066,6 @@ class SyntheticLocation(Base):
                                     verify=self.insecure)
 
         if _status_is_200(retrieve_res.status_code):
-            print('use new check status')
             data = retrieve_res.json()
 
             if isinstance(data, dict):
@@ -3498,7 +3497,7 @@ class ParseParameter:
         )
 
         self.parser_get.add_argument(
-            '--save-script', action="store_true", help='save script to local, default is test label')
+            '--save-script', action="store_true", help='save script to local disk, default file name is <label>.[js|json|side]')
 
         self.parser_get.add_argument(
             "--show-script", action='store_true', help="output test script to terminal")
