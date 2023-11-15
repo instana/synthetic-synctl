@@ -224,6 +224,7 @@ synctl get test [id] [options]
 --show-script          output test script to terminal
 --show-details         output test or location details to terminal
 --show-json            output test json to terminal
+--no-result            disable latency and success rate
 --filter               filter tests based on locationId/applicationId
 
 --use-env, -e <name>   use a specified config
