@@ -1010,15 +1010,6 @@ class SmartAlertConfiguration(Base):
         else:
             self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
 
-    def set_entity(self, entity):
-        self.smart_alert_config["tagFilterExpression"]["entity"] = entity
-
-    def set_logical_operator(self, logical_operator):
-        self.smart_alert_config["tagFilterExpression"]["logicalOperator"] = logical_operator
-
-    def set_elements(self, elements):
-        self.smart_alert_config["tagFilterExpression"]["elements"] = elements
-
     def get_json(self):
         """return payload as json"""
         if len(self.smart_alert_config["syntheticTestIds"]) == 0:
