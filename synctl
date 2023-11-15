@@ -2655,6 +2655,13 @@ class UpdateSmartAlert(SmartAlert):
         else:
             self.update_config["timeThreshold"]["violationsCount"] = violation_count
 
+    def update_tag_filter_expression(self, tag_filter_json):
+        """update tag filter expression"""
+        if tag_filter_json is not None:
+            self.update_config["tagFilterExpression"] = tag_filter_json
+        else:
+            self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
+
     def get_updated_alert_config(self):
         """return payload as json"""
         result = json.dumps(self.update_config)
@@ -3640,6 +3647,8 @@ class ParseParameter:
             '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
         update_group.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
+        update_group.add_argument(
+            '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
         # enable/disable smart alerts
         update_exclusive_group.add_argument(
             '--enable', action='store_true', help='enable smart alert')
@@ -4186,6 +4195,9 @@ def main():
                     update_alert.update_tests(get_args.test)
                 if get_args.violation_count is not None:
                     update_alert.update_violation_count(get_args.violation_count)
+                if get_args.tag_filter_expression is not None:
+                    tag_filter_expression = json.loads(get_args.tag_filter_expression)
+                    update_alert.update_tag_filter_expression(tag_filter_expression)
                 updated_alert_config = update_alert.get_updated_alert_config()
                 update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
     elif COMMAND_DELETE == get_args.sub_command:
