@@ -841,14 +841,7 @@ synctl create alert [options]
 --severity <int>                      the severity of alert is either 5 (Warning), or 10 (Critical)
 --alert-channel <id>                  alerting channel
 --violation-count <int>               the number of consecutive failures to trigger an alert
---tag-filter-type <string>            type of tagFilterExpression
---tag-filter-name <string>            name of tagFilterExpression type TAG_FILTER 
---tag-filter-string-value <string>    set string value for tagFilterExpression type TAG_FILTER
---tag-filter-value <string>           Tag value to filter on. Can be a string, number, or boolean value.
---tag-filter-operator <string>        operator - EQUALS, CONTAINS, LESS_THAN, LESS_OR_EQUAL_THAN, NOT_EMPTY etc.
---tag-filter-entity <string>          entity - "NOT_APPLICABLE" or "DESTINATION" or "SOURCE"
---logical-operator <string>           set logical operator, AND, OR 
---elements <string>                   set elements, array of objects 
+--tag-filter-expression <json>        tag filter expression
 ```
 ### synctl create alert Examples
 ```
@@ -874,21 +867,7 @@ synctl create alert --name "smart alert" \
         --alert-channel "$ALERT_CHANNEL" \ 
         --severity 5 \
         --violation-count 3 \
-        --tag-filter-type TAG_FILTER \
-        --tag-filter-name synthetic.syntheticType \
-        --tag-filter-string-value HTTPAction 
-        --tag-filter-value HTTPAction \ 
-        --tag-filter-operator EQUALS \
-        --tag-filter-entity NOT_APPLICABLE
-        
-synctl create alert --name "smart alert" \
-        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2"... \
-        --alert-channel "$ALERT_CHANNEL" \ 
-        --severity 5 \
-        --violation-count 3 \
-        --tag-filter-type EXPRESSION \
-        --logical-operator OR \
-        --tag-filter-operator EQUAL
+        --tag-filter-expression '{"type": "EXPRESSION", "logicalOperator": "AND", "elements": []}'
 ```
 # Update a Smart Alert
 
