@@ -958,8 +958,6 @@ class SmartAlertConfiguration(Base):
             # This boolean metric requires no threshold to be specified, because value of status=0 indicates a test failure.
             "rule": {
                 "alertType": 'failure',
-                "metricName": "status",
-                "aggregation": "SUM"
             },
             # Defines the triggering condition in time, such as how many consecutive test failures are required to open an event.
             "timeThreshold": {
@@ -969,12 +967,9 @@ class SmartAlertConfiguration(Base):
             # alertChannelIds: It is an array of alert channels defined in Instana.
             "alertChannelIds": [],
             "tagFilterExpression": {
-                "type": "TAG_FILTER",
-                "name": "synthetic.syntheticType",
-                "stringValue": "API Simple",
-                "value": "API Simple",
-                "operator": "EQUALS",
-                "entity": "NOT_APPLICABLE"
+                "type": 'EXPRESSION',
+                "logicalOperator": 'AND',
+                "elements": []
             }
         }
 
@@ -1000,22 +995,6 @@ class SmartAlertConfiguration(Base):
         if len(synthetic_tests) > 0:
             self.smart_alert_config["syntheticTestIds"] = synthetic_tests
 
-    def set_alert_type(self, alert_type: str):
-        """set alert type"""
-        self.smart_alert_config["rule"]["alertType"] = alert_type
-
-    def set_metric_name(self, metric_name: str):
-        """set metric name"""
-        self.smart_alert_config["rule"]["metricName"] = metric_name
-
-    def set_aggregation(self, aggregation: str):
-        """set aggregation"""
-        self.smart_alert_config["rule"]["aggregation"] = aggregation
-
-    def set_time_threshold_type(self, threshold_type: str):
-        """set time threshold type"""
-        self.smart_alert_config["timeThreshold"]["violationsInSequence"] = threshold_type
-
     def set_violations_count(self, violations_count):
         """set violations count"""
         self.smart_alert_config["timeThreshold"]["violationsCount"] = violations_count
@@ -1023,6 +1002,13 @@ class SmartAlertConfiguration(Base):
     def set_alert_channel(self, alert_channels):
         """set alert channels"""
         self.smart_alert_config["alertChannelIds"] = alert_channels
+
+    def set_tag_filter_expression(self, tag_filter_json):
+        """set tag filter expression"""
+        if tag_filter_json is not None:
+            self.smart_alert_config["tagFilterExpression"] = tag_filter_json
+        else:
+            self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
 
     def get_json(self):
         """return payload as json"""
@@ -2213,6 +2199,11 @@ class SmartAlert(Base):
             if create_res.text:
                 print(create_res.text)
 
+    def invalid_create_options(self, invalid_options, items, tag_filter_type=None):
+        for key, value in items:
+            if key in invalid_options and value is not None:
+                self.exit_synctl(ERROR_CODE, f"option: --{key} is not supported with tagFilterExpression type: {tag_filter_type}")
+
     def __delete_a_smart_alert(self, alert_id=""):
         """delete a smart alert"""
         if alert_id == "":
@@ -2233,7 +2224,7 @@ class SmartAlert(Base):
         if result.status_code == 204:
             print(f'alert \"{alert_id}\" deleted')
         elif result.status_code == 404:
-            self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
+            print(f"{alert_id} not found")
         elif result.status_code == 429:
             self.exit_synctl(-1, "Too Many Requests")
         else:
@@ -2276,6 +2267,7 @@ class SmartAlert(Base):
                   self.fill_space(str(x["severity"]), severity_length),
                   self.fill_space(str(x["enabled"])),
                   self.fill_space(test_str))
+        print('Total:', len(alerts))
 
     def print_a_alert_details(self, alert_id, single_alert, show_details=False, show_json=False):
         """Show a smart alert details data"""
@@ -2662,6 +2654,13 @@ class UpdateSmartAlert(SmartAlert):
             self.exit_synctl(ERROR_CODE, "violation count should not be none")
         else:
             self.update_config["timeThreshold"]["violationsCount"] = violation_count
+
+    def update_tag_filter_expression(self, tag_filter_json):
+        """update tag filter expression"""
+        if tag_filter_json is not None:
+            self.update_config["tagFilterExpression"] = tag_filter_json
+        else:
+            self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
 
     def get_updated_alert_config(self):
         """return payload as json"""
@@ -3450,14 +3449,15 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--value', type=str, metavar="<value>", help='set credential value')
 
+        # smart alerts
         self.parser_create.add_argument(
             '--name', type=str, metavar="<string>", help='friendly name for smart alert')
 
         self.parser_create.add_argument(
-            '--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
+            '--test', type=str, nargs='+', metavar="<id>", help="test id, support multiple test id")
 
         self.parser_create.add_argument(
-            '--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
+            '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
 
         self.parser_create.add_argument(
             '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
@@ -3465,6 +3465,8 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
 
+        self.parser_create.add_argument(
+            '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
 
         # set auth
         self.parser_create.add_argument(
@@ -3645,6 +3647,8 @@ class ParseParameter:
             '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
         update_group.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
+        update_group.add_argument(
+            '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
         # enable/disable smart alerts
         update_exclusive_group.add_argument(
             '--enable', action='store_true', help='enable smart alert')
@@ -3911,7 +3915,10 @@ def main():
                 alert_payload.set_violations_count(get_args.violation_count)
             if get_args.severity is not None:
                 alert_payload.set_severity(get_args.severity)
-
+            if get_args.tag_filter_expression is not None:
+                tag_filter_expression = get_args.tag_filter_expression
+                tag_filter_expression_json = json.loads(tag_filter_expression)
+                alert_payload.set_tag_filter_expression(tag_filter_expression_json)
             alert_instance.set_alert_payload(alert_payload.get_json())
             alert_instance.create_synthetic_alert()
         elif get_args.syn_type == SYN_TEST:
@@ -4188,6 +4195,9 @@ def main():
                     update_alert.update_tests(get_args.test)
                 if get_args.violation_count is not None:
                     update_alert.update_violation_count(get_args.violation_count)
+                if get_args.tag_filter_expression is not None:
+                    tag_filter_expression = json.loads(get_args.tag_filter_expression)
+                    update_alert.update_tag_filter_expression(tag_filter_expression)
                 updated_alert_config = update_alert.get_updated_alert_config()
                 update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
     elif COMMAND_DELETE == get_args.sub_command:
