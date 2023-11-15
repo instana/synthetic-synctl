@@ -835,13 +835,14 @@ synctl create alert [options]
 
 ### synctl create alert Options
 ```
--h, --help                          show this help message and exit
---test id [id ...]                  synthetic-test id, support multiple synthetic tests id
---name <string>                     friendly name of the Smart Alerts
---description, -d <string>          the description of Smart Alerts
---severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
---alert-channel <id>                alerting channel
---violation-count <int>             the number of consecutive failures to trigger an alert
+-h, --help                            show this help message and exit
+--test id [id ...]                    synthetic-test id, support multiple synthetic tests id
+--name <string>                       friendly name of the Smart Alerts
+--description, -d <string>            the description of Smart Alerts
+--severity <int>                      the severity of alert is either 5 (Warning), or 10 (Critical)
+--alert-channel <id>                  alerting channel
+--violation-count <int>               the number of consecutive failures to trigger an alert
+--tag-filter-expression <json>        tag filter expression
 ```
 ### synctl create alert Examples
 ```
@@ -860,6 +861,14 @@ synctl create alert --name "Smart-alert" \
        --alert-channel "$ALERT_CHANNEL" \
        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ...  \
        --violation-count 2
+
+# create alert with tagFilterExpression       
+synctl create alert --name "smart alert" \
+        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2"... \
+        --alert-channel "$ALERT_CHANNEL" \ 
+        --severity 5 \
+        --violation-count 3 \
+        --tag-filter-expression '{"type": "EXPRESSION", "logicalOperator": "AND", "elements": []}'
 ```
 # Update a Smart Alert
 
@@ -879,6 +888,7 @@ synctl update alert <id> [options]
 --severity <int>                    the severity of alert is either 5 (Warning), or 10 (Critical)
 --alert-channel <id>                alerting channel
 --violation-count <int>             the number of consecutive failures to trigger an alert
+--tag-filter-expression <json>      tag filter expression
 --enable                            enable smart alert
 --disable                           disable smart alert
 
@@ -901,6 +911,9 @@ synctl update alert <alert-id> --name "Smart-alert" \
     --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \
     --violation-count 2 \
     --severity 10
+    
+# update a smart alert with tagfilter option
+synctl update alert <alert-id> --tag-filter-expression '{"type": "EXPRESSION", "logicalOperator": "AND", "elements": []}'
     
 # enable/disable a smart alert
 synctl update alert <alert-id> --enable
