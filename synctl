@@ -3494,7 +3494,7 @@ class ParseParameter:
             '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
 
         self.parser_create.add_argument(
-            '--severity', type=str, metavar="<string>", help="severity of alert")
+            '--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
 
         self.parser_create.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
