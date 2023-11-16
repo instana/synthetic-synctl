@@ -2292,6 +2292,7 @@ class SmartAlert(Base):
               self.fill_space("Tests".upper()))
 
         for x in alerts:
+            x["severity"] = {5: "WARNING", 10: "CRITICAL"}.get(x["severity"])
             if len(x["syntheticTestIds"]) > 0:
                 test_str = ','.join(x['syntheticTestIds'])
             else:
