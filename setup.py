@@ -1,6 +1,7 @@
 import codecs
 import re
 import sys
+import synctl
 
 from setuptools import setup, find_packages
 
@@ -49,9 +50,9 @@ def find_version(fname):
 setup(
     name="synctl",
     version=find_version("synctl/__version__.py"),
-    description="Because sometimes you need to do it live.",
+    description="Instana Synthetic CLI",
     # long_description=read("README.rst"),
-    author="Rongzhu Shang",
+    author="Rong Zhu Shang",
     author_email="shangrz@cn.ibm.com",
     url="https://github.com/instana/synthetic-synctl",
     install_requires=INSTALL_REQUIRES,
@@ -72,7 +73,11 @@ setup(
         "Environment :: Console",
     ],
     packages=find_packages(include=["synctl"]),
-    entry_points={"console_scripts": ["synctl = synctl.cli:main"]},
+    entry_points={
+        "console_scripts": [
+            "synctl = synctl.cli:main"
+            ]
+        },
     tests_require=["pytest"],
     project_urls={
         "Bug Reports": "https://github.com/instana/synthetic-synctl/issues",

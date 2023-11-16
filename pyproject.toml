@@ -1,21 +1,3 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-[project]
-name = "synctl"
-version = "1.1.0"
-authors = [
-  { name="Rongzhu Shang", email="shangrz@cn.ibm.com" },
-]
-description = "Synthetic CLI Command"
-readme = "README.md"
-requires-python = ">=3.7"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
-
-[project.urls]
-"Homepage" = "https://github.com/instana/synthetic-synctl"
-"Bug Tracker" = "https://github.com/instana/synthetic-synctl/issues"
+[tool.black]
+line-length = 88
+target-version = ['py37', 'py38', 'py39', 'py310']

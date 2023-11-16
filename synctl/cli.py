@@ -18,7 +18,9 @@ import time
 import requests
 import urllib3
 
-VERSION = "1.0.11"
+from synctl.__version__ import __version__
+
+VERSION = __version__
 
 # disable warning when certificate is self signed
 # InsecureRequestWarning: Unverified HTTPS request is being made to host 'some url'.
