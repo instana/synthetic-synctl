@@ -207,7 +207,7 @@ synctl update alert <alert-id> --name "Smart-alert" \\
        --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \\
        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \\
        --violation-count 2 \\
-       --severity 10 
+       --severity warning 
        
 # enable/disable a smart alert
 synctl update alert <alert-id> --enable
@@ -1079,8 +1079,8 @@ class SmartAlertConfiguration(Base):
             "name": "default-Synthetics-Smart-Alert",
             # Description for the synthetic alert configuration, which is used as the details of the triggerd event.
             "description": "Synthetic test failed.",
-            # The severity of the alert when triggered, which is either 5 (Warning), or 10 (Critical).
-            "severity": 5,
+            # The severity of the alert when triggered, which is either Warning or Critical.
+            "severity": "warning",
             # syntheticTestIds: It is an array of the synthetic test IDs this alert configuration is applied to.
             "syntheticTestIds": [],
             # Indicates the type of rule this alert configuration is about.
@@ -2299,7 +2299,7 @@ class SmartAlert(Base):
                 test_str = NOT_APPLICABLE
             print(self.fill_space(x["id"], id_length),
                   self.fill_space(x["name"], max_label_length),
-                  self.fill_space(str(x["severity"]), severity_length),
+                  self.fill_space((x["severity"]), severity_length),
                   self.fill_space(str(x["enabled"])),
                   self.fill_space(test_str))
         print('Total:', len(alerts))
