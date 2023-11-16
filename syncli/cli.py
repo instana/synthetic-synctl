@@ -18,7 +18,7 @@ import time
 import requests
 import urllib3
 
-from synctl.__version__ import __version__
+from syncli.__version__ import __version__
 
 VERSION = __version__
 

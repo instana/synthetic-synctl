@@ -1,7 +1,7 @@
 import codecs
 import re
 import sys
-import synctl
+import syncli
 
 from setuptools import setup, find_packages
 
@@ -48,8 +48,8 @@ def find_version(fname):
 
 
 setup(
-    name="synctl",
-    version=find_version("synctl/__version__.py"),
+    name="syncli",
+    version=find_version("syncli/__version__.py"),
     description="Instana Synthetic CLI",
     # long_description=read("README.rst"),
     author="Rong Zhu Shang",
@@ -72,10 +72,10 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Environment :: Console",
     ],
-    packages=find_packages(include=["synctl"]),
+    packages=find_packages(include=["syncli"]),
     entry_points={
         "console_scripts": [
-            "synctl = synctl.cli:main"
+            "synctl = syncli.cli:main"
             ]
         },
     tests_require=["pytest"],
