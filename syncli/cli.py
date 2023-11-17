@@ -209,7 +209,7 @@ synctl update alert <alert-id> --name "Smart-alert" \\
        --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \\
        --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \\
        --violation-count 2 \\
-       --severity 10 
+       --severity warning 
        
 # enable/disable a smart alert
 synctl update alert <alert-id> --enable
@@ -949,6 +949,127 @@ class CredentialConfiguration(Base):
         result = json.dumps(self.credential_config)
         return result
 
+class SyntheticCredential(Base):
+
+    def __init__(self) -> None:
+        Base.__init__(self)
+
+    def set_cred_payload(self, payload=None):
+        if payload is None:
+            print("payload should not be none")
+        else:
+            self.payload = payload
+    def create_credential(self):
+        """create credential"""
+        cred_payload = self.payload
+        data = json.loads(cred_payload)
+        cred_key = data["credentialName"]
+
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        credential = self.retrieve_credentials()
+
+        create_url = f"{host}/api/synthetics/settings/credentials/"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        if cred_key not in credential:
+            create_cred_res = requests.post(create_url,
+                                            headers=headers,
+                                            data=cred_payload,
+                                            timeout=60,
+                                            verify=self.insecure)
+            if _status_is_201(create_cred_res.status_code):
+                print(f"credential \"{cred_key}\" created")
+            elif _status_is_400(create_cred_res.status_code):
+                print(f'Create Error: {create_cred_res}\n',
+                      create_cred_res.json())
+            else:
+                print('Create credential failed, status code:',
+                      create_cred_res.status_code)
+        else:
+            print("Credential already exists")
+
+    def retrieve_credentials(self):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/synthetics/settings/credentials/"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        cred_result = requests.get(retrieve_url,
+                                   headers=headers,
+                                   timeout=60,
+                                   verify=self.insecure)
+
+        if _status_is_200(cred_result.status_code):
+            data = json.loads(cred_result.content.decode())
+            return data
+        else:
+            self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
+
+    def delete_a_credential(self, cred):
+        """Delete a credential"""
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        if cred is None:
+            print("credential should not be empty")
+            return
+
+        credential = self.retrieve_credentials()
+
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        delete_url = f"{host}/api/synthetics/settings/credentials/{cred}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        if cred in credential:
+            delete_res = requests.delete(delete_url,
+                                         headers=headers,
+                                         timeout=60,
+                                         verify=self.insecure)
+            if _status_is_204(delete_res.status_code):
+                print(f'credential \"{cred}\" deleted')
+            elif _status_is_429(delete_res.status_code):
+                print(TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f"Fail to delete {cred}, status code {delete_res.status_code}")
+        else:
+            self.exit_synctl(ERROR_CODE, f"no credential {cred}")
+
+    def delete_credentials(self, cred_list):
+        if cred_list is None:
+            cred_list = []
+        if len(cred_list) == 0:
+            self.exit_synctl(ERROR_CODE, "no credential to delete")
+        start_time = time.time()
+        total_number = 0
+        for cred in cred_list:
+            self.delete_a_credential(cred)
+            total_number += 1
+        end_time = time.time()
+        total_time = round((end_time-start_time)*1000, 3)
+        print(f"total deleted: {total_number}, time used: {total_time}ms")
+
+    def print_credentials(self, credentials):
+        sorted_cred = sorted(credentials, key=str.lower)
+        for cred in sorted_cred:
+            print(cred)
+
 
 class SmartAlertConfiguration(Base):
     def __init__(self):
@@ -960,8 +1081,8 @@ class SmartAlertConfiguration(Base):
             "name": "default-Synthetics-Smart-Alert",
             # Description for the synthetic alert configuration, which is used as the details of the triggerd event.
             "description": "Synthetic test failed.",
-            # The severity of the alert when triggered, which is either 5 (Warning), or 10 (Critical).
-            "severity": 5,
+            # The severity of the alert when triggered, which is either warning or critical.
+            "severity": "warning",
             # syntheticTestIds: It is an array of the synthetic test IDs this alert configuration is applied to.
             "syntheticTestIds": [],
             # Indicates the type of rule this alert configuration is about.
@@ -994,10 +1115,13 @@ class SmartAlertConfiguration(Base):
         if description != "":
             self.smart_alert_config["description"] = description
 
-    def set_severity(self, severity: int):
+    def set_severity(self, severity):
         """set severity"""
-        if severity != "":
-            self.smart_alert_config["severity"] = severity
+        severity_mapping = {"WARNING" : 5, "CRITICAL" :  10}
+        if severity.upper() in ["WARNING", "CRITICAL"]:
+            self.smart_alert_config["severity"] = severity_mapping.get(severity.upper())
+        else:
+            self.exit_synctl(ERROR_CODE, "severity should be warning or critical")
 
     def set_synthetic_tests(self, synthetic_tests: list = None):
         """set synthetic tests"""
@@ -1008,7 +1132,10 @@ class SmartAlertConfiguration(Base):
 
     def set_violations_count(self, violations_count):
         """set violations count"""
-        self.smart_alert_config["timeThreshold"]["violationsCount"] = violations_count
+        if violations_count >= 1 and violations_count <= 12:
+            self.smart_alert_config["timeThreshold"]["violationsCount"] = violations_count
+        else:
+            self.exit_synctl(ERROR_CODE, "violation count should be in [1,12]")
 
     def set_alert_channel(self, alert_channels):
         """set alert channels"""
@@ -1262,10 +1389,6 @@ class SyntheticLocation(Base):
             print('no location')
         print('total:', len(pop_data))
 
-    def print_credentials(self, credentials):
-        sorted_cred = sorted(credentials, key=str.lower)
-        for t in sorted_cred:
-            print(t)
 
 
 class SyntheticTest(Base):
@@ -1325,42 +1448,6 @@ class SyntheticTest(Base):
             print('create test failed, status code:', create_res.status_code)
             if create_res.text:
                 print(create_res.text)
-
-    def create_credential(self):
-        """create credential"""
-        cred_payload = self.payload
-        data = json.loads(cred_payload)
-        cred_key = data["credentialName"]
-
-        self.check_host_and_token(self.auth["host"], self.auth["token"])
-        host = self.auth["host"]
-        token = self.auth["token"]
-
-        credential = self.retrieve_credentials()
-
-        create_url = f"{host}/api/synthetics/settings/credentials/"
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"apiToken {token}"
-        }
-
-        if cred_key not in credential:
-            create_cred_res = requests.post(create_url,
-                                            headers=headers,
-                                            data=cred_payload,
-                                            timeout=60,
-                                            verify=self.insecure)
-            if _status_is_201(create_cred_res.status_code):
-                print(f"credential \"{cred_key}\" created")
-            elif _status_is_400(create_cred_res.status_code):
-                print(f'Create Error: {create_cred_res}\n',
-                      create_cred_res.json())
-            else:
-                print('Create credential failed, status code:',
-                      create_cred_res.status_code)
-        else:
-            print("Credential already exists")
 
     def retrieve_a_synthetic_test(self, test_id=""):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1538,29 +1625,6 @@ class SyntheticTest(Base):
         else:
             return None
 
-    def retrieve_credentials(self):
-        self.check_host_and_token(self.auth["host"], self.auth["token"])
-        host = self.auth["host"]
-        token = self.auth["token"]
-
-        retrieve_url = f"{host}/api/synthetics/settings/credentials/"
-
-        headers = {
-            'Content-Type': 'application/json',
-            "Authorization": f"apiToken {token}"
-        }
-
-        cred_result = requests.get(retrieve_url,
-                                   headers=headers,
-                                   timeout=60,
-                                   verify=self.insecure)
-
-        if _status_is_200(cred_result.status_code):
-            data = json.loads(cred_result.content.decode())
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
-
     def delete_a_synthetic_test(self, test_id=""):
         """delete a Synthetic by id"""
         # https://instana.github.io/openapi/#operation/deleteSyntheticTest
@@ -1662,50 +1726,6 @@ class SyntheticTest(Base):
             print('no tests match no locations')
         if len(delete_syn_id_lists) > 0 and self.ask_answer("are you sure to delete these tests?"):
             self.delete_multiple_synthetic_tests(delete_syn_id_lists)
-
-    def delete_a_credential(self, cred):
-        """Delete a credential"""
-        self.check_host_and_token(self.auth["host"], self.auth["token"])
-        if cred is None:
-            print("credential should not be empty")
-            return
-
-        credential = self.retrieve_credentials()
-
-        host = self.auth["host"]
-        token = self.auth["token"]
-
-        delete_url = f"{host}/api/synthetics/settings/credentials/{cred}"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"apiToken {token}"
-        }
-
-        if cred in credential:
-            delete_res = requests.delete(delete_url,
-                                         headers=headers,
-                                         timeout=60,
-                                         verify=self.insecure)
-            if _status_is_204(delete_res.status_code):
-                print(f'credential \"{cred}\" deleted')
-            elif _status_is_429(delete_res.status_code):
-                print(TOO_MANY_REQUEST_ERROR)
-            else:
-                print(
-                    f"Fail to delete {cred}, status code {delete_res.status_code}")
-        else:
-            self.exit_synctl(ERROR_CODE, f"no credential {cred}")
-
-    def delete_credentials(self, cred_list):
-        if cred_list is None:
-            cred_list = []
-
-        if len(cred_list) == 0:
-            print("no credential to delete")
-            return
-
-        for cred in cred_list:
-            self.delete_a_credential(cred)
 
     def __sort_synthetic_tests(self, syn_list):
         """sort Synthetic list by locationDisplayLabels"""
@@ -2274,13 +2294,14 @@ class SmartAlert(Base):
               self.fill_space("Tests".upper()))
 
         for x in alerts:
+            x["severity"] = {5: "WARNING", 10: "CRITICAL"}.get(x["severity"])
             if len(x["syntheticTestIds"]) > 0:
                 test_str = ','.join(x['syntheticTestIds'])
             else:
                 test_str = NOT_APPLICABLE
             print(self.fill_space(x["id"], id_length),
                   self.fill_space(x["name"], max_label_length),
-                  self.fill_space(str(x["severity"]), severity_length),
+                  self.fill_space((x["severity"]), severity_length),
                   self.fill_space(str(x["enabled"])),
                   self.fill_space(test_str))
         print('Total:', len(alerts))
@@ -2302,6 +2323,9 @@ class SmartAlert(Base):
         for key, value in a_single_alert.items():
             if key == 'created' or key == 'initialCreated':
                 print(self.fill_space(key, 30), self.format_time(value))
+            elif key == 'severity':
+                severity_mapping = {5 : "WARNING" , 10 : "CRITICAL" }
+                print(self.fill_space(key, 30), severity_mapping.get(value))
             else:
                 print(self.fill_space(key, 30), value)
 
@@ -2644,10 +2668,11 @@ class UpdateSmartAlert(SmartAlert):
 
     def update_alert_severity(self, severity):
         """update severity"""
-        if severity is None:
-            self.exit_synctl(ERROR_CODE, "severity should not be none")
+        severity_mapping = {"WARNING" : 5, "CRITICAL" :  10}
+        if severity.upper() in ["WARNING", "CRITICAL"]:
+            self.update_config["severity"] = severity_mapping.get(severity.upper())
         else:
-            self.update_config["severity"] = severity
+            self.exit_synctl(ERROR_CODE, "severity should be warning or critical")
 
     def update_alert_channel(self, alert_channel):
         """update alerting channels"""
@@ -2667,8 +2692,10 @@ class UpdateSmartAlert(SmartAlert):
         """update violation count"""
         if violation_count is None:
             self.exit_synctl(ERROR_CODE, "violation count should not be none")
-        else:
+        elif violation_count >= 1 and violation_count <= 12:
             self.update_config["timeThreshold"]["violationsCount"] = violation_count
+        else:
+            self.exit_synctl(ERROR_CODE, "violation count should be in [1,12]")
 
     def update_tag_filter_expression(self, tag_filter_json):
         """update tag filter expression"""
@@ -3469,7 +3496,7 @@ class ParseParameter:
             '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
 
         self.parser_create.add_argument(
-            '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
+            '--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
 
         self.parser_create.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
@@ -3653,7 +3680,7 @@ class ParseParameter:
         update_group.add_argument(
             '--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
         update_group.add_argument(
-            '--severity', type=int, metavar="<int>", choices=[5, 10], help="severity of alert")
+            '--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
         update_group.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
         update_group.add_argument(
@@ -3731,6 +3758,7 @@ def main():
 
     syn_instance = SyntheticTest()
     alert_instance = SmartAlert()
+    cred_instance = SyntheticCredential()
     patch_instance = PatchSyntheticTest()
     update_instance = UpdateSyntheticTest()
     update_alert = UpdateSmartAlert()
@@ -3743,6 +3771,7 @@ def main():
     if get_args.verify_tls is not None:
         syn_instance.set_insecure(get_args.verify_tls)
         alert_instance.set_insecure(get_args.verify_tls)
+        cred_instance.set_insecure(get_args.verify_tls)
         patch_instance.set_insecure(get_args.verify_tls)
         update_instance.set_insecure(get_args.verify_tls)
         update_alert.set_insecure(get_args.verify_tls)
@@ -3754,6 +3783,8 @@ def main():
         syn_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         alert_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
+        cred_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         pop_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
@@ -3773,6 +3804,7 @@ def main():
             auth = auth_instance.get_auth(get_args.use_env)
             syn_instance.set_auth(auth)
             alert_instance.set_auth(auth)
+            cred_instance.set_auth(auth)
             pop_instance.set_auth(auth)
             patch_instance.set_auth(auth)
             update_instance.set_auth(auth)
@@ -3882,8 +3914,8 @@ def main():
                 app_instance.set_name_filter(get_args.name_filter)
             app_instance.print_app_list()
         elif get_args.op_type == SYN_CRED:
-            credentials = syn_instance.retrieve_credentials()
-            pop_instance.print_credentials(credentials)
+            credentials = cred_instance.retrieve_credentials()
+            cred_instance.print_credentials(credentials)
         elif get_args.op_type == SYN_ALERT:
             if get_args.id is None:
                 alerts = alert_instance.retrieve_all_smart_alerts()
@@ -3894,6 +3926,8 @@ def main():
                     alert_instance.print_a_alert_details(get_args.id, single_alert, show_details=True)
                 elif get_args.show_json is True:
                     alert_instance.print_a_alert_details(get_args.id, single_alert, show_json=True)
+                else:
+                    alert_instance.print_synthetic_alerts(single_alert)
         elif get_args.op_type == "alert-channel":
             if get_args.id is None:
                 alerting_channel = alert_instance.retrieve_all_alerting_channel()
@@ -3909,8 +3943,8 @@ def main():
             if get_args.value is not None:
                 cred_payload.set_credential_value(get_args.value)
 
-            syn_instance.set_synthetic_payload(payload=cred_payload.get_json())
-            syn_instance.create_credential()
+            cred_instance.set_cred_payload(payload=cred_payload.get_json())
+            cred_instance.create_credential()
             return
         elif get_args.syn_type == SYN_ALERT:
             alert_payload = SmartAlertConfiguration()
@@ -4227,7 +4261,7 @@ def main():
                 pop_instance.delete_synthetic_locations(get_args.id)
         if get_args.delete_type == SYN_CRED:
             if get_args.id is not None:
-                syn_instance.delete_credentials(get_args.id)
+                cred_instance.delete_credentials(get_args.id)
         if get_args.delete_type == SYN_ALERT:
             if get_args.id is not None and len(get_args.id) > 0:
                 alert_instance.delete_multiple_smart_alerts(get_args.id)
