@@ -2691,7 +2691,7 @@ class UpdateSmartAlert(SmartAlert):
         if violation_count is None:
             self.exit_synctl(ERROR_CODE, "violation count should not be none")
         elif violation_count >= 1 and violation_count <= 12:
-            self.smart_alert_config["timeThreshold"]["violationsCount"] = violation_count
+            self.update_config["timeThreshold"]["violationsCount"] = violation_count
         else:
             self.exit_synctl(ERROR_CODE, "violation count should be in [1,12]")
 
