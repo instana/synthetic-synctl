@@ -1081,8 +1081,8 @@ class SmartAlertConfiguration(Base):
             "name": "default-Synthetics-Smart-Alert",
             # Description for the synthetic alert configuration, which is used as the details of the triggerd event.
             "description": "Synthetic test failed.",
-            # The severity of the alert when triggered, which is either warning or critical.
-            "severity": "warning",
+            # The severity of the alert when triggered, which is either warning(5) or critical(10).
+            "severity": 5,
             # syntheticTestIds: It is an array of the synthetic test IDs this alert configuration is applied to.
             "syntheticTestIds": [],
             # Indicates the type of rule this alert configuration is about.
