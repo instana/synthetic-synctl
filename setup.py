@@ -57,7 +57,7 @@ setup(
     url="https://github.com/instana/synthetic-synctl",
     install_requires=INSTALL_REQUIRES,
     # extras_require=EXTRAS_REQUIRE,
-    python_requires=">=3.7",
+    python_requires=">=3.6",
     license="MIT",
     zip_safe=False,
     keywords="Instana Synthetic CLI",
