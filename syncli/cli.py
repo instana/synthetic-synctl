@@ -2201,6 +2201,31 @@ class SmartAlert(Base):
         else:
             self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
 
+    def retrieve_a_single_alerting_channel(self, alert_channel):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/events/settings/alertingChannels/{alert_channel}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+
+        alert_channel_result = requests.get(retrieve_url,
+                                            headers=headers,
+                                            timeout=60,
+                                            verify=self.insecure)
+
+        if _status_is_200(alert_channel_result.status_code):
+            data = alert_channel_result.json()
+            return data
+        else:
+            self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
+
+
+
     def create_synthetic_alert(self):
         alert_payload = self.payload
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -3933,8 +3958,8 @@ def main():
                 alerting_channel = alert_instance.retrieve_all_alerting_channel()
                 alert_instance.print_alerting_channels(alerting_channel)
             else:
-                single_alert = alert_instance.retrieve_a_smart_alert(get_args.id)
-                alert_instance.print_synthetic_alerts(single_alert)
+                single_alert = alert_instance.retrieve_a_single_alerting_channel(get_args.id)
+                alert_instance.print_alerting_channels([single_alert])
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
