@@ -1,12 +1,12 @@
 import codecs
 import re
 import sys
-import syncli
+import synctl
 
 from setuptools import setup, find_packages
 
 INSTALL_REQUIRES = [
-    "requests>=2.27.0",
+    "requests",
 ]
 
 # if "win32" in str(sys.platform).lower():
@@ -48,8 +48,8 @@ def read(fname):
 
 
 setup(
-    name="syncli",
-    version=find_version("syncli/__version__.py"),
+    name="synctl",
+    version=find_version("synctl/__version__.py"),
     description="Instana Synthetic CLI",
     long_description=read("README.md"),
     author="Rong Zhu Shang, Swetha Lohith",
@@ -72,10 +72,10 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Environment :: Console",
     ],
-    packages=find_packages(include=["syncli"]),
+    packages=find_packages(include=["synctl"]),
     entry_points={
         "console_scripts": [
-            "synctl = syncli.cli:main"
+            "synctl = synctl.cli:main"
             ]
         },
     tests_require=["pytest"],
