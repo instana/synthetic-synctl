@@ -6,7 +6,7 @@ import syncli
 from setuptools import setup, find_packages
 
 INSTALL_REQUIRES = [
-    "requests",
+    "requests>=2.27.0",
 ]
 
 # if "win32" in str(sys.platform).lower():
@@ -41,19 +41,19 @@ def find_version(fname):
     return version
 
 
-# def read(fname):
-#     with codecs.open(fname, "r", encoding="utf-8") as fp:
-#         content = fp.read()
-#     return content
+def read(fname):
+    with codecs.open(fname, "r", encoding="utf-8") as fp:
+        content = fp.read()
+    return content
 
 
 setup(
     name="syncli",
     version=find_version("syncli/__version__.py"),
     description="Instana Synthetic CLI",
-    # long_description=read("README.rst"),
-    author="Rong Zhu Shang",
-    author_email="shangrz@cn.ibm.com",
+    long_description=read("README.md"),
+    author="Rong Zhu Shang, Swetha Lohith",
+    author_email="shangrz@cn.ibm.com, Swetha.Lohith@ibm.com",
     url="https://github.com/instana/synthetic-synctl",
     install_requires=INSTALL_REQUIRES,
     # extras_require=EXTRAS_REQUIRE,
