@@ -35,6 +35,7 @@ setup(
     version=find_version("synctl/__version__.py"),
     description="Instana Synthetic CLI",
     long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     author="Rong Zhu Shang, Swetha Lohith",
     author_email="shangrz@cn.ibm.com, Swetha.Lohith@ibm.com",
     url="https://github.com/instana/synthetic-synctl",
