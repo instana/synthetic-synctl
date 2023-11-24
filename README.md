@@ -890,7 +890,7 @@ synctl update alert <alert-id> --name "Smart-alert" \
     --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \
     --violation-count 2 \
     --severity warning
-    
+
 # update a smart alert with tagfilter option
 synctl update alert <alert-id> --tag-filter-expression '{"type": "EXPRESSION", "logicalOperator": "AND", "elements": []}'
     
