@@ -78,20 +78,21 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 - [requests 2.28+](https://requests.readthedocs.io/en/latest/)
 
 # Installation
-
+If you have installed synctl(version 1.0.x) before, make sure remove it via `rm /usr/local/bin/synctl`. 
 ```
-# remove /usr/local/bin/synctl first, if you have installed synctl(version 1.0.x) before.
 pip3 install synctl
 ```
 
 **Note:** To install python3 on Windows, see [Python](https://www.python.org/downloads/windows/).
 
 # Upgrade
+Upgrade `synctl` to latest version.
 ```
-# upgrade to latest
 pip3 install --upgrade synctl
+```
 
-# upgrade synctl to specified version
+Upgrade `synctl` to a specified version.
+```
 pip3 install --upgrade synctl==<version>
 ```
 
