@@ -6,7 +6,7 @@ import synctl
 from setuptools import setup, find_packages
 
 INSTALL_REQUIRES = [
-    "requests",
+    "requests>=2.27.0",
 ]
 
 # if "win32" in str(sys.platform).lower():
