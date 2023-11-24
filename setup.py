@@ -1,28 +1,11 @@
 import codecs
 import re
-import sys
-import synctl
 
 from setuptools import setup, find_packages
 
 INSTALL_REQUIRES = [
     "requests>=2.27.0",
 ]
-
-# if "win32" in str(sys.platform).lower():
-#     # Terminal colors for Windows
-#     INSTALL_REQUIRES.append("colorama>=0.2.4")
-
-# EXTRAS_REQUIRE = {
-#     "tests": ["pytest", "IPython"],
-#     "lint": [
-#         "flake8==3.9.2",
-#         "flake8-bugbear==20.11.1",
-#         "pre-commit~=2.20.0",
-#     ],
-# }
-# EXTRAS_REQUIRE["dev"] = EXTRAS_REQUIRE["tests"] + EXTRAS_REQUIRE["lint"] + ["tox"]
-
 
 def find_version(fname):
     """Attempts to find the version number in the file names fname.
@@ -62,14 +45,13 @@ setup(
     zip_safe=False,
     keywords="Instana Synthetic CLI",
     classifiers=[
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.12",
         "Environment :: Console",
     ],
     packages=find_packages(include=["synctl"]),
@@ -82,5 +64,6 @@ setup(
     project_urls={
         "Bug Reports": "https://github.com/instana/synthetic-synctl/issues",
         "Source": "https://github.com/instana/synthetic-synctl",
+        'Documentation': 'https://github.com/instana/synthetic-synctl#readme',
     },
 )

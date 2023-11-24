@@ -4,8 +4,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 # Table of Contents
 - [Features](#features)
 - [Installation](#installation)
-    - [Linux & Mac OS](#linux--mac-os)
-    - [Windows](#windows)
+- [Upgrade](#upgrade)
 - [Configure an Instana Backend](#configure-an-instana-backend)
     - [Use a configuration file](#use-a-configuration-file-recommended)
     - [Use command options](#use-command-options)
@@ -80,40 +79,20 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 
 # Installation
 
-### Linux & Mac OS
 ```
-# install requests using pip3, for more information, see https://pypi.org/project/requests/
-pip3 install requests
-# install requests using python3 -m pip
-python3 -m pip install requests
-
-# clone code
-git clone https://github.com/instana/synthetic-synctl.git
-
-# copy synctl to /usr/local/bin/
-cd synthetic-synctl
-chmod +x synctl && cp synctl /usr/local/bin/synctl
-
-# if no permissions, add sudo 
-chmod +x synctl && sudo cp synctl /usr/local/bin/synctl
+# remove /usr/local/bin/synctl first, if you have installed synctl(version 1.0.x) before.
+pip install synctl
 ```
 
-**Note:** To upgrade synctl to new version, download new synctl and overwrite the file `/usr/local/bin/synctl`.
+**Note:** To install python3 on Windows, see [Python](https://www.python.org/downloads/windows/). To install git on Windows, see [git](https://github.com/git-guides/install-git#install-git-on-windows).
 
-### Windows
-
-To install python3 on Windows, see [Python](https://www.python.org/downloads/windows/). To install git, see [git](https://github.com/git-guides/install-git#install-git-on-windows).
-
-
+# Upgrade
 ```
-# install requests
-python3 -m pip install requests
+# upgrade to latest
+pip3 install --upgrade synctl
 
-# clone the code
-git clone https://github.com/instana/synthetic-synctl.git
-
-cd <your-path>/synthetic-synctl
-python3 synctl [options]
+# upgrade synctl to specified version
+pip install --upgrade synctl==<version>
 ```
 
 
