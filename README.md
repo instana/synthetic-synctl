@@ -75,7 +75,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 
 # Prerequisites
 - [Python 3.6+](https://www.python.org/downloads/)
-- [requests 2.28+](https://requests.readthedocs.io/en/latest/)
+- [requests 2.27+](https://requests.readthedocs.io/en/latest/)
 
 # Installation
 If you have installed synctl(version 1.0.x) before, make sure remove it via `rm /usr/local/bin/synctl`. 
