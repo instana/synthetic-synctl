@@ -90,12 +90,12 @@ python3 -m pip install requests
 # clone code
 git clone https://github.com/instana/synthetic-synctl.git
 
-# copy synctl to /usr/local/bin/
+# copy synctl.py to /usr/local/bin/
 cd synthetic-synctl
-chmod +x synctl && cp synctl /usr/local/bin/synctl
+chmod +x synctl.py && cp synctl.py /usr/local/bin/synctl
 
 # if no permissions, add sudo 
-chmod +x synctl && sudo cp synctl /usr/local/bin/synctl
+chmod +x synctl.py && sudo cp synctl.py /usr/local/bin/synctl
 ```
 
 **Note:** To upgrade synctl to new version, download new synctl and overwrite the file `/usr/local/bin/synctl`.
