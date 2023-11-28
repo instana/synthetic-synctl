@@ -1069,6 +1069,7 @@ class SyntheticCredential(Base):
         sorted_cred = sorted(credentials, key=str.lower)
         for cred in sorted_cred:
             print(cred)
+        print(f"Total: {len(credentials)}")
 
 
 class SmartAlertConfiguration(Base):
