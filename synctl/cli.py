@@ -1355,6 +1355,7 @@ class SyntheticLocation(Base):
         id_length = 22
         pop_version_length = 13
         status_length = 10
+        loc_type_length = 10
         no_of_tests_length = 13
         max_length = self.__get_max_lo_label_length(pop_data)
         label_length = max_length["max_label"]
@@ -1362,6 +1363,7 @@ class SyntheticLocation(Base):
         print(self.fill_space("ID".upper(), id_length),
               self.fill_space("Label".upper(), label_length),
               self.fill_space("DisplayLabel".upper(), display_label_length),
+              self.fill_space("Type".upper(), loc_type_length),
               self.fill_space("Pop version".upper(), pop_version_length),
               self.fill_space("Status".upper(), status_length),
               self.fill_space("No. of Tests".upper(), no_of_tests_length),
@@ -1374,6 +1376,7 @@ class SyntheticLocation(Base):
                               self.fill_space(pop['label'], label_length),
                               self.fill_space(pop['displayLabel'],
                                               display_label_length),
+                              self.fill_space(pop['locationType'], loc_type_length),
                               self.fill_space(pop['popVersion'], pop_version_length),
                               self.fill_space(
                                   pop['status'], status_length),
@@ -1386,6 +1389,7 @@ class SyntheticLocation(Base):
                       self.fill_space(pop['label'], label_length),
                       self.fill_space(pop['displayLabel'],
                                       display_label_length),
+                      self.fill_space(pop['locationType'], loc_type_length),
                       self.fill_space(pop['popVersion'], pop_version_length),
                       self.fill_space(
                           pop['status'], status_length),
