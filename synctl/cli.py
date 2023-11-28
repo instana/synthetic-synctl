@@ -1229,19 +1229,25 @@ class SyntheticLocation(Base):
             }
         }
         request_url = f"{host}/api/synthetics/results/locationsummarylist"
-        retrieve_res = requests.post(request_url,
-                                     headers=headers,
-                                     data=json.dumps(summary_config),
-                                     timeout=60,
-                                     verify=self.insecure)
+        try:
+            retrieve_res = requests.post(request_url,
+                                         headers=headers,
+                                         data=json.dumps(summary_config),
+                                         timeout=60,
+                                         verify=self.insecure)
 
-        if _status_is_200(retrieve_res.status_code):
-            data = retrieve_res.json()
-            return data
-        else:
-            print('retrieve location summary list failed, status code:',
-                  retrieve_res.status_code)
-            return None
+            if _status_is_200(retrieve_res.status_code):
+                data = retrieve_res.json()
+                return data
+            else:
+                print('retrieve location summary list failed, status code:',
+                      retrieve_res.status_code)
+                return None
+        except requests.exceptions.Timeout:
+            print("retrieve location summary list failed")
+        except requests.exceptions.RequestException as e:
+            print(f"Error: {e}")
+        return None
 
     def get_all_location_summary_list(self,  page=1):
         total_hits = 0
