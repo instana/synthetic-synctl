@@ -1390,7 +1390,6 @@ class SyntheticLocation(Base):
         print('total:', len(pop_data))
 
 
-
 class SyntheticTest(Base):
     """create, query, update and delete Synthetic test"""
 
@@ -3562,7 +3561,7 @@ class ParseParameter:
         self.parser_get.add_argument(
             "--show-json", action='store_true', help="output test json to terminal")
         self.parser_get.add_argument(
-            '--no-result', action='store_true', help="disable latency and success rate")
+            '--show-result', action='store_true', help="show latency and success rate")
         self.parser_get.add_argument(
             '--filter', nargs='?', default=None, help='filter by location')
 
@@ -3888,13 +3887,13 @@ def main():
 
                 out_list = syn_instance.retrieve_all_synthetic_tests(
                     syn_type_t)
-                if get_args.no_result is True:
-                    syn_instance.print_synthetic_test(out_list=out_list)
+                if get_args.show_result is True:
+                    summary_result = summary_instance.get_summary_list(syn_window_size,
+                                                                       test_id=get_args.id)
+                    syn_instance.print_synthetic_test(out_list=out_list,
+                                                      summary_list=summary_result)
                     sys.exit(NORMAL_CODE)
-                summary_result = summary_instance.get_summary_list(syn_window_size,
-                                                                   test_id=get_args.id)
-                syn_instance.print_synthetic_test(out_list=out_list,
-                                                  summary_list=summary_result)
+                syn_instance.print_synthetic_test(out_list=out_list)
             else:
                 summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                    test_id=get_args.id)
