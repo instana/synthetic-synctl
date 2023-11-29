@@ -3773,6 +3773,7 @@ class ParseParameter:
 
 
 def ctrl_exit_handler(signal_received, frame):
+    print("\nsynctl exited")
     sys.exit(0)
 
 def main():
