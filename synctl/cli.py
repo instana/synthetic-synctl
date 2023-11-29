@@ -4307,5 +4307,16 @@ def main():
         print('unknown command:', get_args.sub_command)
 
 
-if __name__ == "__main__":
-    main()
+def ctrl_exit_handler(signal_received, frame):
+    global exit_flag
+    print(f'Signal {signal_received} received. Exiting')
+    exit(0)
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, ctrl_exit_handler)
+    while True:
+        main()
+
+
+# if __name__ == "__main__":
+#     main()
