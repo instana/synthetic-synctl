@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 import os
 import re
+import signal
 import sys
 # import textwrap
 import time
@@ -3771,8 +3772,13 @@ class ParseParameter:
         return self.parser
 
 
+def ctrl_exit_handler(signal_received, frame):
+    sys.exit(0)
+
 def main():
     """main function"""
+    signal.signal(signal.SIGINT, ctrl_exit_handler)
+
     para_instanace = ParseParameter()
     para_instanace.set_options()
     get_args = para_instanace.get_parser().parse_args()
@@ -4306,17 +4312,5 @@ def main():
     else:
         print('unknown command:', get_args.sub_command)
 
-
-def ctrl_exit_handler(signal_received, frame):
-    global exit_flag
-    print(f'Signal {signal_received} received. Exiting')
-    exit(0)
-
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, ctrl_exit_handler)
-    while True:
-        main()
-
-
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
