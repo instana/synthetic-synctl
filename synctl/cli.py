@@ -3773,538 +3773,541 @@ class ParseParameter:
 
 def main():
     """main function"""
-    para_instanace = ParseParameter()
-    para_instanace.set_options()
-    get_args = para_instanace.get_parser().parse_args()
-    update_args = get_args.__dict__.items()
+    try:
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args()
+        update_args = get_args.__dict__.items()
 
-    sys_args = sys.argv
+        sys_args = sys.argv
 
-    if len(sys_args) <= 1:
-        general_helper()
-        sys.exit(0)
+        if len(sys_args) <= 1:
+            general_helper()
+            sys.exit(0)
 
-    # show synctl version
-    if '-v' in sys_args or '--version' in sys_args:
-        show_version()
-        sys.exit(NORMAL_CODE)
+        # show synctl version
+        if '-v' in sys_args or '--version' in sys_args:
+            show_version()
+            sys.exit(NORMAL_CODE)
 
-    auth_instance = Authentication()
+        auth_instance = Authentication()
 
-    syn_instance = SyntheticTest()
-    alert_instance = SmartAlert()
-    cred_instance = SyntheticCredential()
-    patch_instance = PatchSyntheticTest()
-    update_instance = UpdateSyntheticTest()
-    update_alert = UpdateSmartAlert()
-    pop_instance = SyntheticLocation()
+        syn_instance = SyntheticTest()
+        alert_instance = SmartAlert()
+        cred_instance = SyntheticCredential()
+        patch_instance = PatchSyntheticTest()
+        update_instance = UpdateSyntheticTest()
+        update_alert = UpdateSmartAlert()
+        pop_instance = SyntheticLocation()
 
-    summary_instance = SyntheticResult()
-    app_instance = Application()
+        summary_instance = SyntheticResult()
+        app_instance = Application()
 
-    # set --verify-tls
-    if get_args.verify_tls is not None:
-        syn_instance.set_insecure(get_args.verify_tls)
-        alert_instance.set_insecure(get_args.verify_tls)
-        cred_instance.set_insecure(get_args.verify_tls)
-        patch_instance.set_insecure(get_args.verify_tls)
-        update_instance.set_insecure(get_args.verify_tls)
-        update_alert.set_insecure(get_args.verify_tls)
-        pop_instance.set_insecure(get_args.verify_tls)
-        app_instance.set_insecure(get_args.verify_tls)
+        # set --verify-tls
+        if get_args.verify_tls is not None:
+            syn_instance.set_insecure(get_args.verify_tls)
+            alert_instance.set_insecure(get_args.verify_tls)
+            cred_instance.set_insecure(get_args.verify_tls)
+            patch_instance.set_insecure(get_args.verify_tls)
+            update_instance.set_insecure(get_args.verify_tls)
+            update_alert.set_insecure(get_args.verify_tls)
+            pop_instance.set_insecure(get_args.verify_tls)
+            app_instance.set_insecure(get_args.verify_tls)
 
-    # both host and token are required when using in command line
-    if get_args.host is not None and get_args.token is not None:
-        syn_instance.set_host_token(
-            new_host=get_args.host, new_token=get_args.token)
-        alert_instance.set_host_token(
-            new_host=get_args.host, new_token=get_args.token)
-        cred_instance.set_host_token(
-            new_host=get_args.host, new_token=get_args.token)
-        pop_instance.set_host_token(
-            new_host=get_args.host, new_token=get_args.token)
-        patch_instance.set_host_token(
-            new_host=get_args.host, new_token=get_args.token)
-        update_instance.set_host_token(
-            new_host=get_args.host, new_token=get_args.token)
-        update_alert.set_host_token(
-            new_host=get_args.host, new_token=get_args.token)
-        summary_instance.set_host_token(
-            new_host=get_args.host, new_token=get_args.token)
-        app_instance.set_host_token(
-            new_host=get_args.host, new_token=get_args.token)
+        # both host and token are required when using in command line
+        if get_args.host is not None and get_args.token is not None:
+            syn_instance.set_host_token(
+                new_host=get_args.host, new_token=get_args.token)
+            alert_instance.set_host_token(
+                new_host=get_args.host, new_token=get_args.token)
+            cred_instance.set_host_token(
+                new_host=get_args.host, new_token=get_args.token)
+            pop_instance.set_host_token(
+                new_host=get_args.host, new_token=get_args.token)
+            patch_instance.set_host_token(
+                new_host=get_args.host, new_token=get_args.token)
+            update_instance.set_host_token(
+                new_host=get_args.host, new_token=get_args.token)
+            update_alert.set_host_token(
+                new_host=get_args.host, new_token=get_args.token)
+            summary_instance.set_host_token(
+                new_host=get_args.host, new_token=get_args.token)
+            app_instance.set_host_token(
+                new_host=get_args.host, new_token=get_args.token)
 
-    else:
-        if COMMAND_CONFIG != get_args.sub_command:
-            auth = auth_instance.get_auth(get_args.use_env)
-            syn_instance.set_auth(auth)
-            alert_instance.set_auth(auth)
-            cred_instance.set_auth(auth)
-            pop_instance.set_auth(auth)
-            patch_instance.set_auth(auth)
-            update_instance.set_auth(auth)
-            update_alert.set_auth(auth)
-            summary_instance.set_auth(auth)
-            app_instance.set_auth(auth)
+        else:
+            if COMMAND_CONFIG != get_args.sub_command:
+                auth = auth_instance.get_auth(get_args.use_env)
+                syn_instance.set_auth(auth)
+                alert_instance.set_auth(auth)
+                cred_instance.set_auth(auth)
+                pop_instance.set_auth(auth)
+                patch_instance.set_auth(auth)
+                update_instance.set_auth(auth)
+                update_alert.set_auth(auth)
+                summary_instance.set_auth(auth)
+                app_instance.set_auth(auth)
 
-    if COMMAND_CONFIG == get_args.sub_command:
-        if get_args.config_type == "list":
-            if get_args.env is None:
-                auth_instance.print_config_file()
-            else:
-                auth_instance.print_config_file(name=get_args.env)
-        elif get_args.config_type == "set":
-            if get_args.host is None or get_args.token is None or get_args.env is None:
-                print("--env, --host, and --token are required")
-            else:
-                set_as_default = False
-                if get_args.default is True:
-                    set_as_default = True
-                auth_instance.add_an_item_to_config(
-                    name=get_args.env,
-                    host=get_args.host,
-                    token=get_args.token,
-                    set_default=set_as_default
-                )
-        elif get_args.config_type == "use":
-            if get_args.env is None:
-                print('--env is required when set it as default')
-            else:
-                auth_instance.set_env_to_default(get_args.env)
-        elif get_args.config_type == "remove":
-            if get_args.env is None:
-                print('--env is required when remove a config')
-            else:
-                auth_instance.remove_an_item_from_config(get_args.env)
+        if COMMAND_CONFIG == get_args.sub_command:
+            if get_args.config_type == "list":
+                if get_args.env is None:
+                    auth_instance.print_config_file()
+                else:
+                    auth_instance.print_config_file(name=get_args.env)
+            elif get_args.config_type == "set":
+                if get_args.host is None or get_args.token is None or get_args.env is None:
+                    print("--env, --host, and --token are required")
+                else:
+                    set_as_default = False
+                    if get_args.default is True:
+                        set_as_default = True
+                    auth_instance.add_an_item_to_config(
+                        name=get_args.env,
+                        host=get_args.host,
+                        token=get_args.token,
+                        set_default=set_as_default
+                    )
+            elif get_args.config_type == "use":
+                if get_args.env is None:
+                    print('--env is required when set it as default')
+                else:
+                    auth_instance.set_env_to_default(get_args.env)
+            elif get_args.config_type == "remove":
+                if get_args.env is None:
+                    print('--env is required when remove a config')
+                else:
+                    auth_instance.remove_an_item_from_config(get_args.env)
 
-    elif COMMAND_GET == get_args.sub_command:
+        elif COMMAND_GET == get_args.sub_command:
 
-        if get_args.op_type == SYN_TEST:
-            # synctl_instanace.synctl_get()
-            # deal test
-            syn_type_t = None
-            syn_window_size = get_args.window_size
-            if get_args.type is not None:
-                try:
-                    syn_type_t = synthetic_type[get_args.type]
-                except IndexError:
-                    print("Synthetic type only support 0 1 2 3 4", syn_type_t)
+            if get_args.op_type == SYN_TEST:
+                # synctl_instanace.synctl_get()
+                # deal test
+                syn_type_t = None
+                syn_window_size = get_args.window_size
+                if get_args.type is not None:
+                    try:
+                        syn_type_t = synthetic_type[get_args.type]
+                    except IndexError:
+                        print("Synthetic type only support 0 1 2 3 4", syn_type_t)
 
-            if get_args.id is None:
-                if get_args.filter is not None:
-                    split_string = get_args.filter.split('=')
-                    syn_instance.print_tests_by_filter(split_string)
-                    sys.exit(ERROR_CODE)
+                if get_args.id is None:
+                    if get_args.filter is not None:
+                        split_string = get_args.filter.split('=')
+                        syn_instance.print_tests_by_filter(split_string)
+                        sys.exit(ERROR_CODE)
 
-                out_list = syn_instance.retrieve_all_synthetic_tests(
-                    syn_type_t)
-                if get_args.show_result is True:
+                    out_list = syn_instance.retrieve_all_synthetic_tests(
+                        syn_type_t)
+                    if get_args.show_result is True:
+                        summary_result = summary_instance.get_summary_list(syn_window_size,
+                                                                           test_id=get_args.id)
+                        syn_instance.print_synthetic_test(out_list=out_list,
+                                                          summary_list=summary_result)
+                        sys.exit(NORMAL_CODE)
+                    syn_instance.print_synthetic_test(out_list=out_list)
+                else:
                     summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                        test_id=get_args.id)
-                    syn_instance.print_synthetic_test(out_list=out_list,
-                                                      summary_list=summary_result)
-                    sys.exit(NORMAL_CODE)
-                syn_instance.print_synthetic_test(out_list=out_list)
-            else:
-                summary_result = summary_instance.get_summary_list(syn_window_size,
-                                                                   test_id=get_args.id)
-                # if get_args.id is not None:
-                # a_single_payload type: list
-                a_single_payload = syn_instance.retrieve_a_synthetic_test(
-                    get_args.id)
-                if get_args.show_script is True:
-                    syn_instance.print_a_synthetic_details(
-                        a_single_payload, show_script=True)
-                elif get_args.show_json is True:
-                    syn_instance.print_a_synthetic_details(
-                        a_single_payload, show_json=True)
-                elif get_args.save_script is True:
-                    syn_instance.save_api_script_to_local(a_single_payload[0])
-                elif get_args.show_details is True:
-                    syn_instance.print_a_synthetic_details(
-                        a_single_payload, show_details=True)
-                else:
-                    syn_instance.print_synthetic_test(out_list=a_single_payload,
-                                                      test_type=syn_type_t,
-                                                      summary_list=summary_result)
-        elif get_args.op_type in (SYN_LOCATION, SYN_LO):
-            # deal pop
-            pop_locations_json = []
-            if get_args.show_details is True:
-                pop_location = pop_instance.retrieve_synthetic_locations(
-                    get_args.id)
-                pop_instance.print_a_location_details(
-                    get_args.id, pop_location, show_details=True)
-                syn_instance.exit_synctl(ERROR_CODE)
-            if get_args.id is None:
-                pop_locations_json = pop_instance.retrieve_synthetic_locations()
-            else:
-                pop_locations_json = pop_instance.retrieve_synthetic_locations(
-                    location_id=get_args.id)
-            pop_locations_summary_result = pop_instance.get_all_location_summary_list()
-            pop_instance.print_synthetic_locations(
-                pop_locations_json, pop_locations_summary_result)
-        elif get_args.op_type in (SYN_APPLICATION, SYN_APP):
-            if get_args.name_filter is not None:
-                app_instance.set_name_filter(get_args.name_filter)
-            app_instance.print_app_list()
-        elif get_args.op_type == SYN_CRED:
-            credentials = cred_instance.retrieve_credentials()
-            cred_instance.print_credentials(credentials)
-        elif get_args.op_type == SYN_ALERT:
-            if get_args.id is None:
-                alerts = alert_instance.retrieve_all_smart_alerts()
-                alert_instance.print_synthetic_alerts(alerts)
-            else:
-                single_alert = alert_instance.retrieve_a_smart_alert(get_args.id)
+                    # if get_args.id is not None:
+                    # a_single_payload type: list
+                    a_single_payload = syn_instance.retrieve_a_synthetic_test(
+                        get_args.id)
+                    if get_args.show_script is True:
+                        syn_instance.print_a_synthetic_details(
+                            a_single_payload, show_script=True)
+                    elif get_args.show_json is True:
+                        syn_instance.print_a_synthetic_details(
+                            a_single_payload, show_json=True)
+                    elif get_args.save_script is True:
+                        syn_instance.save_api_script_to_local(a_single_payload[0])
+                    elif get_args.show_details is True:
+                        syn_instance.print_a_synthetic_details(
+                            a_single_payload, show_details=True)
+                    else:
+                        syn_instance.print_synthetic_test(out_list=a_single_payload,
+                                                          test_type=syn_type_t,
+                                                          summary_list=summary_result)
+            elif get_args.op_type in (SYN_LOCATION, SYN_LO):
+                # deal pop
+                pop_locations_json = []
                 if get_args.show_details is True:
-                    alert_instance.print_a_alert_details(get_args.id, single_alert, show_details=True)
-                elif get_args.show_json is True:
-                    alert_instance.print_a_alert_details(get_args.id, single_alert, show_json=True)
+                    pop_location = pop_instance.retrieve_synthetic_locations(
+                        get_args.id)
+                    pop_instance.print_a_location_details(
+                        get_args.id, pop_location, show_details=True)
+                    syn_instance.exit_synctl(ERROR_CODE)
+                if get_args.id is None:
+                    pop_locations_json = pop_instance.retrieve_synthetic_locations()
                 else:
-                    alert_instance.print_synthetic_alerts(single_alert)
-        elif get_args.op_type == "alert-channel":
-            if get_args.id is None:
-                alerting_channel = alert_instance.retrieve_all_alerting_channel()
-                alert_instance.print_alerting_channels(alerting_channel)
-            else:
-                single_alert = alert_instance.retrieve_a_single_alerting_channel(get_args.id)
-                alert_instance.print_alerting_channels([single_alert])
-    elif COMMAND_CREATE == get_args.sub_command:
-        if get_args.syn_type == SYN_CRED:
-            cred_payload = CredentialConfiguration()
-            if get_args.key is not None:
-                cred_payload.set_credential_name(get_args.key)
-            if get_args.value is not None:
-                cred_payload.set_credential_value(get_args.value)
-
-            cred_instance.set_cred_payload(payload=cred_payload.get_json())
-            cred_instance.create_credential()
-            return
-        elif get_args.syn_type == SYN_ALERT:
-            alert_payload = SmartAlertConfiguration()
-            if get_args.name is not None:
-                alert_payload.set_alert_name(get_args.name)
-            if get_args.test is not None:
-                alert_payload.set_synthetic_tests(get_args.test)
-            if get_args.alert_channel is not None:
-                alert_payload.set_alert_channel(get_args.alert_channel)
-            if get_args.violation_count is not None:
-                alert_payload.set_violations_count(get_args.violation_count)
-            if get_args.severity is not None:
-                alert_payload.set_severity(get_args.severity)
-            if get_args.tag_filter_expression is not None:
-                tag_filter_expression = get_args.tag_filter_expression
-                tag_filter_expression_json = json.loads(tag_filter_expression)
-                alert_payload.set_tag_filter_expression(tag_filter_expression_json)
-            alert_instance.set_alert_payload(alert_payload.get_json())
-            alert_instance.create_synthetic_alert()
-        elif get_args.syn_type == SYN_TEST:
-            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4]:
-                syn_type_t = synthetic_type[get_args.type]
-                payload = SyntheticConfiguration(syn_type_t)
-
-                # --from-json options
-                # create from a json file
-                # if use a json file, all options should config in json
-                # not support provide other options from command-line
-                if get_args.from_json is not None:
-                    json_file = get_args.from_json
-                    payload.loads_from_json_file(json_file_name=json_file)
-                    syn_instance.set_synthetic_payload(
-                        payload=payload.get_json())
-                    syn_instance.create_a_synthetic_test()
-                    return
-
-                # create test and get option from command line
-                # PING, create simple ping
-                if get_args.type == 0 or get_args.type is None:
-                    # request url is required
-                    if get_args.url is not None:
-                        payload.set_ping_url(get_args.url)
+                    pop_locations_json = pop_instance.retrieve_synthetic_locations(
+                        location_id=get_args.id)
+                pop_locations_summary_result = pop_instance.get_all_location_summary_list()
+                pop_instance.print_synthetic_locations(
+                    pop_locations_json, pop_locations_summary_result)
+            elif get_args.op_type in (SYN_APPLICATION, SYN_APP):
+                if get_args.name_filter is not None:
+                    app_instance.set_name_filter(get_args.name_filter)
+                app_instance.print_app_list()
+            elif get_args.op_type == SYN_CRED:
+                credentials = cred_instance.retrieve_credentials()
+                cred_instance.print_credentials(credentials)
+            elif get_args.op_type == SYN_ALERT:
+                if get_args.id is None:
+                    alerts = alert_instance.retrieve_all_smart_alerts()
+                    alert_instance.print_synthetic_alerts(alerts)
+                else:
+                    single_alert = alert_instance.retrieve_a_smart_alert(get_args.id)
+                    if get_args.show_details is True:
+                        alert_instance.print_a_alert_details(get_args.id, single_alert, show_details=True)
+                    elif get_args.show_json is True:
+                        alert_instance.print_a_alert_details(get_args.id, single_alert, show_json=True)
                     else:
-                        payload.exit_synctl(ERROR_CODE, "URL is required")
-                    if get_args.operation is not None:
-                        payload.set_ping_operation(get_args.operation)
-                    if get_args.headers is not None:
-                        headers_str = get_args.headers
-                        headers_json = json.loads(headers_str)
-                        payload.set_ping_headers(headers_json)
-                    if get_args.body is not None:
-                        payload.set_ping_body(get_args.body)
+                        alert_instance.print_synthetic_alerts(single_alert)
+            elif get_args.op_type == "alert-channel":
+                if get_args.id is None:
+                    alerting_channel = alert_instance.retrieve_all_alerting_channel()
+                    alert_instance.print_alerting_channels(alerting_channel)
+                else:
+                    single_alert = alert_instance.retrieve_a_single_alerting_channel(get_args.id)
+                    alert_instance.print_alerting_channels([single_alert])
+        elif COMMAND_CREATE == get_args.sub_command:
+            if get_args.syn_type == SYN_CRED:
+                cred_payload = CredentialConfiguration()
+                if get_args.key is not None:
+                    cred_payload.set_credential_name(get_args.key)
+                if get_args.value is not None:
+                    cred_payload.set_credential_value(get_args.value)
 
-                    # followRedirect
-                    if get_args.follow_redirect is not None:
-                        payload.set_follow_redirect(get_args.follow_redirect)
-                    # expectStatus
-                    if get_args.expect_status is not None:
-                        payload.set_expect_status(get_args.expect_status)
-                    # expectJson, str -> dict
-                    # an example: --expect-json '{"name": "John","age": 30,"city": "New York"}'
-                    if get_args.expect_json is not None:
-                        expect_json_str = get_args.expect_json
-                        expect_json_json = json.loads(expect_json_str)
-                        payload.set_expect_json(expect_json=expect_json_json)
-                    # expectMatch
-                    # an example: --expect-match "ibm"
-                    if get_args.expect_match is not None:
-                        payload.set_expect_match(
-                            expect_match=get_args.expect_match)
-                    # expectExists
-                    # an example: --expect-exists '["slideshow"]'
-                    if get_args.expect_exists is not None:
-                        expect_exists_str = get_args.expect_exists
-                        expect_exists_list = json.loads(expect_exists_str)
-                        payload.set_expect_exists(expect_exists_list)
-                    # expectNotEmpty
-                    # an example: --expect-not-empty '["slideshow"]'
-                    if get_args.expect_not_empty is not None:
-                        expect_not_empty_str = get_args.expect_not_empty
-                        expect_not_empty_list = json.loads(
-                            expect_not_empty_str)
-                        payload.set_expect_not_empty(expect_not_empty_list)
-                    if get_args.allow_insecure is not None:
-                        payload.set_allow_insecure(get_args.allow_insecure)
-
-                # basic type HTTPScript and WebpageScript
-                elif get_args.type in (1, 2, 3) and get_args.bundle is None:
-                    syn_type_t = synthetic_type[get_args.type]
-                    payload = SyntheticConfiguration(syn_type=syn_type_t)
-                    if get_args.from_file is not None:
-                        script_content = payload.read_js_file(
-                            get_args.from_file)
-                        payload.set_api_script_script(
-                            script_str=script_content)
-                    if payload.get_api_script_script() == "":
-                        syn_instance.exit_synctl(ERROR_CODE, "script should not be empty")
-
-                # bundle script
-                elif get_args.type in (1, 2) and get_args.bundle is not None:
-                    syn_type_t = synthetic_type[get_args.type]
-                    payload = SyntheticConfiguration(
-                        syn_type_t, bundle_type=True)
-
-                    if payload.is_zip_file(get_args.bundle):
-                        bundle_base64_str = payload.read_zip_file_to_base64(
-                            get_args.bundle)
-                    else:
-                        bundle_base64_str = get_args.bundle
-                    # entry file
-                    if get_args.script_file is not None:
-                        payload.set_api_bundle_script(
-                            bundle_base64_str, script_file=get_args.script_file)
-                    else:
-                        # script file use index.js
-                        payload.set_api_bundle_script(bundle_base64_str)
-                # BrowserScript 2, WebpageScript 3, WebpageAction 4
-                if get_args.type in (2, 3, 4):
-                    payload.set_browser_type(get_args.browser)
-
-                    if get_args.record_video is not None:
-                        payload.set_record_video(get_args.record_video)
-
-
-                if get_args.type == 4:
-                    if get_args.url is not None:
-                        payload.set_ping_url(get_args.url)
-                    else:
-                        print("URL is required")
-
-                # global operation, add label, location, description, frequency, etc.
-                if get_args.label is not None:
-                    payload.set_label(get_args.label)
-                if get_args.location is not None:
-                    payload.set_locations(get_args.location)
-                if get_args.description is not None:
-                    payload.set_description(get_args.description)
-                if get_args.frequency is not None:
-                    payload.set_frequency(get_args.frequency)
-                if get_args.app_id is not None:
-                    payload.set_application_id(get_args.app_id)
-                if get_args.timeout is not None:
-                    payload.set_timeout(get_args.timeout)
-
-                if get_args.custom_properties is not None:
-                    payload.set_custom_properties(
-                        json.loads(get_args.custom_properties))
-
-                # configuration
-                # retries [0, 2]
-                if get_args.retries is not None:
-                    payload.set_retries(get_args.retries)
-                # retryInterval [0, 10]
-                if get_args.retry_interval is not None:
-                    payload.set_retry_interval(get_args.retry_interval)
-
-                syn_payload = payload.get_json()
-                syn_instance.set_synthetic_payload(payload=syn_payload)
-
-                syn_instance.create_a_synthetic_test()
-
-            else:
-                syn_instance.exit_synctl(ERROR_CODE, '-t/--type is required to create synthetic test')
-    elif COMMAND_PATCH == get_args.sub_command:
-        if get_args.id is not None:
-            patch_instance.set_test_id(get_args.id)
-        if get_args.active is not None:
-            patch_instance.patch_active(get_args.active)
-        elif get_args.timeout is not None:
-            # timeout Expected <number>(ms|s|m)
-            patch_instance.patch_config_timeout(get_args.timeout)
-        elif get_args.retries is not None:
-            patch_instance.patch_retries(get_args.retries)
-        elif get_args.frequency is not None:
-            patch_instance.patch_frequency(get_args.frequency)
-        elif get_args.retry_interval is not None:
-            patch_instance.patch_retry_interval(get_args.retry_interval)
-        elif get_args.operation is not None:
-            patch_instance.patch_ping_operation(get_args.operation)
-        elif get_args.script_file is not None:
-            patch_instance.patch_config_script_file(get_args.script_file)
-        elif get_args.description is not None:
-            patch_instance.patch_description(get_args.description)
-        elif get_args.record_video is not None:
-            patch_instance.patch_record_video(get_args.record_video)
-        elif get_args.label is not None:
-            patch_instance.patch_label(get_args.label)
-        elif get_args.location is not None:
-            patch_instance.patch_locations(get_args.location)
-        elif get_args.mark_synthetic_call:
-            patch_instance.patch_mark_synthetic_call(
-                get_args.mark_synthetic_call)
-        elif get_args.entry_file is not None:
-            patch_instance.patch_script_file(get_args.entry_file, get_args.id)
-        elif get_args.url is not None:
-            patch_instance.patch_url(get_args.url)
-        elif get_args.follow_redirect is not None:
-            patch_instance.patch_follow_redirect(get_args.follow_redirect)
-        elif get_args.expect_status is not None:
-            patch_instance.patch_expect_status(get_args.expect_status)
-        elif get_args.validation_string is not None:
-            patch_instance.patch_validation_string(get_args.validation_string)
-        elif get_args.bundle is not None:
-            patch_instance.patch_bundle(get_args.id, get_args.bundle)
-        elif get_args.custom_property is not None:
-            split_string = get_args.custom_property.split(',')
-            patch_instance.patch_custom_properties(get_args.id, split_string)
-    elif COMMAND_UPDATE == get_args.sub_command:
-        if get_args.syn_type == SYN_TEST:
-            invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
-            update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
-            if get_args.enable is True or get_args.disable is True:
-                update_instance.exit_synctl(ERROR_CODE, "option: --enable/--disable not supported by synthetic tests")
-            payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
-            update_instance.set_updated_payload(payload)
-            if get_args.file is not None:
-                new_payload = update_instance.update_using_file(get_args.file)
-                update_instance.update_a_synthetic_test(get_args.id, new_payload)
-            else:
-                if get_args.label is not None:
-                    update_instance.update_label(get_args.label)
-                if get_args.active is not None:
-                    update_instance.update_active(get_args.active)
-                if get_args.timeout is not None:
-                    update_instance.update_config_timeout(get_args.timeout)
-                if get_args.retries is not None:
-                    update_instance.update_retries(get_args.retries)
-                if get_args.frequency is not None:
-                    update_instance.update_frequency(get_args.frequency)
-                if get_args.retry_interval is not None:
-                    update_instance.update_retry_interval(get_args.retry_interval)
-                if get_args.operation is not None:
-                    update_instance.update_ping_operation(get_args.operation)
-                if get_args.script_file is not None:
-                    update_instance.update_config_script_file(get_args.script_file)
-                if get_args.description is not None:
-                    update_instance.update_description(get_args.description)
-                if get_args.record_video is not None:
-                    update_instance.update_record_video(get_args.record_video)
-                if get_args.location is not None:
-                    update_instance.update_locations(get_args.location)
-                if get_args.mark_synthetic_call:
-                    update_instance.update_mark_synthetic_call(get_args.mark_synthetic_call)
-                if get_args.entry_file is not None:
-                    update_instance.update_script_file(get_args.entry_file)
-                if get_args.url is not None:
-                    update_instance.update_url(get_args.url)
-                if get_args.follow_redirect is not None:
-                    update_instance.update_follow_redirect(get_args.follow_redirect)
-                if get_args.app_id is not None:
-                    update_instance.update_application_id(get_args.app_id)
-                if get_args.expect_status is not None:
-                    update_instance.update_expect_status(get_args.expect_status)
-                if get_args.validation_string is not None:
-                    update_instance.update_validation_string(get_args.validation_string)
-                if get_args.bundle is not None:
-                    update_instance.update_bundle(get_args.bundle)
-                if get_args.custom_property is not None:
-                    split_string = get_args.custom_property.split(',')
-                    update_instance.update_custom_properties(split_string)
-                updated_payload = update_instance.get_updated_test_config()
-                update_instance.update_a_synthetic_test(get_args.id, updated_payload)
-        if get_args.syn_type == SYN_ALERT:
-            invalid_options = ["label", "active", "frequency", "timeout", "retry_interval", "retries", "operation", "script_file",
-                               "location", "record_video", "mark_synthetic_call", "entry_file", "url", "follow_redirect",
-                               "expect_status", "validation_string", "bundle", "custom_property"]
-            update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
-            payload = alert_instance.retrieve_a_smart_alert(get_args.id)
-            update_alert.set_updated_payload(payload)
-            if get_args.file is not None:
-                new_payload = update_alert.update_using_file(get_args.file)
-                update_alert.update_a_smart_alert(get_args.id, new_payload)
-            elif get_args.enable is True or get_args.disable is True:
-                operation = "enable" if get_args.enable else "disable"
-                invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
-                update_instance.invalid_update_options(invalid_options, update_args, toggle=operation)
-                update_alert.toggle_smart_alert(get_args.id, operation)
-            else:
+                cred_instance.set_cred_payload(payload=cred_payload.get_json())
+                cred_instance.create_credential()
+                return
+            elif get_args.syn_type == SYN_ALERT:
+                alert_payload = SmartAlertConfiguration()
                 if get_args.name is not None:
-                    update_alert.update_alert_name(get_args.name)
-                if get_args.description is not None:
-                    update_alert.update_description(get_args.description)
-                if get_args.severity is not None:
-                    update_alert.update_alert_severity(get_args.severity)
-                if get_args.alert_channel is not None:
-                    update_alert.update_alert_channel(get_args.alert_channel)
+                    alert_payload.set_alert_name(get_args.name)
                 if get_args.test is not None:
-                    update_alert.update_tests(get_args.test)
+                    alert_payload.set_synthetic_tests(get_args.test)
+                if get_args.alert_channel is not None:
+                    alert_payload.set_alert_channel(get_args.alert_channel)
                 if get_args.violation_count is not None:
-                    update_alert.update_violation_count(get_args.violation_count)
+                    alert_payload.set_violations_count(get_args.violation_count)
+                if get_args.severity is not None:
+                    alert_payload.set_severity(get_args.severity)
                 if get_args.tag_filter_expression is not None:
-                    tag_filter_expression = json.loads(get_args.tag_filter_expression)
-                    update_alert.update_tag_filter_expression(tag_filter_expression)
-                updated_alert_config = update_alert.get_updated_alert_config()
-                update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
-    elif COMMAND_DELETE == get_args.sub_command:
-        if get_args.delete_type == SYN_TEST:
-            if get_args.id is not None and len(get_args.id) > 0:
-                syn_instance.delete_multiple_synthetic_tests(
-                    get_args.id)
-            elif get_args.match_regex is not None:
-                syn_instance.delete_tests_label_match_regex(
-                    label_regex=get_args.match_regex)
-            elif get_args.match_location is not None:
-                syn_instance.delete_tests_match_location(
-                    match_location=get_args.match_location)
-            elif get_args.no_locations is True:
-                syn_instance.delete_tests_without_location()
-            else:
-                print('no synthetic test to delete')
+                    tag_filter_expression = get_args.tag_filter_expression
+                    tag_filter_expression_json = json.loads(tag_filter_expression)
+                    alert_payload.set_tag_filter_expression(tag_filter_expression_json)
+                alert_instance.set_alert_payload(alert_payload.get_json())
+                alert_instance.create_synthetic_alert()
+            elif get_args.syn_type == SYN_TEST:
+                if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4]:
+                    syn_type_t = synthetic_type[get_args.type]
+                    payload = SyntheticConfiguration(syn_type_t)
 
-        if get_args.delete_type in (SYN_LOCATION, SYN_LO):
-            if get_args.id is not None:
-                pop_instance.delete_synthetic_locations(get_args.id)
-        if get_args.delete_type == SYN_CRED:
-            if get_args.id is not None:
-                cred_instance.delete_credentials(get_args.id)
-        if get_args.delete_type == SYN_ALERT:
-            if get_args.id is not None and len(get_args.id) > 0:
-                alert_instance.delete_multiple_smart_alerts(get_args.id)
-            else:
-                print('no smart alert to delete')
+                    # --from-json options
+                    # create from a json file
+                    # if use a json file, all options should config in json
+                    # not support provide other options from command-line
+                    if get_args.from_json is not None:
+                        json_file = get_args.from_json
+                        payload.loads_from_json_file(json_file_name=json_file)
+                        syn_instance.set_synthetic_payload(
+                            payload=payload.get_json())
+                        syn_instance.create_a_synthetic_test()
+                        return
 
-    else:
-        print('unknown command:', get_args.sub_command)
+                    # create test and get option from command line
+                    # PING, create simple ping
+                    if get_args.type == 0 or get_args.type is None:
+                        # request url is required
+                        if get_args.url is not None:
+                            payload.set_ping_url(get_args.url)
+                        else:
+                            payload.exit_synctl(ERROR_CODE, "URL is required")
+                        if get_args.operation is not None:
+                            payload.set_ping_operation(get_args.operation)
+                        if get_args.headers is not None:
+                            headers_str = get_args.headers
+                            headers_json = json.loads(headers_str)
+                            payload.set_ping_headers(headers_json)
+                        if get_args.body is not None:
+                            payload.set_ping_body(get_args.body)
+
+                        # followRedirect
+                        if get_args.follow_redirect is not None:
+                            payload.set_follow_redirect(get_args.follow_redirect)
+                        # expectStatus
+                        if get_args.expect_status is not None:
+                            payload.set_expect_status(get_args.expect_status)
+                        # expectJson, str -> dict
+                        # an example: --expect-json '{"name": "John","age": 30,"city": "New York"}'
+                        if get_args.expect_json is not None:
+                            expect_json_str = get_args.expect_json
+                            expect_json_json = json.loads(expect_json_str)
+                            payload.set_expect_json(expect_json=expect_json_json)
+                        # expectMatch
+                        # an example: --expect-match "ibm"
+                        if get_args.expect_match is not None:
+                            payload.set_expect_match(
+                                expect_match=get_args.expect_match)
+                        # expectExists
+                        # an example: --expect-exists '["slideshow"]'
+                        if get_args.expect_exists is not None:
+                            expect_exists_str = get_args.expect_exists
+                            expect_exists_list = json.loads(expect_exists_str)
+                            payload.set_expect_exists(expect_exists_list)
+                        # expectNotEmpty
+                        # an example: --expect-not-empty '["slideshow"]'
+                        if get_args.expect_not_empty is not None:
+                            expect_not_empty_str = get_args.expect_not_empty
+                            expect_not_empty_list = json.loads(
+                                expect_not_empty_str)
+                            payload.set_expect_not_empty(expect_not_empty_list)
+                        if get_args.allow_insecure is not None:
+                            payload.set_allow_insecure(get_args.allow_insecure)
+
+                    # basic type HTTPScript and WebpageScript
+                    elif get_args.type in (1, 2, 3) and get_args.bundle is None:
+                        syn_type_t = synthetic_type[get_args.type]
+                        payload = SyntheticConfiguration(syn_type=syn_type_t)
+                        if get_args.from_file is not None:
+                            script_content = payload.read_js_file(
+                                get_args.from_file)
+                            payload.set_api_script_script(
+                                script_str=script_content)
+                        if payload.get_api_script_script() == "":
+                            syn_instance.exit_synctl(ERROR_CODE, "script should not be empty")
+
+                    # bundle script
+                    elif get_args.type in (1, 2) and get_args.bundle is not None:
+                        syn_type_t = synthetic_type[get_args.type]
+                        payload = SyntheticConfiguration(
+                            syn_type_t, bundle_type=True)
+
+                        if payload.is_zip_file(get_args.bundle):
+                            bundle_base64_str = payload.read_zip_file_to_base64(
+                                get_args.bundle)
+                        else:
+                            bundle_base64_str = get_args.bundle
+                        # entry file
+                        if get_args.script_file is not None:
+                            payload.set_api_bundle_script(
+                                bundle_base64_str, script_file=get_args.script_file)
+                        else:
+                            # script file use index.js
+                            payload.set_api_bundle_script(bundle_base64_str)
+                    # BrowserScript 2, WebpageScript 3, WebpageAction 4
+                    if get_args.type in (2, 3, 4):
+                        payload.set_browser_type(get_args.browser)
+
+                        if get_args.record_video is not None:
+                            payload.set_record_video(get_args.record_video)
+
+
+                    if get_args.type == 4:
+                        if get_args.url is not None:
+                            payload.set_ping_url(get_args.url)
+                        else:
+                            print("URL is required")
+
+                    # global operation, add label, location, description, frequency, etc.
+                    if get_args.label is not None:
+                        payload.set_label(get_args.label)
+                    if get_args.location is not None:
+                        payload.set_locations(get_args.location)
+                    if get_args.description is not None:
+                        payload.set_description(get_args.description)
+                    if get_args.frequency is not None:
+                        payload.set_frequency(get_args.frequency)
+                    if get_args.app_id is not None:
+                        payload.set_application_id(get_args.app_id)
+                    if get_args.timeout is not None:
+                        payload.set_timeout(get_args.timeout)
+
+                    if get_args.custom_properties is not None:
+                        payload.set_custom_properties(
+                            json.loads(get_args.custom_properties))
+
+                    # configuration
+                    # retries [0, 2]
+                    if get_args.retries is not None:
+                        payload.set_retries(get_args.retries)
+                    # retryInterval [0, 10]
+                    if get_args.retry_interval is not None:
+                        payload.set_retry_interval(get_args.retry_interval)
+
+                    syn_payload = payload.get_json()
+                    syn_instance.set_synthetic_payload(payload=syn_payload)
+
+                    syn_instance.create_a_synthetic_test()
+
+                else:
+                    syn_instance.exit_synctl(ERROR_CODE, '-t/--type is required to create synthetic test')
+        elif COMMAND_PATCH == get_args.sub_command:
+            if get_args.id is not None:
+                patch_instance.set_test_id(get_args.id)
+            if get_args.active is not None:
+                patch_instance.patch_active(get_args.active)
+            elif get_args.timeout is not None:
+                # timeout Expected <number>(ms|s|m)
+                patch_instance.patch_config_timeout(get_args.timeout)
+            elif get_args.retries is not None:
+                patch_instance.patch_retries(get_args.retries)
+            elif get_args.frequency is not None:
+                patch_instance.patch_frequency(get_args.frequency)
+            elif get_args.retry_interval is not None:
+                patch_instance.patch_retry_interval(get_args.retry_interval)
+            elif get_args.operation is not None:
+                patch_instance.patch_ping_operation(get_args.operation)
+            elif get_args.script_file is not None:
+                patch_instance.patch_config_script_file(get_args.script_file)
+            elif get_args.description is not None:
+                patch_instance.patch_description(get_args.description)
+            elif get_args.record_video is not None:
+                patch_instance.patch_record_video(get_args.record_video)
+            elif get_args.label is not None:
+                patch_instance.patch_label(get_args.label)
+            elif get_args.location is not None:
+                patch_instance.patch_locations(get_args.location)
+            elif get_args.mark_synthetic_call:
+                patch_instance.patch_mark_synthetic_call(
+                    get_args.mark_synthetic_call)
+            elif get_args.entry_file is not None:
+                patch_instance.patch_script_file(get_args.entry_file, get_args.id)
+            elif get_args.url is not None:
+                patch_instance.patch_url(get_args.url)
+            elif get_args.follow_redirect is not None:
+                patch_instance.patch_follow_redirect(get_args.follow_redirect)
+            elif get_args.expect_status is not None:
+                patch_instance.patch_expect_status(get_args.expect_status)
+            elif get_args.validation_string is not None:
+                patch_instance.patch_validation_string(get_args.validation_string)
+            elif get_args.bundle is not None:
+                patch_instance.patch_bundle(get_args.id, get_args.bundle)
+            elif get_args.custom_property is not None:
+                split_string = get_args.custom_property.split(',')
+                patch_instance.patch_custom_properties(get_args.id, split_string)
+        elif COMMAND_UPDATE == get_args.sub_command:
+            if get_args.syn_type == SYN_TEST:
+                invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
+                update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
+                if get_args.enable is True or get_args.disable is True:
+                    update_instance.exit_synctl(ERROR_CODE, "option: --enable/--disable not supported by synthetic tests")
+                payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
+                update_instance.set_updated_payload(payload)
+                if get_args.file is not None:
+                    new_payload = update_instance.update_using_file(get_args.file)
+                    update_instance.update_a_synthetic_test(get_args.id, new_payload)
+                else:
+                    if get_args.label is not None:
+                        update_instance.update_label(get_args.label)
+                    if get_args.active is not None:
+                        update_instance.update_active(get_args.active)
+                    if get_args.timeout is not None:
+                        update_instance.update_config_timeout(get_args.timeout)
+                    if get_args.retries is not None:
+                        update_instance.update_retries(get_args.retries)
+                    if get_args.frequency is not None:
+                        update_instance.update_frequency(get_args.frequency)
+                    if get_args.retry_interval is not None:
+                        update_instance.update_retry_interval(get_args.retry_interval)
+                    if get_args.operation is not None:
+                        update_instance.update_ping_operation(get_args.operation)
+                    if get_args.script_file is not None:
+                        update_instance.update_config_script_file(get_args.script_file)
+                    if get_args.description is not None:
+                        update_instance.update_description(get_args.description)
+                    if get_args.record_video is not None:
+                        update_instance.update_record_video(get_args.record_video)
+                    if get_args.location is not None:
+                        update_instance.update_locations(get_args.location)
+                    if get_args.mark_synthetic_call:
+                        update_instance.update_mark_synthetic_call(get_args.mark_synthetic_call)
+                    if get_args.entry_file is not None:
+                        update_instance.update_script_file(get_args.entry_file)
+                    if get_args.url is not None:
+                        update_instance.update_url(get_args.url)
+                    if get_args.follow_redirect is not None:
+                        update_instance.update_follow_redirect(get_args.follow_redirect)
+                    if get_args.app_id is not None:
+                        update_instance.update_application_id(get_args.app_id)
+                    if get_args.expect_status is not None:
+                        update_instance.update_expect_status(get_args.expect_status)
+                    if get_args.validation_string is not None:
+                        update_instance.update_validation_string(get_args.validation_string)
+                    if get_args.bundle is not None:
+                        update_instance.update_bundle(get_args.bundle)
+                    if get_args.custom_property is not None:
+                        split_string = get_args.custom_property.split(',')
+                        update_instance.update_custom_properties(split_string)
+                    updated_payload = update_instance.get_updated_test_config()
+                    update_instance.update_a_synthetic_test(get_args.id, updated_payload)
+            if get_args.syn_type == SYN_ALERT:
+                invalid_options = ["label", "active", "frequency", "timeout", "retry_interval", "retries", "operation", "script_file",
+                                   "location", "record_video", "mark_synthetic_call", "entry_file", "url", "follow_redirect",
+                                   "expect_status", "validation_string", "bundle", "custom_property"]
+                update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
+                payload = alert_instance.retrieve_a_smart_alert(get_args.id)
+                update_alert.set_updated_payload(payload)
+                if get_args.file is not None:
+                    new_payload = update_alert.update_using_file(get_args.file)
+                    update_alert.update_a_smart_alert(get_args.id, new_payload)
+                elif get_args.enable is True or get_args.disable is True:
+                    operation = "enable" if get_args.enable else "disable"
+                    invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
+                    update_instance.invalid_update_options(invalid_options, update_args, toggle=operation)
+                    update_alert.toggle_smart_alert(get_args.id, operation)
+                else:
+                    if get_args.name is not None:
+                        update_alert.update_alert_name(get_args.name)
+                    if get_args.description is not None:
+                        update_alert.update_description(get_args.description)
+                    if get_args.severity is not None:
+                        update_alert.update_alert_severity(get_args.severity)
+                    if get_args.alert_channel is not None:
+                        update_alert.update_alert_channel(get_args.alert_channel)
+                    if get_args.test is not None:
+                        update_alert.update_tests(get_args.test)
+                    if get_args.violation_count is not None:
+                        update_alert.update_violation_count(get_args.violation_count)
+                    if get_args.tag_filter_expression is not None:
+                        tag_filter_expression = json.loads(get_args.tag_filter_expression)
+                        update_alert.update_tag_filter_expression(tag_filter_expression)
+                    updated_alert_config = update_alert.get_updated_alert_config()
+                    update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
+        elif COMMAND_DELETE == get_args.sub_command:
+            if get_args.delete_type == SYN_TEST:
+                if get_args.id is not None and len(get_args.id) > 0:
+                    syn_instance.delete_multiple_synthetic_tests(
+                        get_args.id)
+                elif get_args.match_regex is not None:
+                    syn_instance.delete_tests_label_match_regex(
+                        label_regex=get_args.match_regex)
+                elif get_args.match_location is not None:
+                    syn_instance.delete_tests_match_location(
+                        match_location=get_args.match_location)
+                elif get_args.no_locations is True:
+                    syn_instance.delete_tests_without_location()
+                else:
+                    print('no synthetic test to delete')
+
+            if get_args.delete_type in (SYN_LOCATION, SYN_LO):
+                if get_args.id is not None:
+                    pop_instance.delete_synthetic_locations(get_args.id)
+            if get_args.delete_type == SYN_CRED:
+                if get_args.id is not None:
+                    cred_instance.delete_credentials(get_args.id)
+            if get_args.delete_type == SYN_ALERT:
+                if get_args.id is not None and len(get_args.id) > 0:
+                    alert_instance.delete_multiple_smart_alerts(get_args.id)
+                else:
+                    print('no smart alert to delete')
+
+        else:
+            print('unknown command:', get_args.sub_command)
+    except KeyboardInterrupt:
+        print("\nExited successfully")
 
 
 if __name__ == "__main__":
