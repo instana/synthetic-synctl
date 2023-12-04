@@ -518,6 +518,7 @@ synctl patch test id [options]
 --validation-string <string>       set validation-string
 --bundle <bundle>                  set bundle content
 --entry-file <string>              entry file of a bundle test
+--browser <string>                 browser type, support chrome and firefox
 --record-video <boolean>           enable/disable record video, false by default          
 --custom-property <key>=<value>    set custom property, should be <key,value> pair
 
@@ -593,6 +594,9 @@ synctl patch test <synthetic-id> --custom-property key=value
 
 #set record video true
 synctl patch test <synthetic-id> --record-video true
+
+#set browser to firefox
+synctl patch test <synthetic-id> --browser firefox
 
 # set multiple custom properties of a test
 synctl patch test <synthetic-id> --custom-property "key1=value1,key2=value2,key3=value3"
