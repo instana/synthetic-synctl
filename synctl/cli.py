@@ -2818,6 +2818,12 @@ class PatchSyntheticTest(SyntheticTest):
             payload["configuration"]["recordVideo"] = record_video
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
+    def patch_browser(self, browser):
+        payload = {"configuration": {"browser": "chrome"}}
+        if browser is not None:
+            payload["configuration"]["browser"] = browser
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
     def patch_active(self, active):
         """active"""
         if active is None:
@@ -3627,6 +3633,8 @@ class ParseParameter:
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
         patch_exclusive_group.add_argument(
             '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        patch_exclusive_group.add_argument(
+            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
 
         # timeout Expected <number>(ms|s|m)
         patch_exclusive_group.add_argument(
@@ -4173,6 +4181,8 @@ def main():
             patch_instance.patch_description(get_args.description)
         elif get_args.record_video is not None:
             patch_instance.patch_record_video(get_args.record_video)
+        elif get_args.browser is not None:
+            patch_instance.patch_browser(get_args.browser)
         elif get_args.label is not None:
             patch_instance.patch_label(get_args.label)
         elif get_args.location is not None:
