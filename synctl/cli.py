@@ -3634,7 +3634,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
         patch_exclusive_group.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
+            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
 
         # timeout Expected <number>(ms|s|m)
         patch_exclusive_group.add_argument(
