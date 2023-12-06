@@ -109,6 +109,11 @@ Use "synctl <command> -h/--help" for more information about a command.
     """
     print(m)
 
+def identify_hyphen():
+    sys.argv = [
+        " " + a if a.startswith('-') and len(a) > 2 and sys.argv[2] == 'alert' and not a.startswith('--') else a
+        for a in sys.argv
+    ]
 
 COMMAND_CONFIG = 'config'
 COMMAND_CREATE = 'create'
@@ -3788,6 +3793,7 @@ def main():
     """main function"""
     signal.signal(signal.SIGINT, ctrl_exit_handler)
     signal.signal(signal.SIGTSTP, signal.SIG_IGN)
+    identify_hyphen()
 
     para_instanace = ParseParameter()
     para_instanace.set_options()
@@ -3972,6 +3978,7 @@ def main():
                 alerts = alert_instance.retrieve_all_smart_alerts()
                 alert_instance.print_synthetic_alerts(alerts)
             else:
+                get_args.id = get_args.id.lstrip() if get_args.id.startswith(' ') else get_args.id
                 single_alert = alert_instance.retrieve_a_smart_alert(get_args.id)
                 if get_args.show_details is True:
                     alert_instance.print_a_alert_details(get_args.id, single_alert, show_details=True)
@@ -4261,6 +4268,7 @@ def main():
                 updated_payload = update_instance.get_updated_test_config()
                 update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:
+            get_args.id = get_args.id.lstrip() if get_args.id.startswith(' ') else get_args.id
             invalid_options = ["label", "active", "frequency", "timeout", "retry_interval", "retries", "operation", "script_file",
                                "location", "record_video", "mark_synthetic_call", "entry_file", "url", "follow_redirect",
                                "expect_status", "validation_string", "bundle", "custom_property"]
@@ -4317,6 +4325,7 @@ def main():
                 cred_instance.delete_credentials(get_args.id)
         if get_args.delete_type == SYN_ALERT:
             if get_args.id is not None and len(get_args.id) > 0:
+                get_args.id = [a.lstrip() if a.startswith(' ') else a for a in get_args.id]
                 alert_instance.delete_multiple_smart_alerts(get_args.id)
             else:
                 print('no smart alert to delete')
