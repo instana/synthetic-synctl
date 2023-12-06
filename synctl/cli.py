@@ -110,10 +110,10 @@ Use "synctl <command> -h/--help" for more information about a command.
     print(m)
 
 def identify_hyphen():
-    for i, a in enumerate(sys.argv):
-        if a.startswith('-') and len(a) > 2 and not a.startswith('--'):
-            sys.argv[i] = " " + a
-            break
+    sys.argv = [
+        " " + a if a.startswith('-') and len(a) > 2 and sys.argv[2] == 'alert' and not a.startswith('--') else a
+        for a in sys.argv
+    ]
 
 COMMAND_CONFIG = 'config'
 COMMAND_CREATE = 'create'
