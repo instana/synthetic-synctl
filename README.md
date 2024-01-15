@@ -780,7 +780,7 @@ synctl get app
 synctl get app --name-filter "<application-name>"
 
 # then create test with application id
-synctl create test -t 0 --url  --lo wCcJW0WyDIMgnqMhXfvD --app-id <application-id> ...
+synctl create test -t 0 --app-id <application-id> ...
 ```
 # Query Smart Alerts
 `synctl get alert ` can be used to query Smart Alerts. 
