@@ -470,11 +470,11 @@ synctl create test -t 3 \
 
 #### Create Webpage Action test
 ```
-synctl create test -t 4 \ 
+synctl create test -t 4 \
     --label "browser-test-webpageaction" \
     --url "https://httpbin.org/get" \
     --location "$LOCATION" --frequency 5 \
-    --record-video true
+    --record-video true \
     --browser chrome
 ```
 
@@ -777,10 +777,10 @@ Options:
 synctl get app
 
 # filter application by --name-filter, or pattern that application name contains
-synctl get app --name-filter <application-name>
+synctl get app --name-filter "<application-name>"
 
 # then create test with application id
-synctl create test -t 0 --app-id <application-id> ...
+synctl create test -t 0 --url  --lo wCcJW0WyDIMgnqMhXfvD --app-id <application-id> ...
 ```
 # Query Smart Alerts
 `synctl get alert ` can be used to query Smart Alerts. 
@@ -849,7 +849,7 @@ synctl create alert --name "Smart-alert" \
 # create alert with tagFilterExpression       
 synctl create alert --name "smart alert" \
         --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2"... \
-        --alert-channel "$ALERT_CHANNEL" \ 
+        --alert-channel "$ALERT_CHANNEL" \
         --severity critical \
         --violation-count 3 \
         --tag-filter-expression '{"type": "EXPRESSION", "logicalOperator": "AND", "elements": []}'
