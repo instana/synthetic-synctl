@@ -13,6 +13,7 @@ import os
 import re
 import signal
 import sys
+import getpass
 # import textwrap
 import time
 
@@ -3876,9 +3877,10 @@ def main():
             else:
                 auth_instance.print_config_file(name=get_args.env)
         elif get_args.config_type == "set":
-            if get_args.host is None or get_args.token is None or get_args.env is None:
-                print("--env, --host, and --token are required")
+            if get_args.host is None or get_args.env is None:
+                print("--env and --host are required")
             else:
+                get_args.token = getpass.getpass('Token:')
                 set_as_default = False
                 if get_args.default is True:
                     set_as_default = True
