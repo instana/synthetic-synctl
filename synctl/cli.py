@@ -3462,6 +3462,8 @@ class ParseParameter:
         self.parser_config.add_argument(
             '--host', type=str, metavar="<host>", help='set hostname')
         self.parser_config.add_argument(
+            '--token', '-t', type=str, metavar="<token>", help='set token')
+        self.parser_config.add_argument(
             '--show-token', action='store_true', help='show token')
         self.parser_config.add_argument(
             '--env', '--name', type=str, metavar="<name>", help='specify which config to use')
@@ -3905,7 +3907,8 @@ def main():
             if get_args.host is None or get_args.env is None:
                 print("--env and --host are required")
             else:
-                get_args.token = getpass.getpass('Token:')
+                if get_args.token is None:
+                    get_args.token = getpass.getpass('Token:')
                 set_as_default = False
                 if get_args.default is True:
                     set_as_default = True
