@@ -13,6 +13,7 @@ import os
 import re
 import signal
 import sys
+import getpass
 # import textwrap
 import time
 
@@ -368,26 +369,45 @@ class ConfigurationFile(Base):
             json.dump(self.config_json, config_file1,
                       ensure_ascii=True, indent=4)
 
-    def print_config_file(self, name=""):
+    def print_config_file(self, name="", show_token=False):
         """print all config info"""
-        print(self.fill_space("NAME".upper()),
-              self.fill_space("Default".upper(), 13),
-              self.fill_space("Token".upper()),
-              "Hostname".upper())
-        if name != "" and name != "default" and name is not None:
-            for _, item in enumerate(self.config_json):
-                if item["name"] == name:
+        if show_token is True:
+            print(self.fill_space("NAME".upper()),
+                  self.fill_space("Default".upper(), 13),
+                  self.fill_space("Token".upper()),
+                  "Hostname".upper())
+            if name != "" and name != "default" and name is not None:
+                for _, item in enumerate(self.config_json):
+                    encoded_token = b64encode(item["token"].encode()).decode()
+                    if item["name"] == name:
+                        print(self.fill_space(item["name"]),
+                              self.fill_space(str(item["default"]), 13),
+                              self.fill_space(encoded_token),
+                              item["host"])
+            else:
+                # show all
+                for _, item in enumerate(self.config_json):
+                    encoded_token = b64encode(item["token"].encode()).decode()
                     print(self.fill_space(item["name"]),
                           self.fill_space(str(item["default"]), 13),
-                          self.fill_space(item["token"]),
+                          self.fill_space(encoded_token),
                           item["host"])
         else:
-            # show all
-            for _, item in enumerate(self.config_json):
-                print(self.fill_space(item["name"]),
-                      self.fill_space(str(item["default"]), 13),
-                      self.fill_space(item["token"]),
-                      item["host"])
+            print(self.fill_space("NAME".upper()),
+                  self.fill_space("Default".upper(), 13),
+                  "Hostname".upper())
+            if name != "" and name != "default" and name is not None:
+                for _, item in enumerate(self.config_json):
+                    if item["name"] == name:
+                        print(self.fill_space(item["name"]),
+                              self.fill_space(str(item["default"]), 13),
+                              item["host"])
+            else:
+                # show all
+                for _, item in enumerate(self.config_json):
+                    print(self.fill_space(item["name"]),
+                          self.fill_space(str(item["default"]), 13),
+                          item["host"])
 
     def __check_if_already_in_config(self, name: str) -> bool:
         for _, item in enumerate(self.config_json):
@@ -3444,6 +3464,8 @@ class ParseParameter:
         self.parser_config.add_argument(
             '--token', '-t', type=str, metavar="<token>", help='set token')
         self.parser_config.add_argument(
+            '--show-token', action='store_true', help='show token')
+        self.parser_config.add_argument(
             '--env', '--name', type=str, metavar="<name>", help='specify which config to use')
         self.parser_config.add_argument(
             '--default', action="store_true", help='set as default')
@@ -3871,14 +3893,22 @@ def main():
 
     if COMMAND_CONFIG == get_args.sub_command:
         if get_args.config_type == "list":
-            if get_args.env is None:
-                auth_instance.print_config_file()
+            if get_args.show_token is True:
+                if get_args.env is None:
+                    auth_instance.print_config_file(show_token=True)
+                else:
+                    auth_instance.print_config_file(name=get_args.env, show_token=True)
             else:
-                auth_instance.print_config_file(name=get_args.env)
+                if get_args.env is None:
+                    auth_instance.print_config_file()
+                else:
+                    auth_instance.print_config_file(name=get_args.env)
         elif get_args.config_type == "set":
-            if get_args.host is None or get_args.token is None or get_args.env is None:
-                print("--env, --host, and --token are required")
+            if get_args.host is None or get_args.env is None:
+                print("--env and --host are required")
             else:
+                if get_args.token is None:
+                    get_args.token = getpass.getpass('Token:')
                 set_as_default = False
                 if get_args.default is True:
                     set_as_default = True

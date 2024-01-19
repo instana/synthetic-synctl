@@ -105,6 +105,11 @@ pip3 install --upgrade synctl==<version>
 
 **Note:** The priority of configuration is command options > environment variables > config file.
 
+### Create a token
+1. Log in to the Instana UI. 
+2. Navigate to the `Settings` page, go to the `API Tokens` tab under Team Settings.
+3. Click on `New API Token` in the upper right corner to create a new token with proper permissions.
+
 ### Use a configuration file (Recommended)
 The configuration file is stored under `~/.synthetic/config.json` by default, uses can edit it directly or use `synctl config` command to manage configuration information. Below is an example to configure a backend server:
 ```
