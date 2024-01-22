@@ -46,6 +46,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 - [Manage Credentials](#manage-credentials)
     - [Display all credentials](#display-all-credentials)
     - [Create a credential](#create-a-credential)
+    - [Update a credential](#update-a-credential)
     - [Delete a credential](#delete-a-credential)
 - [Manage Application](#manage-application)
     - [Get application Syntax](#get-application-syntax)
@@ -69,7 +70,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 # Features
 - CRUD of Synthetic test, support API Simple, API Script, Browser Script, etc.
 - Query/delete of Synthetic location.
-- Query/create/delete of Synthetic credential.
+- Query/create/update/delete of Synthetic credential.
 - Support multiple configurations of backend server.
 - CRUD of Smart alerts.
 
@@ -758,6 +759,12 @@ synctl get cred
 
 ```
 synctl create cred --key <key-name> --value <value>
+```
+
+### Update a credential
+
+```
+synctl update cred <cred-name> --value <value>
 ```
 
 ### Delete a credential
