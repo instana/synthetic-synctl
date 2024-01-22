@@ -1118,7 +1118,7 @@ class SyntheticCredential(Base):
                 pass
             else:
                 print(
-                    f"Fail to update {cred}, status code {delete_res.status_code}")
+                    f"Fail to delete {cred}, status code {delete_res.status_code}")
         else:
             self.exit_synctl(ERROR_CODE, f"no credential {cred}")
 
