@@ -112,7 +112,7 @@ Use "synctl <command> -h/--help" for more information about a command.
 
 def identify_hyphen():
     sys.argv = [
-        " " + a if a.startswith('-') and not a.startswith('--') and len(a) > 2  and sys.argv[2] == 'alert' else a
+        " " + a if a.startswith('-') and not a.startswith('--') and len(a) > 2 and sys.argv[2] == 'alert' else a
         for a in sys.argv
     ]
 
