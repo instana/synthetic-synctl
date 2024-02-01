@@ -53,6 +53,7 @@ SYN_APPLICATION = "application"
 SYN_APP = "app"  # short for application
 SYN_CRED = "cred"  # short for credentials
 SYN_ALERT = "alert"  # short for smart alerts
+SYN_RESULT = "result"
 
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
@@ -1555,6 +1556,118 @@ class SyntheticTest(Base):
             self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
         else:
             self.exit_synctl(ERROR_CODE, f'get test failed, status code: {query_result.status_code}')
+
+    def retrieve_test_results(self, test_id, page=1, page_size=200, window_size=60*60*1000):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+        if id is None or test_id == "":
+            print("test id should not be empty")
+            return
+        else:
+            retrieve_url = f"{host}/api/synthetics/results/list"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        summary_config = {"syntheticMetrics":["synthetic.metricsResponseTime","synthetic.metricsResponseSize"],
+                          "metrics": [{
+                            "aggregation": "SUM",
+                            "granularity": 600,
+                            "metric": "synthetic.metricsStatus"
+                        }],
+                          "order":{
+                              "by":"synthetic.metricsResponseTime",
+                              "direction":"DESC"
+                          },
+                          "tagFilters":[{
+                              "stringValue": test_id,
+                              "name":"synthetic.testId",
+                              "operator":"EQUALS"
+                          }],
+                          "pagination": {
+                              "page": page,
+                              "pageSize": page_size
+                          },
+                          "timeFrame": {
+                              "to": 0,
+                              "windowSize": window_size
+                          }}
+
+        result = requests.post(retrieve_url,
+                              headers=headers,
+                              data=json.dumps(summary_config),
+                              timeout=60,
+                              verify=self.insecure)
+        if _status_is_200(result.status_code):
+            data = result.json()
+            return data
+        else:
+            self.exit_synctl(ERROR_CODE,
+                             f'retrieve test result list failed, status code:: {result.status_code}')
+            return None
+
+
+    def retrieve_test_result_details(self, resultid, testid):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        if id is None or testid == "":
+            print("test id should not be empty")
+            return
+        else:
+            retrieve_url = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        result = requests.get(retrieve_url,
+                              headers=headers,
+                              timeout=60,
+                              verify=self.insecure)
+
+        if _status_is_200(result.status_code):
+            a_test_result = result.json()
+            return a_test_result
+
+        else:
+            self.exit_synctl(ERROR_CODE,
+                             f'get test {testid} failed, status code: {result.status_code}')
+
+
+    def print_result_list(self, result_list):
+        id_length = 38
+        start_time_length = 30
+        loc_length = 30
+        status_length = 10
+        response_size_length = 15
+        response_time_length = 8
+
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("start Time".upper(), start_time_length),
+              self.fill_space("Location".upper(), loc_length),
+              self.fill_space("status".upper(), status_length),
+              self.fill_space("Response Time".upper(), response_size_length),
+              self.fill_space("Response size".upper(), response_time_length))
+        for result in result_list:
+            test_id = result["testResultCommonProperties"]["testId"]
+            result_id = result["testResultCommonProperties"]["id"]
+            result_details = self.retrieve_test_result_details(result_id, test_id)
+            if result_details["subtransactions"][0]["metrics"]["statusCode"] == 200:
+                status = "Success"
+            else:
+                status = "Failure"
+
+            print(self.fill_space(result_details["testResultId"], id_length ),
+                  self.fill_space(str(self.format_time(result_details["subtransactions"][0]["properties"]["startTime"])), start_time_length),
+                  self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
+                  self.fill_space(status, status_length),
+                  self.fill_space(str(result_details["subtransactions"][0]["metrics"]["responseTime"]), response_size_length),
+                  self.fill_space(str(result_details["subtransactions"][0]["metrics"]["responseSize"])+".00 B", response_time_length))
+
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
         host = self.auth["host"]
@@ -3562,7 +3675,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -3587,6 +3700,10 @@ class ParseParameter:
             '--show-result', action='store_true', help="show latency and success rate")
         self.parser_get.add_argument(
             '--filter', nargs='?', default=None, help='filter by location')
+
+        # result list
+        self.parser_get.add_argument(
+            '--test', type=str, nargs='?', metavar="id", help="test id")
 
         # application
         application_group = self.parser_get.add_argument_group()
@@ -3993,6 +4110,11 @@ def main():
             else:
                 single_alert = alert_instance.retrieve_a_single_alerting_channel(get_args.id)
                 alert_instance.print_alerting_channels([single_alert])
+        elif get_args.op_type == SYN_RESULT:
+            test_result = syn_instance.retrieve_test_results(get_args.test)
+            #result_details = syn_instance.retrieve_test_result_details(test_result["items"])
+            syn_instance.print_result_list(test_result["items"])
+            #syn_instance.print_result_list(test_result)
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
