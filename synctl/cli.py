@@ -3868,6 +3868,11 @@ def main():
             update_alert.set_auth(auth)
             summary_instance.set_auth(auth)
             app_instance.set_auth(auth)
+    try:
+        host = syn_instance.auth["host"]
+        requests.get(host, timeout=60)
+    except requests.ConnectionError:
+        syn_instance.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     if COMMAND_CONFIG == get_args.sub_command:
         if get_args.config_type == "list":
