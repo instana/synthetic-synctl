@@ -1619,7 +1619,8 @@ class SyntheticTest(Base):
             return
         else:
             retrieve_url = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
-
+            # if logs == True:
+            #     retrieve_url = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
         headers = {
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
@@ -1637,21 +1638,27 @@ class SyntheticTest(Base):
             self.exit_synctl(ERROR_CODE,
                              f'get test {testid} failed, status code: {result.status_code}')
 
+    def print_result_details(self, result_details):
+        print(self.fill_space("Name".upper(), 30), "Value".upper())
+        print(self.fill_space("Result Id", 30), result_details["testResultId"])
+        print(self.fill_space("Start Time", 30), self.format_time(result_details["subtransactions"][0]["properties"]["startTime"]))
+        print(self.fill_space("Response Time", 30), result_details["subtransactions"][0]["metrics"]["responseTime"])
+        print(self.fill_space("Response Size", 30), str(result_details["subtransactions"][0]["metrics"]["responseSize"])+".00 B")
 
     def print_result_list(self, result_list):
         id_length = 38
         start_time_length = 30
         loc_length = 30
         status_length = 10
-        response_size_length = 15
-        response_time_length = 8
+        response_size_length = 8
+        response_time_length = 18
 
         print(self.fill_space("ID".upper(), id_length),
               self.fill_space("start Time".upper(), start_time_length),
               self.fill_space("Location".upper(), loc_length),
               self.fill_space("status".upper(), status_length),
-              self.fill_space("Response Time".upper(), response_size_length),
-              self.fill_space("Response size".upper(), response_time_length))
+              self.fill_space("Response Time".upper(), response_time_length),
+              self.fill_space("Response size".upper(), response_size_length))
         for result in result_list:
             test_id = result["testResultCommonProperties"]["testId"]
             result_id = result["testResultCommonProperties"]["id"]
@@ -1665,8 +1672,8 @@ class SyntheticTest(Base):
                   self.fill_space(str(self.format_time(result_details["subtransactions"][0]["properties"]["startTime"])), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
                   self.fill_space(status, status_length),
-                  self.fill_space(str(result_details["subtransactions"][0]["metrics"]["responseTime"]), response_size_length),
-                  self.fill_space(str(result_details["subtransactions"][0]["metrics"]["responseSize"])+".00 B", response_time_length))
+                  self.fill_space(str(result_details["subtransactions"][0]["metrics"]["responseTime"]), response_time_length),
+                  self.fill_space(str(result_details["subtransactions"][0]["metrics"]["responseSize"])+".00 B", response_size_length))
 
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
@@ -4111,10 +4118,15 @@ def main():
                 single_alert = alert_instance.retrieve_a_single_alerting_channel(get_args.id)
                 alert_instance.print_alerting_channels([single_alert])
         elif get_args.op_type == SYN_RESULT:
-            test_result = syn_instance.retrieve_test_results(get_args.test)
-            #result_details = syn_instance.retrieve_test_result_details(test_result["items"])
-            syn_instance.print_result_list(test_result["items"])
-            #syn_instance.print_result_list(test_result)
+            if get_args.test is not None:
+                if get_args.id is None:
+                    test_result = syn_instance.retrieve_test_results(get_args.test)
+                    syn_instance.print_result_list(test_result["items"])
+                else:
+                    a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test)
+                    syn_instance.print_result_details(a_result_details)
+            else:
+                print('testid is required')
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
