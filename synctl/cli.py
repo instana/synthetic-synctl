@@ -983,23 +983,25 @@ class SyntheticCredential(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
-
-        if cred_key not in credential:
-            create_cred_res = requests.post(create_url,
-                                            headers=headers,
-                                            data=cred_payload,
-                                            timeout=60,
-                                            verify=self.insecure)
-            if _status_is_201(create_cred_res.status_code):
-                print(f"credential \"{cred_key}\" created")
-            elif _status_is_400(create_cred_res.status_code):
-                print(f'Create Error: {create_cred_res}\n',
-                      create_cred_res.json())
+        try:
+            if cred_key not in credential:
+                create_cred_res = requests.post(create_url,
+                                                headers=headers,
+                                                data=cred_payload,
+                                                timeout=60,
+                                                verify=self.insecure)
+                if _status_is_201(create_cred_res.status_code):
+                    print(f"credential \"{cred_key}\" created")
+                elif _status_is_400(create_cred_res.status_code):
+                    print(f'Create Error: {create_cred_res}\n',
+                          create_cred_res.json())
+                else:
+                    print('Create credential failed, status code:',
+                          create_cred_res.status_code)
             else:
-                print('Create credential failed, status code:',
-                      create_cred_res.status_code)
-        else:
-            print("Credential already exists")
+                print("Credential already exists")
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def retrieve_credentials(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1012,17 +1014,19 @@ class SyntheticCredential(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            cred_result = requests.get(retrieve_url,
+                                       headers=headers,
+                                       timeout=60,
+                                       verify=self.insecure)
 
-        cred_result = requests.get(retrieve_url,
-                                   headers=headers,
-                                   timeout=60,
-                                   verify=self.insecure)
-
-        if _status_is_200(cred_result.status_code):
-            data = json.loads(cred_result.content.decode())
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
+            if _status_is_200(cred_result.status_code):
+                data = json.loads(cred_result.content.decode())
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def delete_a_credential(self, cred):
         """Delete a credential"""
@@ -1041,21 +1045,23 @@ class SyntheticCredential(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
-
-        if cred in credential:
-            delete_res = requests.delete(delete_url,
-                                         headers=headers,
-                                         timeout=60,
-                                         verify=self.insecure)
-            if _status_is_204(delete_res.status_code):
-                print(f'credential \"{cred}\" deleted')
-            elif _status_is_429(delete_res.status_code):
-                print(TOO_MANY_REQUEST_ERROR)
+        try:
+            if cred in credential:
+                delete_res = requests.delete(delete_url,
+                                             headers=headers,
+                                             timeout=60,
+                                             verify=self.insecure)
+                if _status_is_204(delete_res.status_code):
+                    print(f'credential \"{cred}\" deleted')
+                elif _status_is_429(delete_res.status_code):
+                    print(TOO_MANY_REQUEST_ERROR)
+                else:
+                    print(
+                        f"Fail to delete {cred}, status code {delete_res.status_code}")
             else:
-                print(
-                    f"Fail to delete {cred}, status code {delete_res.status_code}")
-        else:
-            self.exit_synctl(ERROR_CODE, f"no credential {cred}")
+                self.exit_synctl(ERROR_CODE, f"no credential {cred}")
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def delete_credentials(self, cred_list):
         if cred_list is None:
@@ -1181,24 +1187,26 @@ class SyntheticLocation(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            retrieve_res = requests.get(request_url,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
 
-        retrieve_res = requests.get(request_url,
-                                    headers=headers,
-                                    timeout=60,
-                                    verify=self.insecure)
+            if _status_is_200(retrieve_res.status_code):
+                data = retrieve_res.json()
 
-        if _status_is_200(retrieve_res.status_code):
-            data = retrieve_res.json()
-
-            if isinstance(data, dict):
-                return [data]
+                if isinstance(data, dict):
+                    return [data]
+                else:
+                    return data
+            elif _status_is_429(retrieve_res.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
             else:
-                return data
-        elif _status_is_429(retrieve_res.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            self.exit_synctl(ERROR_CODE,
-                f"Failed to get locations, status code {retrieve_res.status_code}")
+                self.exit_synctl(ERROR_CODE,
+                    f"Failed to get locations, status code {retrieve_res.status_code}")
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def get_location_summary_list(self,  page=1, page_size=200, window_size=60*60*1000):
         """curl --request POST 'http://{host}/api/synthetics/results/locationsummarylist'
@@ -1254,6 +1262,8 @@ class SyntheticLocation(Base):
             print("retrieve location summary list failed")
         except requests.exceptions.RequestException as e:
             print(f"Error: {e}")
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
         return None
 
     def get_all_location_summary_list(self,  page=1):
@@ -1326,20 +1336,22 @@ class SyntheticLocation(Base):
             "Content-Type": "application/json",
             "Authorization": "apiToken %s" % (self.auth["token"])
         }
+        try:
+            r = requests.delete(delete_url,
+                                headers=headers,
+                                timeout=60,
+                                verify=self.insecure)
 
-        r = requests.delete(delete_url,
-                            headers=headers,
-                            timeout=60,
-                            verify=self.insecure)
-
-        if _status_is_204(r.status_code):
-            print(f'location \"{location_id}\" deleted')
-        elif _status_is_404(r.status_code):
-            print(f"{location_id} not found")
-        elif _status_is_429(r.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(f"Fail to delete {location_id}, status code {r.status_code}")
+            if _status_is_204(r.status_code):
+                print(f'location \"{location_id}\" deleted')
+            elif _status_is_404(r.status_code):
+                print(f"{location_id} not found")
+            elif _status_is_429(r.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(f"Fail to delete {location_id}, status code {r.status_code}")
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def delete_synthetic_locations(self, locations_list):
         if locations_list is None:
@@ -1445,25 +1457,28 @@ class SyntheticTest(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
+        try:
+            create_res = requests.post(create_url,
+                                       headers=headers,
+                                       data=test_payload,
+                                       timeout=60,
+                                       verify=self.insecure)
 
-        create_res = requests.post(create_url,
-                                   headers=headers,
-                                   data=test_payload,
-                                   timeout=60,
-                                   verify=self.insecure)
+            if _status_is_201(create_res.status_code):
+                # extracting data in json format
+                data = create_res.json()
+                test_id = data["id"]
+                test_label = data["label"]
+                print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
+            elif _status_is_429(create_res.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print('create test failed, status code:', create_res.status_code)
+                if create_res.text:
+                    print(create_res.text)
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
-        if _status_is_201(create_res.status_code):
-            # extracting data in json format
-            data = create_res.json()
-            test_id = data["id"]
-            test_label = data["label"]
-            print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
-        elif _status_is_429(create_res.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print('create test failed, status code:', create_res.status_code)
-            if create_res.text:
-                print(create_res.text)
 
     def retrieve_a_synthetic_test(self, test_id=""):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1479,36 +1494,38 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            result = requests.get(retrieve_url,
+                                  headers=headers,
+                                  timeout=60,
+                                  verify=self.insecure)
 
-        result = requests.get(retrieve_url,
-                              headers=headers,
-                              timeout=60,
-                              verify=self.insecure)
+            if _status_is_200(result.status_code):
+                # extracting data in json format
+                data = result.json()
 
-        if _status_is_200(result.status_code):
-            # extracting data in json format
-            data = result.json()
-
-            if isinstance(data, list):
-                self.test_lists = data
-                return data
-            elif isinstance(data, dict):
-                self.test_lists = [data]
-                return [data]
+                if isinstance(data, list):
+                    self.test_lists = data
+                    return data
+                elif isinstance(data, dict):
+                    self.test_lists = [data]
+                    return [data]
+                else:
+                    print('unknown data:', data)
+            elif _status_is_403(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message='Insufficient access rights for resource')
+            elif _status_is_404(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message=f'test {test_id} not found')
+            elif _status_is_429(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message=TOO_MANY_REQUEST_ERROR)
             else:
-                print('unknown data:', data)
-        elif _status_is_403(result.status_code):
-            self.exit_synctl(error_code=ERROR_CODE,
-                             message='Insufficient access rights for resource')
-        elif _status_is_404(result.status_code):
-            self.exit_synctl(error_code=ERROR_CODE,
-                             message=f'test {test_id} not found')
-        elif _status_is_429(result.status_code):
-            self.exit_synctl(error_code=ERROR_CODE,
-                             message=TOO_MANY_REQUEST_ERROR)
-        else:
-            self.exit_synctl(ERROR_CODE,
-                f'get test {test_id} failed, status code: {result.status_code}')
+                self.exit_synctl(ERROR_CODE,
+                    f'get test {test_id} failed, status code: {result.status_code}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def retrieve_all_synthetic_tests(self, syn_type=None):
         # API doc: https://instana.github.io/openapi/#operation/getSyntheticTests
@@ -1522,39 +1539,41 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
-
-        query_result = requests.get(retrieve_url,
-                                    headers=headers,
-                                    timeout=60,
-                                    verify=self.insecure)
-        if _status_is_200(query_result.status_code):
-            # extracting data in json format
-            data = query_result.json()
-            syn_type_list = []
-            if isinstance(data, list):
-                self.test_lists = data
-                for x in data:
-                    if syn_type is not None and x is not None and x["configuration"]["syntheticType"] == syn_type:
-                        syn_type_list.append(x)
-                    if syn_type is None:
-                        syn_type_list.append(x)
-                return syn_type_list
-            elif isinstance(data, dict):
-                # only one test
-                self.test_lists = [data]
-                if syn_type is not None and data["configuration"]["syntheticType"] == syn_type:
-                    return [data]
-                return []
+        try:
+            query_result = requests.get(retrieve_url,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
+            if _status_is_200(query_result.status_code):
+                # extracting data in json format
+                data = query_result.json()
+                syn_type_list = []
+                if isinstance(data, list):
+                    self.test_lists = data
+                    for x in data:
+                        if syn_type is not None and x is not None and x["configuration"]["syntheticType"] == syn_type:
+                            syn_type_list.append(x)
+                        if syn_type is None:
+                            syn_type_list.append(x)
+                    return syn_type_list
+                elif isinstance(data, dict):
+                    # only one test
+                    self.test_lists = [data]
+                    if syn_type is not None and data["configuration"]["syntheticType"] == syn_type:
+                        return [data]
+                    return []
+                else:
+                    self.exit_synctl(ERROR_CODE, f'unknown data: {data}')
+            elif _status_is_403(query_result.status_code):
+                self.exit_synctl(ERROR_CODE, 'Insufficient access rights for resource')
+            elif _status_is_404(query_result.status_code):
+                self.exit_synctl(ERROR_CODE, 'test not found')
+            elif _status_is_429(query_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
             else:
-                self.exit_synctl(ERROR_CODE, f'unknown data: {data}')
-        elif _status_is_403(query_result.status_code):
-            self.exit_synctl(ERROR_CODE, 'Insufficient access rights for resource')
-        elif _status_is_404(query_result.status_code):
-            self.exit_synctl(ERROR_CODE, 'test not found')
-        elif _status_is_429(query_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            self.exit_synctl(ERROR_CODE, f'get test failed, status code: {query_result.status_code}')
+                self.exit_synctl(ERROR_CODE, f'get test failed, status code: {query_result.status_code}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
         host = self.auth["host"]
@@ -1604,20 +1623,22 @@ class SyntheticTest(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
+        try:
+            retrieve_res = requests.post(test_summary_list_url,
+                                         headers=headers,
+                                         data=json.dumps(summary_config),
+                                         timeout=60,
+                                         verify=self.insecure)
 
-        retrieve_res = requests.post(test_summary_list_url,
-                                     headers=headers,
-                                     data=json.dumps(summary_config),
-                                     timeout=60,
-                                     verify=self.insecure)
-
-        if _status_is_200(retrieve_res.status_code):
-            data = retrieve_res.json()
-            return data
-        else:
-            print('retrieve test summary list failed, status code:',
-                  retrieve_res.status_code)
-            return None
+            if _status_is_200(retrieve_res.status_code):
+                data = retrieve_res.json()
+                return data
+            else:
+                print('retrieve test summary list failed, status code:',
+                      retrieve_res.status_code)
+                return None
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def get_all_tests_by_filter(self, tag_filter, page=1):
         total_hits = 0
@@ -1657,19 +1678,21 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": "apiToken %s" % (self.auth["token"])
         }
+        try:
+            del_result = requests.delete(delete_url,
+                                         headers=headers,
+                                         timeout=60,
+                                         verify=self.insecure)
 
-        del_result = requests.delete(delete_url,
-                                     headers=headers,
-                                     timeout=60,
-                                     verify=self.insecure)
-
-        if _status_is_204(del_result.status_code):
-            print(f'test \"{test_id}\" deleted')
-        elif _status_is_429(del_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f"Fail to delete {test_id}, status code {del_result.status_code}")
+            if _status_is_204(del_result.status_code):
+                print(f'test \"{test_id}\" deleted')
+            elif _status_is_429(del_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f"Fail to delete {test_id}, status code {del_result.status_code}")
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def delete_multiple_synthetic_tests(self, tests_list: list):
         start_time = time.time()
@@ -2148,17 +2171,19 @@ class SmartAlert(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            alert_result = requests.get(retrieve_url,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
 
-        alert_result = requests.get(retrieve_url,
-                                    headers=headers,
-                                    timeout=60,
-                                    verify=self.insecure)
-
-        if _status_is_200(alert_result.status_code):
-            data = alert_result.json()
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+            if _status_is_200(alert_result.status_code):
+                data = alert_result.json()
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def retrieve_a_smart_alert(self, alert_id=""):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2171,28 +2196,30 @@ class SmartAlert(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            alert_result = requests.get(retrieve_url,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
 
-        alert_result = requests.get(retrieve_url,
-                                    headers=headers,
-                                    timeout=60,
-                                    verify=self.insecure)
+            if _status_is_200(alert_result.status_code):
+                data = alert_result.json()
 
-        if _status_is_200(alert_result.status_code):
-            data = alert_result.json()
-
-            if isinstance(data, list):
-                self.alert_lists = data
-                return data
-            elif isinstance(data, dict):
-                self.alert_lists = [data]
-                return [data]
+                if isinstance(data, list):
+                    self.alert_lists = data
+                    return data
+                elif isinstance(data, dict):
+                    self.alert_lists = [data]
+                    return [data]
+                else:
+                    print('unknown data:', data)
+            elif _status_is_404(alert_result.status_code):
+                self.exit_synctl(ERROR_CODE,
+                                 message=f'alert {alert_id} not found')
             else:
-                print('unknown data:', data)
-        elif _status_is_404(alert_result.status_code):
-            self.exit_synctl(ERROR_CODE,
-                             message=f'alert {alert_id} not found')
-        else:
-            self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+                self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def retrieve_all_alerting_channel(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2205,17 +2232,19 @@ class SmartAlert(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            alert_channel_result = requests.get(retrieve_url,
+                                                headers=headers,
+                                                timeout=60,
+                                                verify=self.insecure)
 
-        alert_channel_result = requests.get(retrieve_url,
-                                            headers=headers,
-                                            timeout=60,
-                                            verify=self.insecure)
-
-        if _status_is_200(alert_channel_result.status_code):
-            data = alert_channel_result.json()
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
+            if _status_is_200(alert_channel_result.status_code):
+                data = alert_channel_result.json()
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def retrieve_a_single_alerting_channel(self, alert_channel):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2228,18 +2257,19 @@ class SmartAlert(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            alert_channel_result = requests.get(retrieve_url,
+                                                headers=headers,
+                                                timeout=60,
+                                                verify=self.insecure)
 
-        alert_channel_result = requests.get(retrieve_url,
-                                            headers=headers,
-                                            timeout=60,
-                                            verify=self.insecure)
-
-        if _status_is_200(alert_channel_result.status_code):
-            data = alert_channel_result.json()
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
-
+            if _status_is_200(alert_channel_result.status_code):
+                data = alert_channel_result.json()
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
 
     def create_synthetic_alert(self):
@@ -2254,25 +2284,27 @@ class SmartAlert(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
+        try:
+            create_res = requests.post(create_url,
+                                       headers=headers,
+                                       data=alert_payload,
+                                       timeout=60,
+                                       verify=self.insecure)
 
-        create_res = requests.post(create_url,
-                                   headers=headers,
-                                   data=alert_payload,
-                                   timeout=60,
-                                   verify=self.insecure)
-
-        if _status_is_200(create_res.status_code):
-            # extracting data in json format
-            data = create_res.json()
-            alert_id = data["id"]
-            alert_name = data["name"]
-            print(f"smart alert \"{alert_name}\" created, id is \"{alert_id}\"")
-        elif _status_is_429(create_res.status_code):
-            self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
-        else:
-            print('create test failed, status code:', create_res.status_code)
-            if create_res.text:
-                print(create_res.text)
+            if _status_is_200(create_res.status_code):
+                # extracting data in json format
+                data = create_res.json()
+                alert_id = data["id"]
+                alert_name = data["name"]
+                print(f"smart alert \"{alert_name}\" created, id is \"{alert_id}\"")
+            elif _status_is_429(create_res.status_code):
+                self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
+            else:
+                print('create test failed, status code:', create_res.status_code)
+                if create_res.text:
+                    print(create_res.text)
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def invalid_create_options(self, invalid_options, items, tag_filter_type=None):
         for key, value in items:
@@ -2292,20 +2324,22 @@ class SmartAlert(Base):
             "Content-Type": "application/json",
             "Authorization": "apiToken %s" % (self.auth["token"])
         }
+        try:
+            result = requests.delete(delete_url,
+                                     headers=headers,
+                                     timeout=60,
+                                     verify=self.insecure)
 
-        result = requests.delete(delete_url,
-                                 headers=headers,
-                                 timeout=60,
-                                 verify=self.insecure)
-
-        if _status_is_204(result.status_code):
-            print(f'alert \"{alert_id}\" deleted')
-        elif _status_is_404(result.status_code):
-            self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
-        elif _status_is_429(result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            self.exit_synctl(ERROR_CODE, f"Failed to delete {alert_id}, status code {result.status_code}")
+            if _status_is_204(result.status_code):
+                print(f'alert \"{alert_id}\" deleted')
+            elif _status_is_404(result.status_code):
+                self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
+            elif _status_is_429(result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                self.exit_synctl(ERROR_CODE, f"Failed to delete {alert_id}, status code {result.status_code}")
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def delete_multiple_smart_alerts(self, alert_list):
         start_time = time.time()
@@ -2423,22 +2457,24 @@ class UpdateSyntheticTest(SyntheticTest):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            update_result = requests.put(put_url,
+                                         headers=headers,
+                                         data=new_payload,
+                                         timeout=60,
+                                         verify=self.insecure)
 
-        update_result = requests.put(put_url,
-                                     headers=headers,
-                                     data=new_payload,
-                                     timeout=60,
-                                     verify=self.insecure)
-
-        if _status_is_200(update_result.status_code):
-            print(f"test {test_id} updated")
-        elif _status_is_400(update_result.status_code):
-            print(f'Error: {update_result}', update_result.content)
-        elif _status_is_429(update_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f'update test {test_id} failed, status code: {update_result.status_code}')
+            if _status_is_200(update_result.status_code):
+                print(f"test {test_id} updated")
+            elif _status_is_400(update_result.status_code):
+                print(f'Error: {update_result}', update_result.content)
+            elif _status_is_429(update_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'update test {test_id} failed, status code: {update_result.status_code}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def update_using_file(self, file):
         with open(file, 'rb') as json_file:
@@ -2647,24 +2683,26 @@ class UpdateSmartAlert(SmartAlert):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            update_result = requests.post(update_url,
+                                          headers=headers,
+                                          data=new_payload,
+                                          timeout=60,
+                                          verify=self.insecure)
 
-        update_result = requests.post(update_url,
-                                      headers=headers,
-                                      data=new_payload,
-                                      timeout=60,
-                                      verify=self.insecure)
-
-        if _status_is_200(update_result.status_code):
-            print(f"alert {alert_id} updated")
-        elif _status_is_204(update_result.status_code):
-            print(f"alert {alert_id} did not change")
-        elif _status_is_400(update_result.status_code):
-            print(f'Error: {update_result}', update_result.content)
-        elif _status_is_429(update_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+            if _status_is_200(update_result.status_code):
+                print(f"alert {alert_id} updated")
+            elif _status_is_204(update_result.status_code):
+                print(f"alert {alert_id} did not change")
+            elif _status_is_400(update_result.status_code):
+                print(f'Error: {update_result}', update_result.content)
+            elif _status_is_429(update_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def toggle_smart_alert(self, alert_id, toggle):
         """API https://instana.github.io/openapi/#operation/enableSyntheticAlertConfig
@@ -2684,21 +2722,23 @@ class UpdateSmartAlert(SmartAlert):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            update_result = requests.put(put_url,
+                                         headers=headers,
+                                         timeout=60,
+                                         verify=self.insecure)
 
-        update_result = requests.put(put_url,
-                                     headers=headers,
-                                     timeout=60,
-                                     verify=self.insecure)
-
-        if _status_is_204(update_result.status_code):
-            print(f"alert {alert_id} {toggle}d")
-        elif _status_is_400(update_result.status_code):
-            print(f'Error: {update_result}', update_result.content)
-        elif _status_is_429(update_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+            if _status_is_204(update_result.status_code):
+                print(f"alert {alert_id} {toggle}d")
+            elif _status_is_400(update_result.status_code):
+                print(f'Error: {update_result}', update_result.content)
+            elif _status_is_429(update_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def update_alert_name(self, name):
         """update alert name"""
@@ -2777,22 +2817,24 @@ class PatchSyntheticTest(SyntheticTest):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            patch_result = requests.patch(patch_url,
+                                          headers=headers,
+                                          data=data,
+                                          timeout=60,
+                                          verify=self.insecure)
 
-        patch_result = requests.patch(patch_url,
-                                      headers=headers,
-                                      data=data,
-                                      timeout=60,
-                                      verify=self.insecure)
-
-        if _status_is_200(patch_result.status_code):
-            print(f"{test_id} updated")
-        elif _status_is_400(patch_result.status_code):
-            print(f'Patch Error: {patch_result}', patch_result.json())
-        elif _status_is_429(patch_result.status_code):
-            print(TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f'patch test {test_id} failed, status code: {patch_result.status_code}')
+            if _status_is_200(patch_result.status_code):
+                print(f"{test_id} updated")
+            elif _status_is_400(patch_result.status_code):
+                print(f'Patch Error: {patch_result}', patch_result.json())
+            elif _status_is_429(patch_result.status_code):
+                print(TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'patch test {test_id} failed, status code: {patch_result.status_code}')
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def set_test_id(self, test_id):
         """set test id"""
@@ -3144,30 +3186,32 @@ class SyntheticResult(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
+        try:
+            summary_res = requests.post(test_summary_list_url,
+                                        headers=headers,
+                                        data=json.dumps(summary_config),
+                                        timeout=60,
+                                        verify=self.insecure)
 
-        summary_res = requests.post(test_summary_list_url,
-                                    headers=headers,
-                                    data=json.dumps(summary_config),
-                                    timeout=60,
-                                    verify=self.insecure)
-
-        if _status_is_200(summary_res.status_code):
-            # extracting data in json format
-            data = summary_res.json()
-            return data
-        elif _status_is_400(summary_res.status_code):
-            print(f'Bad Request: status code: {summary_res.status_code}')
-            if summary_res.text:
-                print("Error Message:", summary_res.text)
-            self.exit_synctl(error_code=ERROR_CODE)
-        elif _status_is_429(summary_res.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print('retrieve test summary list failed, status code:',
-                  summary_res.status_code)
-            if summary_res.text:
-                print("Error Message:", summary_res.text)
-            self.exit_synctl(ERROR_CODE)
+            if _status_is_200(summary_res.status_code):
+                # extracting data in json format
+                data = summary_res.json()
+                return data
+            elif _status_is_400(summary_res.status_code):
+                print(f'Bad Request: status code: {summary_res.status_code}')
+                if summary_res.text:
+                    print("Error Message:", summary_res.text)
+                self.exit_synctl(error_code=ERROR_CODE)
+            elif _status_is_429(summary_res.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print('retrieve test summary list failed, status code:',
+                      summary_res.status_code)
+                if summary_res.text:
+                    print("Error Message:", summary_res.text)
+                self.exit_synctl(ERROR_CODE)
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def convert_summary_list_dict(self, summary_result, metrics_summary):
         if summary_result is None or not isinstance(summary_result, dict):
@@ -3277,26 +3321,28 @@ class Application(Base):
         if self.name_filter is not None:
             params_list["nameFilter"] = self.name_filter
         if application_boundary_scope is not None:
-            params_list["applicationBoundaryScope"] = application_boundary_scope
+                params_list["applicationBoundaryScope"] = application_boundary_scope
+        try:
+            app_res = requests.get(application_list_url,
+                                   headers=headers,
+                                   params=params_list,
+                                   timeout=60,
+                                   verify=False)
 
-        app_res = requests.get(application_list_url,
-                               headers=headers,
-                               params=params_list,
-                               timeout=60,
-                               verify=False)
-
-        if _status_is_200(app_res.status_code):
-            # extracting data in json format
-            data = app_res.json()
-            return data
-        elif _status_is_429(app_res.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print('retrieve test summary list failed, status code:',
-                  app_res.status_code)
-            if app_res.text:
-                print(app_res.text)
-            self.exit_synctl(ERROR_CODE)
+            if _status_is_200(app_res.status_code):
+                # extracting data in json format
+                data = app_res.json()
+                return data
+            elif _status_is_429(app_res.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print('retrieve test summary list failed, status code:',
+                      app_res.status_code)
+                if app_res.text:
+                    print(app_res.text)
+                self.exit_synctl(ERROR_CODE)
+        except requests.ConnectionError:
+            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
 
     def __get_all_application(self,
                               name_filter=None,
