@@ -1001,7 +1001,7 @@ class SyntheticCredential(Base):
             else:
                 print("Credential already exists")
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def retrieve_credentials(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1026,7 +1026,7 @@ class SyntheticCredential(Base):
             else:
                 self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def delete_a_credential(self, cred):
         """Delete a credential"""
@@ -1061,7 +1061,7 @@ class SyntheticCredential(Base):
             else:
                 self.exit_synctl(ERROR_CODE, f"no credential {cred}")
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def delete_credentials(self, cred_list):
         if cred_list is None:
@@ -1206,7 +1206,7 @@ class SyntheticLocation(Base):
                 self.exit_synctl(ERROR_CODE,
                     f"Failed to get locations, status code {retrieve_res.status_code}")
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def get_location_summary_list(self,  page=1, page_size=200, window_size=60*60*1000):
         """curl --request POST 'http://{host}/api/synthetics/results/locationsummarylist'
@@ -1263,7 +1263,7 @@ class SyntheticLocation(Base):
         except requests.exceptions.RequestException as e:
             print(f"Error: {e}")
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
         return None
 
     def get_all_location_summary_list(self,  page=1):
@@ -1351,7 +1351,7 @@ class SyntheticLocation(Base):
             else:
                 print(f"Fail to delete {location_id}, status code {r.status_code}")
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def delete_synthetic_locations(self, locations_list):
         if locations_list is None:
@@ -1477,7 +1477,7 @@ class SyntheticTest(Base):
                 if create_res.text:
                     print(create_res.text)
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
 
     def retrieve_a_synthetic_test(self, test_id=""):
@@ -1525,7 +1525,7 @@ class SyntheticTest(Base):
                 self.exit_synctl(ERROR_CODE,
                     f'get test {test_id} failed, status code: {result.status_code}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def retrieve_all_synthetic_tests(self, syn_type=None):
         # API doc: https://instana.github.io/openapi/#operation/getSyntheticTests
@@ -1573,7 +1573,7 @@ class SyntheticTest(Base):
             else:
                 self.exit_synctl(ERROR_CODE, f'get test failed, status code: {query_result.status_code}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
         host = self.auth["host"]
@@ -1638,7 +1638,7 @@ class SyntheticTest(Base):
                       retrieve_res.status_code)
                 return None
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def get_all_tests_by_filter(self, tag_filter, page=1):
         total_hits = 0
@@ -1692,7 +1692,7 @@ class SyntheticTest(Base):
                 print(
                     f"Fail to delete {test_id}, status code {del_result.status_code}")
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def delete_multiple_synthetic_tests(self, tests_list: list):
         start_time = time.time()
@@ -2183,7 +2183,7 @@ class SmartAlert(Base):
             else:
                 self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def retrieve_a_smart_alert(self, alert_id=""):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2219,7 +2219,7 @@ class SmartAlert(Base):
             else:
                 self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def retrieve_all_alerting_channel(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2244,7 +2244,7 @@ class SmartAlert(Base):
             else:
                 self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def retrieve_a_single_alerting_channel(self, alert_channel):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2269,7 +2269,7 @@ class SmartAlert(Base):
             else:
                 self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
 
     def create_synthetic_alert(self):
@@ -2304,7 +2304,7 @@ class SmartAlert(Base):
                 if create_res.text:
                     print(create_res.text)
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def invalid_create_options(self, invalid_options, items, tag_filter_type=None):
         for key, value in items:
@@ -2339,7 +2339,7 @@ class SmartAlert(Base):
             else:
                 self.exit_synctl(ERROR_CODE, f"Failed to delete {alert_id}, status code {result.status_code}")
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def delete_multiple_smart_alerts(self, alert_list):
         start_time = time.time()
@@ -2474,7 +2474,7 @@ class UpdateSyntheticTest(SyntheticTest):
                 print(
                     f'update test {test_id} failed, status code: {update_result.status_code}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def update_using_file(self, file):
         with open(file, 'rb') as json_file:
@@ -2702,7 +2702,7 @@ class UpdateSmartAlert(SmartAlert):
                 print(
                     f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def toggle_smart_alert(self, alert_id, toggle):
         """API https://instana.github.io/openapi/#operation/enableSyntheticAlertConfig
@@ -2738,7 +2738,7 @@ class UpdateSmartAlert(SmartAlert):
                 print(
                     f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def update_alert_name(self, name):
         """update alert name"""
@@ -2834,7 +2834,7 @@ class PatchSyntheticTest(SyntheticTest):
                 print(
                     f'patch test {test_id} failed, status code: {patch_result.status_code}')
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def set_test_id(self, test_id):
         """set test id"""
@@ -3211,7 +3211,7 @@ class SyntheticResult(Base):
                     print("Error Message:", summary_res.text)
                 self.exit_synctl(ERROR_CODE)
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def convert_summary_list_dict(self, summary_result, metrics_summary):
         if summary_result is None or not isinstance(summary_result, dict):
@@ -3342,7 +3342,7 @@ class Application(Base):
                     print(app_res.text)
                 self.exit_synctl(ERROR_CODE)
         except requests.ConnectionError:
-            self.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+            self.exit_synctl(f"Connection to {host} timed out")
 
     def __get_all_application(self,
                               name_filter=None,
@@ -3918,7 +3918,7 @@ def main():
         host = syn_instance.auth["host"]
         requests.get(host, timeout=60)
     except requests.ConnectionError:
-        syn_instance.exit_synctl(f"Connection to {host.lstrip('http://')} timed out")
+        syn_instance.exit_synctl(f"Connection to {host} timed out")
 
     if COMMAND_CONFIG == get_args.sub_command:
         if get_args.config_type == "list":
