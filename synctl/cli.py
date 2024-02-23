@@ -1609,41 +1609,63 @@ class SyntheticTest(Base):
             return None
 
 
-    def retrieve_test_result_details(self, resultid, testid):
+    def retrieve_test_result_details(self, resultid, testid, sub=False, logs=False):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
+        test = self.retrieve_a_synthetic_test(testid)
+        result = {}
 
-        if id is None or testid == "":
-            print("test id should not be empty")
-            return
-        else:
-            retrieve_url = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
-            # if logs == True:
-            #     retrieve_url = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
         headers = {
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
-        result = requests.get(retrieve_url,
-                              headers=headers,
-                              timeout=60,
-                              verify=self.insecure)
+        if id is None or testid == "":
+            print("test id should not be empty")
+            return
+        elif test[0]["configuration"]["syntheticType"] in [HTTPAction_TYPE, HTTPScript_TYPE]:
+            retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
+            result_sub = requests.get(retrieve_url_sub,
+                                      headers=headers,
+                                      timeout=60,
+                                      verify=self.insecure)
+            if _status_is_200(result_sub.status_code):
+                result["sub"] = result_sub.json()
+            else:
+                self.exit_synctl(ERROR_CODE,
+                                 f'get result for test {testid} failed, status code: {result_sub.status_code}')
+            if test[0]["configuration"]["syntheticType"] is not HTTPAction_TYPE and logs is True:
+                retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
+                result_logs = requests.get(retrieve_url_logs,
+                                           headers=headers,
+                                           timeout=60,
+                                           verify=self.insecure)
+                result["logs"] = result_logs.json()
+                if _status_is_200(result_logs.status_code):
+                    result["sub"] = result_logs.json()
+                else:
+                    self.exit_synctl(ERROR_CODE,
+                                     f'get test result for {testid} failed, status code: {result_logs.status_code}')
 
-        if _status_is_200(result.status_code):
-            a_test_result = result.json()
-            return a_test_result
-
-        else:
-            self.exit_synctl(ERROR_CODE,
-                             f'get test {testid} failed, status code: {result.status_code}')
+        return result
 
     def print_result_details(self, result_details):
         print(self.fill_space("Name".upper(), 30), "Value".upper())
-        print(self.fill_space("Result Id", 30), result_details["testResultId"])
-        print(self.fill_space("Start Time", 30), self.format_time(result_details["subtransactions"][0]["properties"]["startTime"]))
-        print(self.fill_space("Response Time", 30), result_details["subtransactions"][0]["metrics"]["responseTime"])
-        print(self.fill_space("Response Size", 30), str(result_details["subtransactions"][0]["metrics"]["responseSize"])+".00 B")
+        print(self.fill_space("Result Id", 30), result_details['sub']["testResultId"])
+        print(self.fill_space("Start Time", 30), self.format_time(result_details['sub']["subtransactions"][0]["properties"]["startTime"]))
+        print(self.fill_space("Response Time", 30), result_details['sub']["subtransactions"][0]["metrics"]["responseTime"])
+        print(self.fill_space("Response Size", 30), str(result_details['sub']["subtransactions"][0]["metrics"]["responseSize"])+".00 B")
+        print("")
+        print(self.__fix_length("*", 80))
+        print("Subtransactions ")
+        print(self.__fix_length("*", 80))
+        for key, value in result_details['sub']["subtransactions"][0]["properties"].items():
+            if key == 'finishTime' or key == 'startTime':
+                print(self.fill_space(key, 30), self.format_time(value))
+            else:
+                print(self.fill_space(key, 30), value)
+        for key, value in result_details['sub']["subtransactions"][0]["metrics"].items():
+            print(self.fill_space(key, 30), value)
 
     def print_result_list(self, result_list):
         id_length = 38
@@ -1663,17 +1685,17 @@ class SyntheticTest(Base):
             test_id = result["testResultCommonProperties"]["testId"]
             result_id = result["testResultCommonProperties"]["id"]
             result_details = self.retrieve_test_result_details(result_id, test_id)
-            if result_details["subtransactions"][0]["metrics"]["statusCode"] == 200:
+            if result_details['sub']["subtransactions"][0]["metrics"]["statusCode"] == 200:
                 status = "Success"
             else:
                 status = "Failure"
 
-            print(self.fill_space(result_details["testResultId"], id_length ),
-                  self.fill_space(str(self.format_time(result_details["subtransactions"][0]["properties"]["startTime"])), start_time_length),
+            print(self.fill_space(result_details['sub']["testResultId"], id_length ),
+                  self.fill_space(str(self.format_time(result_details['sub']["subtransactions"][0]["properties"]["startTime"])), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
                   self.fill_space(status, status_length),
-                  self.fill_space(str(result_details["subtransactions"][0]["metrics"]["responseTime"]), response_time_length),
-                  self.fill_space(str(result_details["subtransactions"][0]["metrics"]["responseSize"])+".00 B", response_size_length))
+                  self.fill_space(str(result_details['sub']["subtransactions"][0]["metrics"]["responseTime"]), response_time_length),
+                  self.fill_space(str(result_details['sub']["subtransactions"][0]["metrics"]["responseSize"])+".00 B", response_size_length))
 
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
