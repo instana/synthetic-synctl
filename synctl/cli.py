@@ -1609,12 +1609,15 @@ class SyntheticTest(Base):
             return None
 
 
-    def retrieve_test_result_details(self, resultid, testid, sub=False, logs=False):
+    def retrieve_test_result_details(self, resultid, testid):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
-        test = self.retrieve_a_synthetic_test(testid)
+        sub =  False
+        logs = False
         result = {}
+        result["testid"] = testid
+        result["resultid"] = resultid
 
         headers = {
             'Content-Type': 'application/json',
@@ -1623,49 +1626,55 @@ class SyntheticTest(Base):
         if id is None or testid == "":
             print("test id should not be empty")
             return
-        elif test[0]["configuration"]["syntheticType"] in [HTTPAction_TYPE, HTTPScript_TYPE]:
+        else:
             retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
+            retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
             result_sub = requests.get(retrieve_url_sub,
                                       headers=headers,
                                       timeout=60,
                                       verify=self.insecure)
+            result_logs = requests.get(retrieve_url_logs,
+                                       headers=headers,
+                                       timeout=60,
+                                       verify=self.insecure)
+
             if _status_is_200(result_sub.status_code):
-                result["sub"] = result_sub.json()
+                result["sub"] = result_sub.json()["subtransactions"]
+                sub = True
             else:
-                self.exit_synctl(ERROR_CODE,
-                                 f'get result for test {testid} failed, status code: {result_sub.status_code}')
-            if test[0]["configuration"]["syntheticType"] is not HTTPAction_TYPE and logs is True:
-                retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
-                result_logs = requests.get(retrieve_url_logs,
-                                           headers=headers,
-                                           timeout=60,
-                                           verify=self.insecure)
-                result["logs"] = result_logs.json()
-                if _status_is_200(result_logs.status_code):
-                    result["sub"] = result_logs.json()
-                else:
-                    self.exit_synctl(ERROR_CODE,
-                                     f'get test result for {testid} failed, status code: {result_logs.status_code}')
+               print(f'get subtransactions for test {testid} failed, status code: {result_sub.status_code}')
+            if _status_is_200(result_logs.status_code):
+                result["logs"] = result_logs.json()["logs"]
+                logs = True
+            else:
+                print(f'get logs for test {testid} failed, status code: {result_sub.status_code}')
+        self.__print_result_details(result, sub, logs)
 
-        return result
-
-    def print_result_details(self, result_details):
+    def __print_result_details(self, result_details, sub=False, logs=False):
         print(self.fill_space("Name".upper(), 30), "Value".upper())
-        print(self.fill_space("Result Id", 30), result_details['sub']["testResultId"])
-        print(self.fill_space("Start Time", 30), self.format_time(result_details['sub']["subtransactions"][0]["properties"]["startTime"]))
-        print(self.fill_space("Response Time", 30), result_details['sub']["subtransactions"][0]["metrics"]["responseTime"])
-        print(self.fill_space("Response Size", 30), str(result_details['sub']["subtransactions"][0]["metrics"]["responseSize"])+".00 B")
-        print("")
-        print(self.__fix_length("*", 80))
-        print("Subtransactions ")
-        print(self.__fix_length("*", 80))
-        for key, value in result_details['sub']["subtransactions"][0]["properties"].items():
-            if key == 'finishTime' or key == 'startTime':
-                print(self.fill_space(key, 30), self.format_time(value))
-            else:
+        print(self.fill_space("Result Id", 30), result_details["resultid"])
+        if sub == True:
+            print(self.fill_space("Start Time", 30), self.format_time(result_details["sub"][0]["properties"]["startTime"]))
+            print(self.fill_space("Response Time", 30), result_details["sub"][0]["metrics"]["responseTime"])
+            print(self.fill_space("Response Size", 30), str(result_details["sub"][0]["metrics"]["responseSize"])+".00 B")
+            print("")
+            print(self.__fix_length("*", 80))
+            print("Subtransactions ")
+            print(self.__fix_length("*", 80))
+            for key, value in result_details["sub"][0]["properties"].items():
+                if key == 'finishTime' or key == 'startTime':
+                    print(self.fill_space(key, 30), self.format_time(value))
+                else:
+                    print(self.fill_space(key, 30), value)
+            for key, value in result_details['sub'][0]["metrics"].items():
                 print(self.fill_space(key, 30), value)
-        for key, value in result_details['sub']["subtransactions"][0]["metrics"].items():
-            print(self.fill_space(key, 30), value)
+        elif logs == True:
+            if result_details['logs'] is not None:
+                print("")
+                print(self.__fix_length("*", 80))
+                print("Logs ")
+                print(self.__fix_length("*", 80))
+                print(result_details['logs'])
 
     def print_result_list(self, result_list):
         id_length = 38
@@ -3733,6 +3742,8 @@ class ParseParameter:
         # result list
         self.parser_get.add_argument(
             '--test', type=str, nargs='?', metavar="id", help="test id")
+        self.parser_get.add_argument(
+            '--logs', action="store_true", help="show logs")
 
         # application
         application_group = self.parser_get.add_argument_group()
@@ -4143,10 +4154,8 @@ def main():
             if get_args.test is not None:
                 if get_args.id is None:
                     test_result = syn_instance.retrieve_test_results(get_args.test)
-                    syn_instance.print_result_list(test_result["items"])
                 else:
                     a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test)
-                    syn_instance.print_result_details(a_result_details)
             else:
                 print('testid is required')
     elif COMMAND_CREATE == get_args.sub_command:
