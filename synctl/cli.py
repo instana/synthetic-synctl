@@ -1629,6 +1629,7 @@ class SyntheticTest(Base):
         else:
             retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
             retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
+            retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
             result_sub = requests.get(retrieve_url_sub,
                                       headers=headers,
                                       timeout=60,
@@ -1637,44 +1638,61 @@ class SyntheticTest(Base):
                                        headers=headers,
                                        timeout=60,
                                        verify=self.insecure)
+            result_har = requests.get(retrieve_url_har,
+                                      headers=headers,
+                                      timeout=60,
+                                      verify=self.insecure)
 
             if _status_is_200(result_sub.status_code):
                 result["sub"] = result_sub.json()["subtransactions"]
-                sub = True
+            elif _status_is_404(result_sub.status_code):
+                print(f"Detail data of type subtransactions not found for test result id {resultid}")
             else:
                print(f'get subtransactions for test {testid} failed, status code: {result_sub.status_code}')
             if _status_is_200(result_logs.status_code):
                 result["logs"] = result_logs.json()["logs"]
-                logs = True
+            elif _status_is_404(result_sub.status_code):
+                print(f"Detail data of type logs not found for test result id {resultid}")
             else:
                 print(f'get logs for test {testid} failed, status code: {result_sub.status_code}')
-        self.__print_result_details(result, sub, logs)
+            if _status_is_200(result_har.status_code):
+                result["har"] = result_har.json()['har']
+            elif _status_is_404(result_sub.status_code):
+                print(f"Detail data of type har not found for test result id {resultid}")
+            else:
+                print(f'get har for test {testid} failed, status code: {result_har.status_code}')
+        return result
 
-    def __print_result_details(self, result_details, sub=False, logs=False):
+    def print_result_details(self, result_details, result_list):
         print(self.fill_space("Name".upper(), 30), "Value".upper())
         print(self.fill_space("Result Id", 30), result_details["resultid"])
-        if sub == True:
-            print(self.fill_space("Start Time", 30), self.format_time(result_details["sub"][0]["properties"]["startTime"]))
-            print(self.fill_space("Response Time", 30), result_details["sub"][0]["metrics"]["responseTime"])
-            print(self.fill_space("Response Size", 30), str(result_details["sub"][0]["metrics"]["responseSize"])+".00 B")
-            print("")
-            print(self.__fix_length("*", 80))
-            print("Subtransactions ")
-            print(self.__fix_length("*", 80))
-            for key, value in result_details["sub"][0]["properties"].items():
-                if key == 'finishTime' or key == 'startTime':
-                    print(self.fill_space(key, 30), self.format_time(value))
-                else:
-                    print(self.fill_space(key, 30), value)
-            for key, value in result_details['sub'][0]["metrics"].items():
-                print(self.fill_space(key, 30), value)
-        elif logs == True:
-            if result_details['logs'] is not None:
+        for result in result_list:
+            if result["testResultCommonProperties"]["id"] == result_details["resultid"]:
+                print(self.fill_space("Start Time", 30), self.format_time(result["metrics"]["response_time"][0][0]))
+                print(self.fill_space("Response Time", 30), result["metrics"]["response_time"][0][1])
+                print(self.fill_space("Response Size", 30), str(result["metrics"]["response_size"][0][1])+".00 B")
                 print("")
-                print(self.__fix_length("*", 80))
-                print("Logs ")
-                print(self.__fix_length("*", 80))
-                print(result_details['logs'])
+                if "sub" in result_details:
+                    print(self.__fix_length("*", 80))
+                    print("Subtransactions ")
+                    print(self.__fix_length("*", 80))
+                    for key, value in result_details["sub"][0]["properties"].items():
+                        if key == 'finishTime' or key == 'startTime':
+                            print(self.fill_space(key, 30), self.format_time(value))
+                        else:
+                            print(self.fill_space(key, 30), value)
+                    for key, value in result_details['sub'][0]["metrics"].items():
+                        print(self.fill_space(key, 30), value)
+                if "logs" in result_details:
+                    print(self.__fix_length("*", 80))
+                    print("Logs")
+                    print(self.__fix_length("*", 80))
+                    print(result_details['logs'])
+                if "har" in result_details:
+                    print(self.__fix_length("*", 80))
+                    print("Har")
+                    print(self.__fix_length("*", 80))
+                    print(result_details['har'])
 
     def print_result_list(self, result_list):
         id_length = 38
@@ -1690,8 +1708,6 @@ class SyntheticTest(Base):
               self.fill_space("Response Time".upper(), response_time_length),
               self.fill_space("Response size".upper(), response_size_length))
         for result in result_list:
-            test_id = result["testResultCommonProperties"]["testId"]
-            result_id = result["testResultCommonProperties"]["id"]
             print(self.fill_space(result["testResultCommonProperties"]["id"], id_length ),
                   self.fill_space(str(self.format_time(result["metrics"]["response_time"][0][0])), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
@@ -4143,11 +4159,12 @@ def main():
                 alert_instance.print_alerting_channels([single_alert])
         elif get_args.op_type == SYN_RESULT:
             if get_args.test is not None:
+                test_result = syn_instance.retrieve_test_results(get_args.test)
                 if get_args.id is None:
-                    test_result = syn_instance.retrieve_test_results(get_args.test)
                     syn_instance.print_result_list(test_result["items"])
                 else:
                     a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test)
+                    syn_instance.print_result_details(a_result_details, test_result["items"])
             else:
                 print('testid is required')
     elif COMMAND_CREATE == get_args.sub_command:
