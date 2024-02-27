@@ -1687,25 +1687,16 @@ class SyntheticTest(Base):
         print(self.fill_space("ID".upper(), id_length),
               self.fill_space("start Time".upper(), start_time_length),
               self.fill_space("Location".upper(), loc_length),
-              self.fill_space("status".upper(), status_length),
               self.fill_space("Response Time".upper(), response_time_length),
               self.fill_space("Response size".upper(), response_size_length))
         for result in result_list:
             test_id = result["testResultCommonProperties"]["testId"]
             result_id = result["testResultCommonProperties"]["id"]
-            result_details = self.retrieve_test_result_details(result_id, test_id)
-            if result_details['sub']["subtransactions"][0]["metrics"]["statusCode"] == 200:
-                status = "Success"
-            else:
-                status = "Failure"
-
-            print(self.fill_space(result_details['sub']["testResultId"], id_length ),
-                  self.fill_space(str(self.format_time(result_details['sub']["subtransactions"][0]["properties"]["startTime"])), start_time_length),
+            print(self.fill_space(result["testResultCommonProperties"]["id"], id_length ),
+                  self.fill_space(str(self.format_time(result["metrics"]["response_time"][0][0])), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
-                  self.fill_space(status, status_length),
-                  self.fill_space(str(result_details['sub']["subtransactions"][0]["metrics"]["responseTime"]), response_time_length),
-                  self.fill_space(str(result_details['sub']["subtransactions"][0]["metrics"]["responseSize"])+".00 B", response_size_length))
-
+                  self.fill_space(str(result["metrics"]["response_time"][0][1]), response_time_length),
+                  self.fill_space(str(result["metrics"]["response_size"][0][1])+".00 B", response_size_length))
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
         host = self.auth["host"]
@@ -4154,6 +4145,7 @@ def main():
             if get_args.test is not None:
                 if get_args.id is None:
                     test_result = syn_instance.retrieve_test_results(get_args.test)
+                    syn_instance.print_result_list(test_result["items"])
                 else:
                     a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test)
             else:
