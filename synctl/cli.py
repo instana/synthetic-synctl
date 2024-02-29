@@ -13,6 +13,7 @@ import os
 import re
 import signal
 import sys
+import tarfile
 # import textwrap
 import time
 
@@ -1613,8 +1614,6 @@ class SyntheticTest(Base):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
-        sub =  False
-        logs = False
         result = {}
         result["testid"] = testid
         result["resultid"] = resultid
@@ -1630,6 +1629,9 @@ class SyntheticTest(Base):
             retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
             retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
             retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
+            retrieve_url_image = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=IMAGES"
+            retrieve_url_videos = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=VIDEOS"
+
             result_sub = requests.get(retrieve_url_sub,
                                       headers=headers,
                                       timeout=60,
@@ -1642,6 +1644,14 @@ class SyntheticTest(Base):
                                       headers=headers,
                                       timeout=60,
                                       verify=self.insecure)
+            result_image = requests.get(retrieve_url_image,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
+            result_videos = requests.get(retrieve_url_videos,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
 
             if _status_is_200(result_sub.status_code):
                 result["sub"] = result_sub.json()["subtransactions"]
@@ -1661,9 +1671,20 @@ class SyntheticTest(Base):
                 print(f"Detail data of type har not found for test result id {resultid}")
             else:
                 print(f'get har for test {testid} failed, status code: {result_har.status_code}')
+            if _status_is_200(result_image.status_code):
+                result["image"] = result_image.content
+            elif _status_is_404(result_image.status_code):
+                print(f"Detail data of type images not found for test result id {resultid}")
+            if _status_is_200(result_videos.status_code):
+                result["video"] = result_videos.content
+            elif _status_is_404(result_videos.status_code):
+                print(f"Detail data of type videos not found for test result id {resultid}")
+            else:
+                print(f'get videos for test {testid} failed, status code: {result_videos.status_code}')
         return result
 
     def print_result_details(self, result_details, result_list):
+        print("")
         print(self.fill_space("Name".upper(), 30), "Value".upper())
         print(self.fill_space("Result Id", 30), result_details["resultid"])
         for result in result_list:
@@ -1690,9 +1711,25 @@ class SyntheticTest(Base):
                     print(result_details['logs'])
                 if "har" in result_details:
                     print(self.__fix_length("*", 80))
-                    print("Har")
+                    with open("HAR.json", "w") as file:
+                        json.dump(result_details['har'], file)
+                    print("HAR has been saved to 'HAR.json'")
+                    print("")
+                if "image" in result_details:
                     print(self.__fix_length("*", 80))
-                    print(result_details['har'])
+                    with open("images.tar", "wb") as f:
+                        f.write(result_details["image"])
+                    with tarfile.open("images.tar", "r") as tar:
+                        tar.extractall(path="ExtractedFiles")
+                        print("Images has been saved to Extracted Files")
+                        print("")
+                if "video" in result_details:
+                    print(self.__fix_length("*", 80))
+                    with open("videos.tar", "wb") as f:
+                        f.write(result_details["video"])
+                    with tarfile.open("videos.tar", "r") as tar:
+                        tar.extractall(path="ExtractedFiles")
+                        print("Videos has been saved to Extracted Files")
 
     def print_result_list(self, result_list):
         id_length = 38
