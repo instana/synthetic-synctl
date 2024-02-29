@@ -798,16 +798,28 @@ synctl get alert [id] [options]
 --host <host>          set hostname
 --token <token>        set token
 ```
-### synctl get alert Examples
-```
-# Display all alert
-synctl get alert
+# Query Test Results
+`synctl get result` can be used to query Test Results
 
-# show alert details
-synctl get alert <id> --show-details
- 
-# show alert payload in json
-synctl get alert <id> --show-json
+### synctl get result Syntax
+```
+synctl get result [id] [options]
+```
+### synctl get result Options
+```
+-h, --help             show this help message and exit
+--test                 synthetic-test id
+--use-env, -e <name>   use a specified config
+--host <host>          set hostname
+--token <token>        set token
+```
+### synctl get result Examples
+```
+# Display result list
+synctl get result --test <test-id>
+
+# show result details
+synctl get result <id> --test <test-id>
 ```
 # Create Smart alert
 `synctl create alert` is used to create Smart Alerts.
