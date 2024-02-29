@@ -16,6 +16,7 @@ import sys
 import tarfile
 # import textwrap
 import time
+from datetime import datetime
 
 import requests
 import urllib3
@@ -1609,6 +1610,11 @@ class SyntheticTest(Base):
                              f'retrieve test result list failed, status code:: {result.status_code}')
             return None
 
+    def __sort_test_result(self, result_list):
+        """sort Synthetic result list by Starttime"""
+        new_list = sorted(
+            result_list, reverse=True, key=lambda result: result["metrics"]["response_time"][0][0] if result is not None else [])
+        return new_list
 
     def retrieve_test_result_details(self, resultid, testid):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1738,13 +1744,14 @@ class SyntheticTest(Base):
         status_length = 10
         response_size_length = 8
         response_time_length = 18
+        sorted_result = self.__sort_test_result(result_list)
 
         print(self.fill_space("ID".upper(), id_length),
               self.fill_space("start Time".upper(), start_time_length),
               self.fill_space("Location".upper(), loc_length),
               self.fill_space("Response Time".upper(), response_time_length),
               self.fill_space("Response size".upper(), response_size_length))
-        for result in result_list:
+        for result in sorted_result:
             print(self.fill_space(result["testResultCommonProperties"]["id"], id_length ),
                   self.fill_space(str(self.format_time(result["metrics"]["response_time"][0][0])), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
