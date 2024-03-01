@@ -1755,8 +1755,10 @@ class SyntheticTest(Base):
               self.fill_space("Response Time".upper(), response_time_length),
               self.fill_space("Response size".upper(), response_size_length))
         for result in sorted_result:
+            date_time = datetime.utcfromtimestamp(round(result["metrics"]["response_time"][0][0]/1000))
+            formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
             print(self.fill_space(result["testResultCommonProperties"]["id"], id_length ),
-                  self.fill_space(str(self.format_time(result["metrics"]["response_time"][0][0])), start_time_length),
+                  self.fill_space(str(formatted_date_time), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
                   self.fill_space(str(result["metrics"]["response_time"][0][1]), response_time_length),
                   self.fill_space(str(result["metrics"]["response_size"][0][1])+".00 B", response_size_length))
