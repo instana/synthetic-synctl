@@ -1692,15 +1692,33 @@ class SyntheticTest(Base):
                     print(f'get videos for test {testid} failed, status code: {result_videos.status_code}')
         return result
 
+    def convert_milliseconds(self, time_ms):
+        if time_ms > 60000:
+            time = f"{time_ms / 60000:.2f}min"
+        elif time_ms > 1000:
+            time = f"{time_ms / 1000:.2f}s"
+        else:
+            time = f"{time_ms}ms"
+        return time
+
+    def change_time_format(self, time):
+        """format time to YYYY-MM-DD, HH:MM:SS"""
+        date_time = datetime.fromtimestamp(time/1000)
+        formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+
+        return formatted_date_time
+
     def print_result_details(self, result_details, result_list):
         print("")
         print(self.fill_space("Name".upper(), 30), "Value".upper())
         print(self.fill_space("Result Id", 30), result_details["resultid"])
         for result in result_list:
+            formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
+
             if result["testResultCommonProperties"]["id"] == result_details["resultid"]:
-                print(self.fill_space("Start Time", 30), self.format_time(result["metrics"]["response_time"][0][0]))
-                print(self.fill_space("Response Time", 30), result["metrics"]["response_time"][0][1])
-                print(self.fill_space("Response Size", 30), str(result["metrics"]["response_size"][0][1])+".00 B")
+                print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
+                print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
+                print(self.fill_space("Response Size", 30), str(formatted_response_size))
                 print("")
                 if "sub" in result_details:
                     print(self.__fix_length("*", 80))
@@ -1755,13 +1773,13 @@ class SyntheticTest(Base):
               self.fill_space("Response Time".upper(), response_time_length),
               self.fill_space("Response size".upper(), response_size_length))
         for result in sorted_result:
-            date_time = datetime.utcfromtimestamp(round(result["metrics"]["response_time"][0][0]/1000))
-            formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+            formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
+
             print(self.fill_space(result["testResultCommonProperties"]["id"], id_length ),
-                  self.fill_space(str(formatted_date_time), start_time_length),
+                  self.fill_space(str(self.change_time_format(result["metrics"]["response_time"][0][0])), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
-                  self.fill_space(str(result["metrics"]["response_time"][0][1]), response_time_length),
-                  self.fill_space(str(result["metrics"]["response_size"][0][1])+".00 B", response_size_length))
+                  self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
+                  self.fill_space(str(formatted_response_size), response_size_length))
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
         host = self.auth["host"]
