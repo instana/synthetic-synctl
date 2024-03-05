@@ -1622,7 +1622,6 @@ class SyntheticTest(Base):
         token = self.auth["token"]
         test = self.retrieve_a_synthetic_test(testid)
         result = {}
-        result["testid"] = testid
         result["resultid"] = resultid
 
         headers = {
@@ -1633,45 +1632,26 @@ class SyntheticTest(Base):
             print("test id should not be empty")
             return
         else:
-            retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
-            retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
-            retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
+            if test[0]["configuration"]["syntheticType"] in [HTTPAction_TYPE, HTTPScript_TYPE]:
+                retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
+                result_sub = requests.get(retrieve_url_sub,
+                                          headers=headers,
+                                          timeout=60,
+                                          verify=self.insecure)
 
-            result_sub = requests.get(retrieve_url_sub,
-                                      headers=headers,
-                                      timeout=60,
-                                      verify=self.insecure)
-            result_logs = requests.get(retrieve_url_logs,
-                                       headers=headers,
-                                       timeout=60,
-                                       verify=self.insecure)
-            result_har = requests.get(retrieve_url_har,
-                                      headers=headers,
-                                      timeout=60,
-                                      verify=self.insecure)
+                if _status_is_200(result_sub.status_code):
+                    result["sub"] = result_sub.json()["subtransactions"]
+                elif result_sub.status_code != 404:
+                   print(f'get subtransactions for test {testid} failed, status code: {result_sub.status_code}')
 
-            if _status_is_200(result_sub.status_code):
-                result["sub"] = result_sub.json()["subtransactions"]
-            elif _status_is_404(result_sub.status_code):
-                print(f"Detail data of type subtransactions not found for test result id {resultid}")
-            else:
-               print(f'get subtransactions for test {testid} failed, status code: {result_sub.status_code}')
-            if _status_is_200(result_logs.status_code):
-                result["logs"] = result_logs.json()["logs"]
-            elif _status_is_404(result_sub.status_code):
-                print(f"Detail data of type logs not found for test result id {resultid}")
-            else:
-                print(f'get logs for test {testid} failed, status code: {result_sub.status_code}')
-            if _status_is_200(result_har.status_code):
-                result["har"] = result_har.json()['har']
-            elif _status_is_404(result_sub.status_code):
-                print(f"Detail data of type har not found for test result id {resultid}")
-            else:
-                print(f'get har for test {testid} failed, status code: {result_har.status_code}')
-
-            if test[0]["configuration"]["syntheticType"] == BrowserScript_TYPE:
+            elif test[0]["configuration"]["syntheticType"] in  [BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
+                retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
                 retrieve_url_image = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=IMAGES"
                 retrieve_url_videos = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=VIDEOS"
+                result_har = requests.get(retrieve_url_har,
+                                          headers=headers,
+                                          timeout=60,
+                                          verify=self.insecure)
                 result_image = requests.get(retrieve_url_image,
                                             headers=headers,
                                             timeout=60,
@@ -1680,15 +1660,17 @@ class SyntheticTest(Base):
                                              headers=headers,
                                              timeout=60,
                                              verify=self.insecure)
+                if _status_is_200(result_har.status_code):
+                    result["har"] = result_har.json()['har']
+                elif result_har.status_code != 404:
+                    print(f'get har for test {testid} failed, status code: {result_har.status_code}')
                 if _status_is_200(result_image.status_code):
                     result["image"] = result_image.content
-                elif _status_is_404(result_image.status_code):
-                    print(f"Detail data of type images not found for test result id {resultid}")
+                elif result_image.status_code != 404:
+                    print(f'get image for test {testid} failed, status code: {result_image.status_code}')
                 if _status_is_200(result_videos.status_code):
                     result["video"] = result_videos.content
-                elif _status_is_404(result_videos.status_code):
-                    print(f"Detail data of type videos not found for test result id {resultid}")
-                else:
+                elif result_videos.status_code != 404:
                     print(f'get videos for test {testid} failed, status code: {result_videos.status_code}')
         return result
 
@@ -1709,7 +1691,6 @@ class SyntheticTest(Base):
         return formatted_date_time
 
     def print_result_details(self, result_details, result_list):
-        print("")
         print(self.fill_space("Name".upper(), 30), "Value".upper())
         print(self.fill_space("Result Id", 30), result_details["resultid"])
         for result in result_list:
@@ -1719,8 +1700,31 @@ class SyntheticTest(Base):
                 print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
                 print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
                 print(self.fill_space("Response Size", 30), str(formatted_response_size))
-                print("")
+                if "har" in result_details:
+                    with open("HAR.json", "w") as file:
+                        json.dump(result_details['har'], file)
+                    print(self.fill_space("har", 30), "HAR has been saved to 'HAR.json'")
+                else:
+                    print(self.fill_space("har", 30), "N/A")
+                if "image" in result_details:
+                    with open("images.tar", "wb") as f:
+                        f.write(result_details["image"])
+                    with tarfile.open("images.tar", "r") as tar:
+                        tar.extractall(path="ExtractedImageFiles")
+                    print(self.fill_space("Screenshots", 30), "Screenshots has been saved to ExtractedImageFiles")
+                else:
+                    print(self.fill_space("Screenshots", 30), "N/A")
+                if "video" in result_details:
+                    print(self.__fix_length("*", 80))
+                    with open("videos.tar", "wb") as f:
+                        f.write(result_details["video"])
+                    with tarfile.open("videos.tar", "r") as tar:
+                        tar.extractall(path="ExtractedVideoFiles")
+                    print(self.fill_space("Recordings", 30), "Recordings has been saved to ExtractedVideoFiles")
+                else:
+                    print(self.fill_space("Recordings", 30), "N/A")
                 if "sub" in result_details:
+                    print("")
                     print(self.__fix_length("*", 80))
                     print("Subtransactions ")
                     print(self.__fix_length("*", 80))
@@ -1731,32 +1735,8 @@ class SyntheticTest(Base):
                             print(self.fill_space(key, 30), value)
                     for key, value in result_details['sub'][0]["metrics"].items():
                         print(self.fill_space(key, 30), value)
-                if "logs" in result_details:
-                    print(self.__fix_length("*", 80))
-                    print("Logs")
-                    print(self.__fix_length("*", 80))
-                    print(result_details['logs'])
-                if "har" in result_details:
-                    print(self.__fix_length("*", 80))
-                    with open("HAR.json", "w") as file:
-                        json.dump(result_details['har'], file)
-                    print("HAR has been saved to 'HAR.json'")
-                    print("")
-                if "image" in result_details:
-                    print(self.__fix_length("*", 80))
-                    with open("images.tar", "wb") as f:
-                        f.write(result_details["image"])
-                    with tarfile.open("images.tar", "r") as tar:
-                        tar.extractall(path="ExtractedFiles")
-                        print("Images has been saved to Extracted Files")
-                        print("")
-                if "video" in result_details:
-                    print(self.__fix_length("*", 80))
-                    with open("videos.tar", "wb") as f:
-                        f.write(result_details["video"])
-                    with tarfile.open("videos.tar", "r") as tar:
-                        tar.extractall(path="ExtractedFiles")
-                        print("Videos has been saved to Extracted Files")
+                else:
+                    print(self.fill_space("Subtransactions", 30), "N/A")
 
     def print_result_list(self, result_list):
         id_length = 38
