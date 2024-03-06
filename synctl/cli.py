@@ -1596,19 +1596,23 @@ class SyntheticTest(Base):
                               "to": 0,
                               "windowSize": window_size
                           }}
-
-        result = requests.post(retrieve_url,
-                              headers=headers,
-                              data=json.dumps(summary_config),
-                              timeout=60,
-                              verify=self.insecure)
-        if _status_is_200(result.status_code):
-            data = result.json()
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE,
-                             f'retrieve test result list failed, status code:: {result.status_code}')
-            return None
+        try:
+            result = requests.post(retrieve_url,
+                                  headers=headers,
+                                  data=json.dumps(summary_config),
+                                  timeout=60,
+                                  verify=self.insecure)
+            if _status_is_200(result.status_code):
+                data = result.json()
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE,
+                                 f'retrieve test result list failed, status code:: {result.status_code}')
+                return None
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def __sort_test_result(self, result_list):
         """sort Synthetic result list by Starttime"""
@@ -1628,51 +1632,56 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
-        if id is None or testid == "":
-            print("test id should not be empty")
-            return
-        else:
-            if test[0]["configuration"]["syntheticType"] in [HTTPAction_TYPE, HTTPScript_TYPE]:
-                retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
-                result_sub = requests.get(retrieve_url_sub,
-                                          headers=headers,
-                                          timeout=60,
-                                          verify=self.insecure)
+        try:
+            if id is None or testid == "":
+                print("test id should not be empty")
+                return
+            else:
+                if test[0]["configuration"]["syntheticType"] in [HTTPAction_TYPE, HTTPScript_TYPE]:
+                    retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
+                    result_sub = requests.get(retrieve_url_sub,
+                                              headers=headers,
+                                              timeout=60,
+                                              verify=self.insecure)
 
-                if _status_is_200(result_sub.status_code):
-                    result["sub"] = result_sub.json()["subtransactions"]
-                elif result_sub.status_code != 404:
-                   print(f'get subtransactions for test {testid} failed, status code: {result_sub.status_code}')
+                    if _status_is_200(result_sub.status_code):
+                        result["sub"] = result_sub.json()["subtransactions"]
+                    elif result_sub.status_code != 404:
+                       print(f'get subtransactions for test {testid} failed, status code: {result_sub.status_code}')
 
-            elif test[0]["configuration"]["syntheticType"] in  [BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
-                retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
-                retrieve_url_image = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=IMAGES"
-                retrieve_url_videos = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=VIDEOS"
-                result_har = requests.get(retrieve_url_har,
-                                          headers=headers,
-                                          timeout=60,
-                                          verify=self.insecure)
-                result_image = requests.get(retrieve_url_image,
-                                            headers=headers,
-                                            timeout=60,
-                                            verify=self.insecure)
-                result_videos = requests.get(retrieve_url_videos,
-                                             headers=headers,
-                                             timeout=60,
-                                             verify=self.insecure)
-                if _status_is_200(result_har.status_code):
-                    result["har"] = result_har.json()['har']
-                elif result_har.status_code != 404:
-                    print(f'get har for test {testid} failed, status code: {result_har.status_code}')
-                if _status_is_200(result_image.status_code):
-                    result["image"] = result_image.content
-                elif result_image.status_code != 404:
-                    print(f'get image for test {testid} failed, status code: {result_image.status_code}')
-                if _status_is_200(result_videos.status_code):
-                    result["video"] = result_videos.content
-                elif result_videos.status_code != 404:
-                    print(f'get videos for test {testid} failed, status code: {result_videos.status_code}')
-        return result
+                elif test[0]["configuration"]["syntheticType"] in  [BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
+                    retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
+                    retrieve_url_image = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=IMAGES"
+                    retrieve_url_videos = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=VIDEOS"
+                    result_har = requests.get(retrieve_url_har,
+                                              headers=headers,
+                                              timeout=60,
+                                              verify=self.insecure)
+                    result_image = requests.get(retrieve_url_image,
+                                                headers=headers,
+                                                timeout=60,
+                                                verify=self.insecure)
+                    result_videos = requests.get(retrieve_url_videos,
+                                                 headers=headers,
+                                                 timeout=60,
+                                                 verify=self.insecure)
+                    if _status_is_200(result_har.status_code):
+                        result["har"] = result_har.json()['har']
+                    elif result_har.status_code != 404:
+                        print(f'get har for test {testid} failed, status code: {result_har.status_code}')
+                    if _status_is_200(result_image.status_code):
+                        result["image"] = result_image.content
+                    elif result_image.status_code != 404:
+                        print(f'get image for test {testid} failed, status code: {result_image.status_code}')
+                    if _status_is_200(result_videos.status_code):
+                        result["video"] = result_videos.content
+                    elif result_videos.status_code != 404:
+                        print(f'get videos for test {testid} failed, status code: {result_videos.status_code}')
+            return result
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def get_all_test_results(self, test_id, page=1):
         total_hits = 0
