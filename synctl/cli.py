@@ -1674,6 +1674,28 @@ class SyntheticTest(Base):
                     print(f'get videos for test {testid} failed, status code: {result_videos.status_code}')
         return result
 
+    def get_all_test_results(self, test_id, page=1):
+        total_hits = 0
+        result_list = self.retrieve_test_results(test_id)
+
+        if result_list is not None:
+            page = result_list["page"] if page in result_list else 1
+            page_size = result_list["pageSize"] if "pageSize" in result_list else 200
+            if "totalHits" in result_list:
+                total_hits = result_list["totalHits"]
+
+            if page_size >= total_hits:
+                return result_list
+            else:
+                total_pages = total_hits/page_size
+                if (total_pages - round(total_pages)) > 0:
+                    total_pages += 1
+                for x in range(0, round(total_pages)):
+                    result_list = self.retrieve_test_results(test_id, page=x+1)
+                    return result_list
+        else:
+            return None
+
     def convert_milliseconds(self, time_ms):
         if time_ms > 60000:
             time = f"{time_ms / 60000:.2f}min"
@@ -4221,7 +4243,7 @@ def main():
                 alert_instance.print_alerting_channels([single_alert])
         elif get_args.op_type == SYN_RESULT:
             if get_args.test is not None:
-                test_result = syn_instance.retrieve_test_results(get_args.test)
+                test_result = syn_instance.get_all_test_results(get_args.test)
                 if get_args.id is None:
                     syn_instance.print_result_list(test_result["items"])
                 else:
