@@ -1573,7 +1573,7 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
-        summary_config = {"syntheticMetrics":["synthetic.metricsResponseTime","synthetic.metricsResponseSize"],
+        summary_config = {"syntheticMetrics":["synthetic.metricsResponseTime","synthetic.metricsResponseSize", "status","synthetic.errors"],
                           "metrics": [{
                             "aggregation": "SUM",
                             "granularity": 600,
@@ -1695,9 +1695,11 @@ class SyntheticTest(Base):
         print(self.fill_space("Result Id", 30), result_details["resultid"])
         for result in result_list:
             formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
+            status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
 
             if result["testResultCommonProperties"]["id"] == result_details["resultid"]:
                 print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
+                print(self.fill_space("Status", 30), status)
                 print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
                 print(self.fill_space("Response Size", 30), str(formatted_response_size))
                 if "har" in result_details:
@@ -1737,12 +1739,22 @@ class SyntheticTest(Base):
                         print(self.fill_space(key, 30), value)
                 else:
                     print(self.fill_space("Subtransactions", 30), "N/A")
+                if "errors" in result["testResultCommonProperties"]:
+                    print("")
+                    print(self.__fix_length("*", 80))
+                    print("Error")
+                    print(self.__fix_length("*", 80))
+                    errors = result["testResultCommonProperties"]["errors"][0].split(",")
+                    for e in errors:
+                        print(e)
+                else:
+                    print(self.fill_space("Error", 30), "N/A")
 
     def print_result_list(self, result_list):
         id_length = 38
         start_time_length = 30
         loc_length = 30
-        status_length = 10
+        status_length = 15
         response_size_length = 8
         response_time_length = 18
         sorted_result = self.__sort_test_result(result_list)
@@ -1750,14 +1762,17 @@ class SyntheticTest(Base):
         print(self.fill_space("ID".upper(), id_length),
               self.fill_space("start Time".upper(), start_time_length),
               self.fill_space("Location".upper(), loc_length),
+              self.fill_space("Status".upper(), status_length),
               self.fill_space("Response Time".upper(), response_time_length),
               self.fill_space("Response size".upper(), response_size_length))
         for result in sorted_result:
             formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
+            status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
 
             print(self.fill_space(result["testResultCommonProperties"]["id"], id_length ),
                   self.fill_space(str(self.change_time_format(result["metrics"]["response_time"][0][0])), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
+                  self.fill_space(status, status_length),
                   self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
                   self.fill_space(str(formatted_response_size), response_size_length))
 
