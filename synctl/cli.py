@@ -13,7 +13,9 @@ import os
 import re
 import signal
 import sys
+
 import tarfile
+import getpass
 # import textwrap
 import time
 from datetime import datetime
@@ -114,7 +116,7 @@ Use "synctl <command> -h/--help" for more information about a command.
 
 def identify_hyphen():
     sys.argv = [
-        " " + a if a.startswith('-') and len(a) > 2 and sys.argv[2] == 'alert' and not a.startswith('--') else a
+        " " + a if a.startswith('-') and not a.startswith('--') and len(a) > 2 and sys.argv[2] == 'alert' else a
         for a in sys.argv
     ]
 
@@ -371,26 +373,45 @@ class ConfigurationFile(Base):
             json.dump(self.config_json, config_file1,
                       ensure_ascii=True, indent=4)
 
-    def print_config_file(self, name=""):
+    def print_config_file(self, name="", show_token=False):
         """print all config info"""
-        print(self.fill_space("NAME".upper()),
-              self.fill_space("Default".upper(), 13),
-              self.fill_space("Token".upper()),
-              "Hostname".upper())
-        if name != "" and name != "default" and name is not None:
-            for _, item in enumerate(self.config_json):
-                if item["name"] == name:
+        if show_token is True:
+            print(self.fill_space("NAME".upper()),
+                  self.fill_space("Default".upper(), 13),
+                  self.fill_space("Token".upper()),
+                  "Hostname".upper())
+            if name != "" and name != "default" and name is not None:
+                for _, item in enumerate(self.config_json):
+                    encoded_token = b64encode(item["token"].encode()).decode()
+                    if item["name"] == name:
+                        print(self.fill_space(item["name"]),
+                              self.fill_space(str(item["default"]), 13),
+                              self.fill_space(encoded_token),
+                              item["host"])
+            else:
+                # show all
+                for _, item in enumerate(self.config_json):
+                    encoded_token = b64encode(item["token"].encode()).decode()
                     print(self.fill_space(item["name"]),
                           self.fill_space(str(item["default"]), 13),
-                          self.fill_space(item["token"]),
+                          self.fill_space(encoded_token),
                           item["host"])
         else:
-            # show all
-            for _, item in enumerate(self.config_json):
-                print(self.fill_space(item["name"]),
-                      self.fill_space(str(item["default"]), 13),
-                      self.fill_space(item["token"]),
-                      item["host"])
+            print(self.fill_space("NAME".upper()),
+                  self.fill_space("Default".upper(), 13),
+                  "Hostname".upper())
+            if name != "" and name != "default" and name is not None:
+                for _, item in enumerate(self.config_json):
+                    if item["name"] == name:
+                        print(self.fill_space(item["name"]),
+                              self.fill_space(str(item["default"]), 13),
+                              item["host"])
+            else:
+                # show all
+                for _, item in enumerate(self.config_json):
+                    print(self.fill_space(item["name"]),
+                          self.fill_space(str(item["default"]), 13),
+                          item["host"])
 
     def __check_if_already_in_config(self, name: str) -> bool:
         for _, item in enumerate(self.config_json):
@@ -986,23 +1007,27 @@ class SyntheticCredential(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
-
-        if cred_key not in credential:
-            create_cred_res = requests.post(create_url,
-                                            headers=headers,
-                                            data=cred_payload,
-                                            timeout=60,
-                                            verify=self.insecure)
-            if _status_is_201(create_cred_res.status_code):
-                print(f"credential \"{cred_key}\" created")
-            elif _status_is_400(create_cred_res.status_code):
-                print(f'Create Error: {create_cred_res}\n',
-                      create_cred_res.json())
+        try:
+            if cred_key not in credential:
+                create_cred_res = requests.post(create_url,
+                                                headers=headers,
+                                                data=cred_payload,
+                                                timeout=60,
+                                                verify=self.insecure)
+                if _status_is_201(create_cred_res.status_code):
+                    print(f"credential \"{cred_key}\" created")
+                elif _status_is_400(create_cred_res.status_code):
+                    print(f'Create Error: {create_cred_res}\n',
+                          create_cred_res.json())
+                else:
+                    print('Create credential failed, status code:',
+                          create_cred_res.status_code)
             else:
-                print('Create credential failed, status code:',
-                      create_cred_res.status_code)
-        else:
-            print("Credential already exists")
+                print("Credential already exists")
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def retrieve_credentials(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1015,17 +1040,21 @@ class SyntheticCredential(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            cred_result = requests.get(retrieve_url,
+                                       headers=headers,
+                                       timeout=60,
+                                       verify=self.insecure)
 
-        cred_result = requests.get(retrieve_url,
-                                   headers=headers,
-                                   timeout=60,
-                                   verify=self.insecure)
-
-        if _status_is_200(cred_result.status_code):
-            data = json.loads(cred_result.content.decode())
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
+            if _status_is_200(cred_result.status_code):
+                data = json.loads(cred_result.content.decode())
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def delete_a_credential(self, cred):
         """Delete a credential"""
@@ -1044,21 +1073,25 @@ class SyntheticCredential(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
-
-        if cred in credential:
-            delete_res = requests.delete(delete_url,
-                                         headers=headers,
-                                         timeout=60,
-                                         verify=self.insecure)
-            if _status_is_204(delete_res.status_code):
-                print(f'credential \"{cred}\" deleted')
-            elif _status_is_429(delete_res.status_code):
-                print(TOO_MANY_REQUEST_ERROR)
+        try:
+            if cred in credential:
+                delete_res = requests.delete(delete_url,
+                                             headers=headers,
+                                             timeout=60,
+                                             verify=self.insecure)
+                if _status_is_204(delete_res.status_code):
+                    print(f'credential \"{cred}\" deleted')
+                elif _status_is_429(delete_res.status_code):
+                    print(TOO_MANY_REQUEST_ERROR)
+                else:
+                    print(
+                        f"Fail to delete {cred}, status code {delete_res.status_code}")
             else:
-                print(
-                    f"Fail to delete {cred}, status code {delete_res.status_code}")
-        else:
-            self.exit_synctl(ERROR_CODE, f"no credential {cred}")
+                self.exit_synctl(ERROR_CODE, f"no credential {cred}")
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def delete_credentials(self, cred_list):
         if cred_list is None:
@@ -1073,6 +1106,57 @@ class SyntheticCredential(Base):
         end_time = time.time()
         total_time = round((end_time-start_time)*1000, 3)
         print(f"total deleted: {total_number}, time used: {total_time}ms")
+
+    def update_a_credential(self, cred):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        if cred is None:
+            print("credential should not be empty")
+            return
+
+        credential = self.retrieve_credentials()
+
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        # delete cred
+        delete_url = f"{host}/api/synthetics/settings/credentials/{cred}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+        if cred in credential:
+            delete_res = requests.delete(delete_url,
+                                         headers=headers,
+                                         timeout=60,
+                                         verify=self.insecure)
+
+            if _status_is_204(delete_res.status_code):
+                pass
+            else:
+                self.exit_synctl(ERROR_CODE, f"Fail to delete {cred}")
+        else:
+            self.exit_synctl(ERROR_CODE, f"no credential {cred}")
+
+        # create cred
+        create_url = f"{host}/api/synthetics/settings/credentials/"
+
+        credential = self.retrieve_credentials()
+        cred_payload = self.payload
+
+        if cred not in credential:
+            create_cred_res = requests.post(create_url,
+                                            headers=headers,
+                                            data=cred_payload,
+                                            timeout=60,
+                                            verify=self.insecure)
+            if _status_is_201(create_cred_res.status_code):
+                print(f"Credential \"{cred}\" updated")
+            else:
+                print('Update credential failed, status code:',
+                      create_cred_res.status_code)
+        else:
+            print("Credential already exists")
+
 
     def print_credentials(self, credentials):
         sorted_cred = sorted(credentials, key=str.lower)
@@ -1184,24 +1268,28 @@ class SyntheticLocation(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            retrieve_res = requests.get(request_url,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
 
-        retrieve_res = requests.get(request_url,
-                                    headers=headers,
-                                    timeout=60,
-                                    verify=self.insecure)
+            if _status_is_200(retrieve_res.status_code):
+                data = retrieve_res.json()
 
-        if _status_is_200(retrieve_res.status_code):
-            data = retrieve_res.json()
-
-            if isinstance(data, dict):
-                return [data]
+                if isinstance(data, dict):
+                    return [data]
+                else:
+                    return data
+            elif _status_is_429(retrieve_res.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
             else:
-                return data
-        elif _status_is_429(retrieve_res.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            self.exit_synctl(ERROR_CODE,
-                f"Failed to get locations, status code {retrieve_res.status_code}")
+                self.exit_synctl(ERROR_CODE,
+                    f"Failed to get locations, status code {retrieve_res.status_code}")
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def get_location_summary_list(self,  page=1, page_size=200, window_size=60*60*1000):
         """curl --request POST 'http://{host}/api/synthetics/results/locationsummarylist'
@@ -1257,6 +1345,10 @@ class SyntheticLocation(Base):
             print("retrieve location summary list failed")
         except requests.exceptions.RequestException as e:
             print(f"Error: {e}")
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
         return None
 
     def get_all_location_summary_list(self,  page=1):
@@ -1329,20 +1421,24 @@ class SyntheticLocation(Base):
             "Content-Type": "application/json",
             "Authorization": "apiToken %s" % (self.auth["token"])
         }
+        try:
+            r = requests.delete(delete_url,
+                                headers=headers,
+                                timeout=60,
+                                verify=self.insecure)
 
-        r = requests.delete(delete_url,
-                            headers=headers,
-                            timeout=60,
-                            verify=self.insecure)
-
-        if _status_is_204(r.status_code):
-            print(f'location \"{location_id}\" deleted')
-        elif _status_is_404(r.status_code):
-            print(f"{location_id} not found")
-        elif _status_is_429(r.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(f"Fail to delete {location_id}, status code {r.status_code}")
+            if _status_is_204(r.status_code):
+                print(f'location \"{location_id}\" deleted')
+            elif _status_is_404(r.status_code):
+                print(f"{location_id} not found")
+            elif _status_is_429(r.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(f"Fail to delete {location_id}, status code {r.status_code}")
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def delete_synthetic_locations(self, locations_list):
         if locations_list is None:
@@ -1448,25 +1544,30 @@ class SyntheticTest(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
+        try:
+            create_res = requests.post(create_url,
+                                       headers=headers,
+                                       data=test_payload,
+                                       timeout=60,
+                                       verify=self.insecure)
 
-        create_res = requests.post(create_url,
-                                   headers=headers,
-                                   data=test_payload,
-                                   timeout=60,
-                                   verify=self.insecure)
+            if _status_is_201(create_res.status_code):
+                # extracting data in json format
+                data = create_res.json()
+                test_id = data["id"]
+                test_label = data["label"]
+                print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
+            elif _status_is_429(create_res.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print('create test failed, status code:', create_res.status_code)
+                if create_res.text:
+                    print(create_res.text)
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-        if _status_is_201(create_res.status_code):
-            # extracting data in json format
-            data = create_res.json()
-            test_id = data["id"]
-            test_label = data["label"]
-            print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
-        elif _status_is_429(create_res.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print('create test failed, status code:', create_res.status_code)
-            if create_res.text:
-                print(create_res.text)
 
     def retrieve_a_synthetic_test(self, test_id=""):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1482,36 +1583,40 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            result = requests.get(retrieve_url,
+                                  headers=headers,
+                                  timeout=60,
+                                  verify=self.insecure)
 
-        result = requests.get(retrieve_url,
-                              headers=headers,
-                              timeout=60,
-                              verify=self.insecure)
+            if _status_is_200(result.status_code):
+                # extracting data in json format
+                data = result.json()
 
-        if _status_is_200(result.status_code):
-            # extracting data in json format
-            data = result.json()
-
-            if isinstance(data, list):
-                self.test_lists = data
-                return data
-            elif isinstance(data, dict):
-                self.test_lists = [data]
-                return [data]
+                if isinstance(data, list):
+                    self.test_lists = data
+                    return data
+                elif isinstance(data, dict):
+                    self.test_lists = [data]
+                    return [data]
+                else:
+                    print('unknown data:', data)
+            elif _status_is_403(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message='Insufficient access rights for resource')
+            elif _status_is_404(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message=f'test {test_id} not found')
+            elif _status_is_429(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message=TOO_MANY_REQUEST_ERROR)
             else:
-                print('unknown data:', data)
-        elif _status_is_403(result.status_code):
-            self.exit_synctl(error_code=ERROR_CODE,
-                             message='Insufficient access rights for resource')
-        elif _status_is_404(result.status_code):
-            self.exit_synctl(error_code=ERROR_CODE,
-                             message=f'test {test_id} not found')
-        elif _status_is_429(result.status_code):
-            self.exit_synctl(error_code=ERROR_CODE,
-                             message=TOO_MANY_REQUEST_ERROR)
-        else:
-            self.exit_synctl(ERROR_CODE,
-                f'get test {test_id} failed, status code: {result.status_code}')
+                self.exit_synctl(ERROR_CODE,
+                    f'get test {test_id} failed, status code: {result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def retrieve_all_synthetic_tests(self, syn_type=None):
         # API doc: https://instana.github.io/openapi/#operation/getSyntheticTests
@@ -1525,39 +1630,43 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
-
-        query_result = requests.get(retrieve_url,
-                                    headers=headers,
-                                    timeout=60,
-                                    verify=self.insecure)
-        if _status_is_200(query_result.status_code):
-            # extracting data in json format
-            data = query_result.json()
-            syn_type_list = []
-            if isinstance(data, list):
-                self.test_lists = data
-                for x in data:
-                    if syn_type is not None and x is not None and x["configuration"]["syntheticType"] == syn_type:
-                        syn_type_list.append(x)
-                    if syn_type is None:
-                        syn_type_list.append(x)
-                return syn_type_list
-            elif isinstance(data, dict):
-                # only one test
-                self.test_lists = [data]
-                if syn_type is not None and data["configuration"]["syntheticType"] == syn_type:
-                    return [data]
-                return []
+        try:
+            query_result = requests.get(retrieve_url,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
+            if _status_is_200(query_result.status_code):
+                # extracting data in json format
+                data = query_result.json()
+                syn_type_list = []
+                if isinstance(data, list):
+                    self.test_lists = data
+                    for x in data:
+                        if syn_type is not None and x is not None and x["configuration"]["syntheticType"] == syn_type:
+                            syn_type_list.append(x)
+                        if syn_type is None:
+                            syn_type_list.append(x)
+                    return syn_type_list
+                elif isinstance(data, dict):
+                    # only one test
+                    self.test_lists = [data]
+                    if syn_type is not None and data["configuration"]["syntheticType"] == syn_type:
+                        return [data]
+                    return []
+                else:
+                    self.exit_synctl(ERROR_CODE, f'unknown data: {data}')
+            elif _status_is_403(query_result.status_code):
+                self.exit_synctl(ERROR_CODE, 'Insufficient access rights for resource')
+            elif _status_is_404(query_result.status_code):
+                self.exit_synctl(ERROR_CODE, 'test not found')
+            elif _status_is_429(query_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
             else:
-                self.exit_synctl(ERROR_CODE, f'unknown data: {data}')
-        elif _status_is_403(query_result.status_code):
-            self.exit_synctl(ERROR_CODE, 'Insufficient access rights for resource')
-        elif _status_is_404(query_result.status_code):
-            self.exit_synctl(ERROR_CODE, 'test not found')
-        elif _status_is_429(query_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            self.exit_synctl(ERROR_CODE, f'get test failed, status code: {query_result.status_code}')
+                self.exit_synctl(ERROR_CODE, f'get test failed, status code: {query_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def retrieve_test_results(self, test_id, page=1, page_size=200, window_size=60*60*1000):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1855,20 +1964,24 @@ class SyntheticTest(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
+        try:
+            retrieve_res = requests.post(test_summary_list_url,
+                                         headers=headers,
+                                         data=json.dumps(summary_config),
+                                         timeout=60,
+                                         verify=self.insecure)
 
-        retrieve_res = requests.post(test_summary_list_url,
-                                     headers=headers,
-                                     data=json.dumps(summary_config),
-                                     timeout=60,
-                                     verify=self.insecure)
-
-        if _status_is_200(retrieve_res.status_code):
-            data = retrieve_res.json()
-            return data
-        else:
-            print('retrieve test summary list failed, status code:',
-                  retrieve_res.status_code)
-            return None
+            if _status_is_200(retrieve_res.status_code):
+                data = retrieve_res.json()
+                return data
+            else:
+                print('retrieve test summary list failed, status code:',
+                      retrieve_res.status_code)
+                return None
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def get_all_tests_by_filter(self, tag_filter, page=1):
         total_hits = 0
@@ -1908,19 +2021,23 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": "apiToken %s" % (self.auth["token"])
         }
+        try:
+            del_result = requests.delete(delete_url,
+                                         headers=headers,
+                                         timeout=60,
+                                         verify=self.insecure)
 
-        del_result = requests.delete(delete_url,
-                                     headers=headers,
-                                     timeout=60,
-                                     verify=self.insecure)
-
-        if _status_is_204(del_result.status_code):
-            print(f'test \"{test_id}\" deleted')
-        elif _status_is_429(del_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f"Fail to delete {test_id}, status code {del_result.status_code}")
+            if _status_is_204(del_result.status_code):
+                print(f'test \"{test_id}\" deleted')
+            elif _status_is_429(del_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f"Fail to delete {test_id}, status code {del_result.status_code}")
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def delete_multiple_synthetic_tests(self, tests_list: list):
         start_time = time.time()
@@ -2399,17 +2516,21 @@ class SmartAlert(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            alert_result = requests.get(retrieve_url,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
 
-        alert_result = requests.get(retrieve_url,
-                                    headers=headers,
-                                    timeout=60,
-                                    verify=self.insecure)
-
-        if _status_is_200(alert_result.status_code):
-            data = alert_result.json()
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+            if _status_is_200(alert_result.status_code):
+                data = alert_result.json()
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def retrieve_a_smart_alert(self, alert_id=""):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2422,28 +2543,32 @@ class SmartAlert(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            alert_result = requests.get(retrieve_url,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
 
-        alert_result = requests.get(retrieve_url,
-                                    headers=headers,
-                                    timeout=60,
-                                    verify=self.insecure)
+            if _status_is_200(alert_result.status_code):
+                data = alert_result.json()
 
-        if _status_is_200(alert_result.status_code):
-            data = alert_result.json()
-
-            if isinstance(data, list):
-                self.alert_lists = data
-                return data
-            elif isinstance(data, dict):
-                self.alert_lists = [data]
-                return [data]
+                if isinstance(data, list):
+                    self.alert_lists = data
+                    return data
+                elif isinstance(data, dict):
+                    self.alert_lists = [data]
+                    return [data]
+                else:
+                    print('unknown data:', data)
+            elif _status_is_404(alert_result.status_code):
+                self.exit_synctl(ERROR_CODE,
+                                 message=f'alert {alert_id} not found')
             else:
-                print('unknown data:', data)
-        elif _status_is_404(alert_result.status_code):
-            self.exit_synctl(ERROR_CODE,
-                             message=f'alert {alert_id} not found')
-        else:
-            self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+                self.exit_synctl(ERROR_CODE, f'get alert failed, status code: {alert_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def retrieve_all_alerting_channel(self):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2456,17 +2581,21 @@ class SmartAlert(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            alert_channel_result = requests.get(retrieve_url,
+                                                headers=headers,
+                                                timeout=60,
+                                                verify=self.insecure)
 
-        alert_channel_result = requests.get(retrieve_url,
-                                            headers=headers,
-                                            timeout=60,
-                                            verify=self.insecure)
-
-        if _status_is_200(alert_channel_result.status_code):
-            data = alert_channel_result.json()
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
+            if _status_is_200(alert_channel_result.status_code):
+                data = alert_channel_result.json()
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def retrieve_a_single_alerting_channel(self, alert_channel):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -2479,18 +2608,22 @@ class SmartAlert(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            alert_channel_result = requests.get(retrieve_url,
+                                                headers=headers,
+                                                timeout=60,
+                                                verify=self.insecure)
 
-        alert_channel_result = requests.get(retrieve_url,
-                                            headers=headers,
-                                            timeout=60,
-                                            verify=self.insecure)
-
-        if _status_is_200(alert_channel_result.status_code):
-            data = alert_channel_result.json()
-            return data
-        else:
-            self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
-
+            if _status_is_200(alert_channel_result.status_code):
+                data = alert_channel_result.json()
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get alert channel failed, status code: {alert_channel_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+            self.exit_synctl(f"Connection to {host} timed out")
 
 
     def create_synthetic_alert(self):
@@ -2505,25 +2638,29 @@ class SmartAlert(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
+        try:
+            create_res = requests.post(create_url,
+                                       headers=headers,
+                                       data=alert_payload,
+                                       timeout=60,
+                                       verify=self.insecure)
 
-        create_res = requests.post(create_url,
-                                   headers=headers,
-                                   data=alert_payload,
-                                   timeout=60,
-                                   verify=self.insecure)
-
-        if _status_is_200(create_res.status_code):
-            # extracting data in json format
-            data = create_res.json()
-            alert_id = data["id"]
-            alert_name = data["name"]
-            print(f"smart alert \"{alert_name}\" created, id is \"{alert_id}\"")
-        elif _status_is_429(create_res.status_code):
-            self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
-        else:
-            print('create test failed, status code:', create_res.status_code)
-            if create_res.text:
-                print(create_res.text)
+            if _status_is_200(create_res.status_code):
+                # extracting data in json format
+                data = create_res.json()
+                alert_id = data["id"]
+                alert_name = data["name"]
+                print(f"smart alert \"{alert_name}\" created, id is \"{alert_id}\"")
+            elif _status_is_429(create_res.status_code):
+                self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
+            else:
+                print('create test failed, status code:', create_res.status_code)
+                if create_res.text:
+                    print(create_res.text)
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def invalid_create_options(self, invalid_options, items, tag_filter_type=None):
         for key, value in items:
@@ -2543,20 +2680,24 @@ class SmartAlert(Base):
             "Content-Type": "application/json",
             "Authorization": "apiToken %s" % (self.auth["token"])
         }
+        try:
+            result = requests.delete(delete_url,
+                                     headers=headers,
+                                     timeout=60,
+                                     verify=self.insecure)
 
-        result = requests.delete(delete_url,
-                                 headers=headers,
-                                 timeout=60,
-                                 verify=self.insecure)
-
-        if _status_is_204(result.status_code):
-            print(f'alert \"{alert_id}\" deleted')
-        elif _status_is_404(result.status_code):
-            self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
-        elif _status_is_429(result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            self.exit_synctl(ERROR_CODE, f"Failed to delete {alert_id}, status code {result.status_code}")
+            if _status_is_204(result.status_code):
+                print(f'alert \"{alert_id}\" deleted')
+            elif _status_is_404(result.status_code):
+                self.exit_synctl(ERROR_CODE, f"{alert_id} not found")
+            elif _status_is_429(result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                self.exit_synctl(ERROR_CODE, f"Failed to delete {alert_id}, status code {result.status_code}")
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def delete_multiple_smart_alerts(self, alert_list):
         start_time = time.time()
@@ -2674,22 +2815,26 @@ class UpdateSyntheticTest(SyntheticTest):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            update_result = requests.put(put_url,
+                                         headers=headers,
+                                         data=new_payload,
+                                         timeout=60,
+                                         verify=self.insecure)
 
-        update_result = requests.put(put_url,
-                                     headers=headers,
-                                     data=new_payload,
-                                     timeout=60,
-                                     verify=self.insecure)
-
-        if _status_is_200(update_result.status_code):
-            print(f"test {test_id} updated")
-        elif _status_is_400(update_result.status_code):
-            print(f'Error: {update_result}', update_result.content)
-        elif _status_is_429(update_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f'update test {test_id} failed, status code: {update_result.status_code}')
+            if _status_is_200(update_result.status_code):
+                print(f"test {test_id} updated")
+            elif _status_is_400(update_result.status_code):
+                print(f'Error: {update_result}', update_result.content)
+            elif _status_is_429(update_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'update test {test_id} failed, status code: {update_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def update_using_file(self, file):
         with open(file, 'rb') as json_file:
@@ -2898,24 +3043,28 @@ class UpdateSmartAlert(SmartAlert):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            update_result = requests.post(update_url,
+                                          headers=headers,
+                                          data=new_payload,
+                                          timeout=60,
+                                          verify=self.insecure)
 
-        update_result = requests.post(update_url,
-                                      headers=headers,
-                                      data=new_payload,
-                                      timeout=60,
-                                      verify=self.insecure)
-
-        if _status_is_200(update_result.status_code):
-            print(f"alert {alert_id} updated")
-        elif _status_is_204(update_result.status_code):
-            print(f"alert {alert_id} did not change")
-        elif _status_is_400(update_result.status_code):
-            print(f'Error: {update_result}', update_result.content)
-        elif _status_is_429(update_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+            if _status_is_200(update_result.status_code):
+                print(f"alert {alert_id} updated")
+            elif _status_is_204(update_result.status_code):
+                print(f"alert {alert_id} did not change")
+            elif _status_is_400(update_result.status_code):
+                print(f'Error: {update_result}', update_result.content)
+            elif _status_is_429(update_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def toggle_smart_alert(self, alert_id, toggle):
         """API https://instana.github.io/openapi/#operation/enableSyntheticAlertConfig
@@ -2935,21 +3084,25 @@ class UpdateSmartAlert(SmartAlert):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            update_result = requests.put(put_url,
+                                         headers=headers,
+                                         timeout=60,
+                                         verify=self.insecure)
 
-        update_result = requests.put(put_url,
-                                     headers=headers,
-                                     timeout=60,
-                                     verify=self.insecure)
-
-        if _status_is_204(update_result.status_code):
-            print(f"alert {alert_id} {toggle}d")
-        elif _status_is_400(update_result.status_code):
-            print(f'Error: {update_result}', update_result.content)
-        elif _status_is_429(update_result.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+            if _status_is_204(update_result.status_code):
+                print(f"alert {alert_id} {toggle}d")
+            elif _status_is_400(update_result.status_code):
+                print(f'Error: {update_result}', update_result.content)
+            elif _status_is_429(update_result.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'update alert {alert_id} failed, status code: {update_result.status_code}, {update_result.text}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def update_alert_name(self, name):
         """update alert name"""
@@ -3028,22 +3181,26 @@ class PatchSyntheticTest(SyntheticTest):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
+        try:
+            patch_result = requests.patch(patch_url,
+                                          headers=headers,
+                                          data=data,
+                                          timeout=60,
+                                          verify=self.insecure)
 
-        patch_result = requests.patch(patch_url,
-                                      headers=headers,
-                                      data=data,
-                                      timeout=60,
-                                      verify=self.insecure)
-
-        if _status_is_200(patch_result.status_code):
-            print(f"{test_id} updated")
-        elif _status_is_400(patch_result.status_code):
-            print(f'Patch Error: {patch_result}', patch_result.json())
-        elif _status_is_429(patch_result.status_code):
-            print(TOO_MANY_REQUEST_ERROR)
-        else:
-            print(
-                f'patch test {test_id} failed, status code: {patch_result.status_code}')
+            if _status_is_200(patch_result.status_code):
+                print(f"{test_id} updated")
+            elif _status_is_400(patch_result.status_code):
+                print(f'Patch Error: {patch_result}', patch_result.json())
+            elif _status_is_429(patch_result.status_code):
+                print(TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'patch test {test_id} failed, status code: {patch_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def set_test_id(self, test_id):
         """set test id"""
@@ -3395,30 +3552,34 @@ class SyntheticResult(Base):
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
+        try:
+            summary_res = requests.post(test_summary_list_url,
+                                        headers=headers,
+                                        data=json.dumps(summary_config),
+                                        timeout=60,
+                                        verify=self.insecure)
 
-        summary_res = requests.post(test_summary_list_url,
-                                    headers=headers,
-                                    data=json.dumps(summary_config),
-                                    timeout=60,
-                                    verify=self.insecure)
-
-        if _status_is_200(summary_res.status_code):
-            # extracting data in json format
-            data = summary_res.json()
-            return data
-        elif _status_is_400(summary_res.status_code):
-            print(f'Bad Request: status code: {summary_res.status_code}')
-            if summary_res.text:
-                print("Error Message:", summary_res.text)
-            self.exit_synctl(error_code=ERROR_CODE)
-        elif _status_is_429(summary_res.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print('retrieve test summary list failed, status code:',
-                  summary_res.status_code)
-            if summary_res.text:
-                print("Error Message:", summary_res.text)
-            self.exit_synctl(ERROR_CODE)
+            if _status_is_200(summary_res.status_code):
+                # extracting data in json format
+                data = summary_res.json()
+                return data
+            elif _status_is_400(summary_res.status_code):
+                print(f'Bad Request: status code: {summary_res.status_code}')
+                if summary_res.text:
+                    print("Error Message:", summary_res.text)
+                self.exit_synctl(error_code=ERROR_CODE)
+            elif _status_is_429(summary_res.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print('retrieve test summary list failed, status code:',
+                      summary_res.status_code)
+                if summary_res.text:
+                    print("Error Message:", summary_res.text)
+                self.exit_synctl(ERROR_CODE)
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def convert_summary_list_dict(self, summary_result, metrics_summary):
         if summary_result is None or not isinstance(summary_result, dict):
@@ -3528,26 +3689,30 @@ class Application(Base):
         if self.name_filter is not None:
             params_list["nameFilter"] = self.name_filter
         if application_boundary_scope is not None:
-            params_list["applicationBoundaryScope"] = application_boundary_scope
+                params_list["applicationBoundaryScope"] = application_boundary_scope
+        try:
+            app_res = requests.get(application_list_url,
+                                   headers=headers,
+                                   params=params_list,
+                                   timeout=60,
+                                   verify=False)
 
-        app_res = requests.get(application_list_url,
-                               headers=headers,
-                               params=params_list,
-                               timeout=60,
-                               verify=False)
-
-        if _status_is_200(app_res.status_code):
-            # extracting data in json format
-            data = app_res.json()
-            return data
-        elif _status_is_429(app_res.status_code):
-            self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-        else:
-            print('retrieve test summary list failed, status code:',
-                  app_res.status_code)
-            if app_res.text:
-                print(app_res.text)
-            self.exit_synctl(ERROR_CODE)
+            if _status_is_200(app_res.status_code):
+                # extracting data in json format
+                data = app_res.json()
+                return data
+            elif _status_is_429(app_res.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print('retrieve test summary list failed, status code:',
+                      app_res.status_code)
+                if app_res.text:
+                    print(app_res.text)
+                self.exit_synctl(ERROR_CODE)
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def __get_all_application(self,
                               name_filter=None,
@@ -3694,6 +3859,8 @@ class ParseParameter:
             '--host', type=str, metavar="<host>", help='set hostname')
         self.parser_config.add_argument(
             '--token', '-t', type=str, metavar="<token>", help='set token')
+        self.parser_config.add_argument(
+            '--show-token', action='store_true', help='show token')
         self.parser_config.add_argument(
             '--env', '--name', type=str, metavar="<name>", help='specify which config to use')
         self.parser_config.add_argument(
@@ -3928,7 +4095,7 @@ class ParseParameter:
 
     def update_command_options(self):
         self.parser_update.add_argument(
-            'syn_type', type=str, choices=["test", "alert"], help="Synthetic type/ smart alert")
+            'syn_type', type=str, choices=["test", "alert", "cred"], help="Synthetic type/ smart alert/ credential")
         self.parser_update.add_argument(
             'id', type=str, help="Synthetic test id")
 
@@ -3996,7 +4163,9 @@ class ParseParameter:
             '--enable', action='store_true', help='enable smart alert')
         update_exclusive_group.add_argument(
             '--disable', action='store_true', help='disable smart alert')
-
+        #update cred
+        update_group.add_argument(
+            '--value', type=str, metavar="<value>", help='set credential value')
 
         self.parser_update.add_argument(
             '--use-env', '-e', type=str, metavar="<name>", default=None, help='use a config hostname')
@@ -4128,14 +4297,22 @@ def main():
 
     if COMMAND_CONFIG == get_args.sub_command:
         if get_args.config_type == "list":
-            if get_args.env is None:
-                auth_instance.print_config_file()
+            if get_args.show_token is True:
+                if get_args.env is None:
+                    auth_instance.print_config_file(show_token=True)
+                else:
+                    auth_instance.print_config_file(name=get_args.env, show_token=True)
             else:
-                auth_instance.print_config_file(name=get_args.env)
+                if get_args.env is None:
+                    auth_instance.print_config_file()
+                else:
+                    auth_instance.print_config_file(name=get_args.env)
         elif get_args.config_type == "set":
-            if get_args.host is None or get_args.token is None or get_args.env is None:
-                print("--env, --host, and --token are required")
+            if get_args.host is None or get_args.env is None:
+                print("--env and --host are required")
             else:
+                if get_args.token is None:
+                    get_args.token = getpass.getpass('Token:')
                 set_as_default = False
                 if get_args.default is True:
                     set_as_default = True
@@ -4568,6 +4745,14 @@ def main():
                     update_alert.update_tag_filter_expression(tag_filter_expression)
                 updated_alert_config = update_alert.get_updated_alert_config()
                 update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
+        if get_args.syn_type == SYN_CRED:
+            cred_payload = CredentialConfiguration()
+            if get_args.value is not None:
+                cred_payload.set_credential_name(get_args.id)
+                cred_payload.set_credential_value(get_args.value)
+
+            cred_instance.set_cred_payload(payload=cred_payload.get_json())
+            cred_instance.update_a_credential(get_args.id)
     elif COMMAND_DELETE == get_args.sub_command:
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:

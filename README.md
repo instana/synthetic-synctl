@@ -46,6 +46,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 - [Manage Credentials](#manage-credentials)
     - [Display all credentials](#display-all-credentials)
     - [Create a credential](#create-a-credential)
+    - [Update a credential](#update-a-credential)
     - [Delete a credential](#delete-a-credential)
 - [Manage Application](#manage-application)
     - [Get application Syntax](#get-application-syntax)
@@ -69,7 +70,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 # Features
 - CRUD of Synthetic test, support API Simple, API Script, Browser Script, etc.
 - Query/delete of Synthetic location.
-- Query/create/delete of Synthetic credential.
+- Query/create/update/delete of Synthetic credential.
 - Support multiple configurations of backend server.
 - CRUD of Smart alerts.
 
@@ -104,6 +105,11 @@ pip3 install --upgrade synctl==<version>
 - Set environment variables before run synctl command, `SYN_SERVER_HOSTNAME`, `SYN_API_TOKEN` are used to store host and token.
 
 **Note:** The priority of configuration is command options > environment variables > config file.
+
+### Create a token
+1. Log in to the Instana UI. 
+2. Navigate to the `Settings` page, go to the `API Tokens` tab under Team Settings.
+3. Click on `New API Token` in the upper right corner to create a new token with proper permissions.
 
 ### Use a configuration file (Recommended)
 The configuration file is stored under `~/.synthetic/config.json` by default, uses can edit it directly or use `synctl config` command to manage configuration information. Below is an example to configure a backend server:
@@ -470,11 +476,11 @@ synctl create test -t 3 \
 
 #### Create Webpage Action test
 ```
-synctl create test -t 4 \ 
+synctl create test -t 4 \
     --label "browser-test-webpageaction" \
     --url "https://httpbin.org/get" \
     --location "$LOCATION" --frequency 5 \
-    --record-video true
+    --record-video true \
     --browser chrome
 ```
 
@@ -755,6 +761,12 @@ synctl get cred
 synctl create cred --key <key-name> --value <value>
 ```
 
+### Update a credential
+
+```
+synctl update cred <cred-name> --value <value>
+```
+
 ### Delete a credential
 
 ```
@@ -777,7 +789,7 @@ Options:
 synctl get app
 
 # filter application by --name-filter, or pattern that application name contains
-synctl get app --name-filter <application-name>
+synctl get app --name-filter "<application-name>"
 
 # then create test with application id
 synctl create test -t 0 --app-id <application-id> ...
@@ -861,7 +873,7 @@ synctl create alert --name "Smart-alert" \
 # create alert with tagFilterExpression       
 synctl create alert --name "smart alert" \
         --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2"... \
-        --alert-channel "$ALERT_CHANNEL" \ 
+        --alert-channel "$ALERT_CHANNEL" \
         --severity critical \
         --violation-count 3 \
         --tag-filter-expression '{"type": "EXPRESSION", "logicalOperator": "AND", "elements": []}'
