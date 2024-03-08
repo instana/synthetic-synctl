@@ -13,9 +13,12 @@ import os
 import re
 import signal
 import sys
+
+import tarfile
 import getpass
 # import textwrap
 import time
+from datetime import datetime
 
 import requests
 import urllib3
@@ -54,6 +57,7 @@ SYN_APPLICATION = "application"
 SYN_APP = "app"  # short for application
 SYN_CRED = "cred"  # short for credentials
 SYN_ALERT = "alert"  # short for smart alerts
+SYN_RESULT = "result"
 
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
@@ -1663,6 +1667,254 @@ class SyntheticTest(Base):
             self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    def retrieve_test_results(self, test_id, page=1, page_size=200, window_size=60*60*1000):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+        if id is None or test_id == "":
+            print("test id should not be empty")
+            return
+        else:
+            retrieve_url = f"{host}/api/synthetics/results/list"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        summary_config = {"syntheticMetrics":["synthetic.metricsResponseTime","synthetic.metricsResponseSize", "status","synthetic.errors"],
+                          "metrics": [{
+                            "aggregation": "SUM",
+                            "granularity": 600,
+                            "metric": "synthetic.metricsStatus"
+                        }],
+                          "order":{
+                              "by":"synthetic.metricsResponseTime",
+                              "direction":"DESC"
+                          },
+                          "tagFilters":[{
+                              "stringValue": test_id,
+                              "name":"synthetic.testId",
+                              "operator":"EQUALS"
+                          }],
+                          "pagination": {
+                              "page": page,
+                              "pageSize": page_size
+                          },
+                          "timeFrame": {
+                              "to": 0,
+                              "windowSize": window_size
+                          }}
+        try:
+            result = requests.post(retrieve_url,
+                                  headers=headers,
+                                  data=json.dumps(summary_config),
+                                  timeout=60,
+                                  verify=self.insecure)
+            if _status_is_200(result.status_code):
+                data = result.json()
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE,
+                                 f'retrieve test result list failed, status code:: {result.status_code}')
+                return None
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    def __sort_test_result(self, result_list):
+        """sort Synthetic result list by Starttime"""
+        new_list = sorted(
+            result_list, reverse=True, key=lambda result: result["metrics"]["response_time"][0][0] if result is not None else [])
+        return new_list
+
+    def retrieve_test_result_details(self, resultid, testid):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+        test = self.retrieve_a_synthetic_test(testid)
+        result = {}
+        result["resultid"] = resultid
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        try:
+            if id is None or testid == "":
+                print("test id should not be empty")
+                return
+            else:
+                if test[0]["configuration"]["syntheticType"] in [HTTPAction_TYPE, HTTPScript_TYPE]:
+                    retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
+                    result_sub = requests.get(retrieve_url_sub,
+                                              headers=headers,
+                                              timeout=60,
+                                              verify=self.insecure)
+
+                    if _status_is_200(result_sub.status_code):
+                        result["sub"] = result_sub.json()["subtransactions"]
+                    elif result_sub.status_code != 404:
+                       print(f'get subtransactions for test {testid} failed, status code: {result_sub.status_code}')
+
+                elif test[0]["configuration"]["syntheticType"] in  [BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
+                    retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
+                    retrieve_url_image = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=IMAGES"
+                    retrieve_url_videos = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=VIDEOS"
+                    result_har = requests.get(retrieve_url_har,
+                                              headers=headers,
+                                              timeout=60,
+                                              verify=self.insecure)
+                    result_image = requests.get(retrieve_url_image,
+                                                headers=headers,
+                                                timeout=60,
+                                                verify=self.insecure)
+                    result_videos = requests.get(retrieve_url_videos,
+                                                 headers=headers,
+                                                 timeout=60,
+                                                 verify=self.insecure)
+                    if _status_is_200(result_har.status_code):
+                        result["har"] = result_har.json()['har']
+                    elif result_har.status_code != 404:
+                        print(f'get har for test {testid} failed, status code: {result_har.status_code}')
+                    if _status_is_200(result_image.status_code):
+                        result["image"] = result_image.content
+                    elif result_image.status_code != 404:
+                        print(f'get image for test {testid} failed, status code: {result_image.status_code}')
+                    if _status_is_200(result_videos.status_code):
+                        result["video"] = result_videos.content
+                    elif result_videos.status_code != 404:
+                        print(f'get videos for test {testid} failed, status code: {result_videos.status_code}')
+            return result
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    def get_all_test_results(self, test_id, page=1):
+        total_hits = 0
+        result_list = self.retrieve_test_results(test_id)
+
+        if result_list is not None:
+            page = result_list["page"] if page in result_list else 1
+            page_size = result_list["pageSize"] if "pageSize" in result_list else 200
+            if "totalHits" in result_list:
+                total_hits = result_list["totalHits"]
+
+            if page_size >= total_hits:
+                return result_list
+            else:
+                total_pages = total_hits/page_size
+                if (total_pages - round(total_pages)) > 0:
+                    total_pages += 1
+                for x in range(0, round(total_pages)):
+                    result_list = self.retrieve_test_results(test_id, page=x+1)
+                    return result_list
+        else:
+            return None
+
+    def convert_milliseconds(self, time_ms):
+        if time_ms > 60000:
+            time = f"{time_ms / 60000:.2f}min"
+        elif time_ms > 1000:
+            time = f"{time_ms / 1000:.2f}s"
+        else:
+            time = f"{time_ms}ms"
+        return time
+
+    def change_time_format(self, time):
+        """format time to YYYY-MM-DD, HH:MM:SS"""
+        date_time = datetime.fromtimestamp(time/1000)
+        formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+
+        return formatted_date_time
+
+    def print_result_details(self, result_details, result_list):
+        print(self.fill_space("Name".upper(), 30), "Value".upper())
+        print(self.fill_space("Result Id", 30), result_details["resultid"])
+        for result in result_list:
+            formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
+            status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
+
+            if result["testResultCommonProperties"]["id"] == result_details["resultid"]:
+                print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
+                print(self.fill_space("Status", 30), status)
+                print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
+                print(self.fill_space("Response Size", 30), str(formatted_response_size))
+                if "har" in result_details:
+                    with open("HAR.json", "w") as file:
+                        json.dump(result_details['har'], file)
+                    print(self.fill_space("har", 30), "HAR has been saved to 'HAR.json'")
+                else:
+                    print(self.fill_space("har", 30), "N/A")
+                if "image" in result_details:
+                    with open("images.tar", "wb") as f:
+                        f.write(result_details["image"])
+                    with tarfile.open("images.tar", "r") as tar:
+                        tar.extractall(path="ExtractedImageFiles")
+                    print(self.fill_space("Screenshots", 30), "Screenshots has been saved to ExtractedImageFiles")
+                else:
+                    print(self.fill_space("Screenshots", 30), "N/A")
+                if "video" in result_details:
+                    print(self.__fix_length("*", 80))
+                    with open("videos.tar", "wb") as f:
+                        f.write(result_details["video"])
+                    with tarfile.open("videos.tar", "r") as tar:
+                        tar.extractall(path="ExtractedVideoFiles")
+                    print(self.fill_space("Recordings", 30), "Recordings has been saved to ExtractedVideoFiles")
+                else:
+                    print(self.fill_space("Recordings", 30), "N/A")
+                if "sub" in result_details:
+                    print("")
+                    print(self.__fix_length("*", 80))
+                    print("Subtransactions ")
+                    print(self.__fix_length("*", 80))
+                    for key, value in result_details["sub"][0]["properties"].items():
+                        if key == 'finishTime' or key == 'startTime':
+                            print(self.fill_space(key, 30), self.format_time(value))
+                        else:
+                            print(self.fill_space(key, 30), value)
+                    for key, value in result_details['sub'][0]["metrics"].items():
+                        print(self.fill_space(key, 30), value)
+                else:
+                    print(self.fill_space("Subtransactions", 30), "N/A")
+                if "errors" in result["testResultCommonProperties"]:
+                    print("")
+                    print(self.__fix_length("*", 80))
+                    print("Error")
+                    print(self.__fix_length("*", 80))
+                    errors = result["testResultCommonProperties"]["errors"][0].split(",")
+                    for e in errors:
+                        print(e)
+                else:
+                    print(self.fill_space("Error", 30), "N/A")
+
+    def print_result_list(self, result_list):
+        id_length = 38
+        start_time_length = 30
+        loc_length = 30
+        status_length = 15
+        response_size_length = 8
+        response_time_length = 18
+        sorted_result = self.__sort_test_result(result_list)
+
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("start Time".upper(), start_time_length),
+              self.fill_space("Location".upper(), loc_length),
+              self.fill_space("Status".upper(), status_length),
+              self.fill_space("Response Time".upper(), response_time_length),
+              self.fill_space("Response size".upper(), response_size_length))
+        for result in sorted_result:
+            formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
+            status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
+
+            print(self.fill_space(result["testResultCommonProperties"]["id"], id_length ),
+                  self.fill_space(str(self.change_time_format(result["metrics"]["response_time"][0][0])), start_time_length),
+                  self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
+                  self.fill_space(status, status_length),
+                  self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
+                  self.fill_space(str(formatted_response_size), response_size_length))
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
         host = self.auth["host"]
@@ -3728,7 +3980,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -3753,6 +4005,12 @@ class ParseParameter:
             '--show-result', action='store_true', help="show latency and success rate")
         self.parser_get.add_argument(
             '--filter', nargs='?', default=None, help='filter by location')
+
+        # result list
+        self.parser_get.add_argument(
+            '--test', type=str, nargs='?', metavar="id", help="test id")
+        self.parser_get.add_argument(
+            '--logs', action="store_true", help="show logs")
 
         # application
         application_group = self.parser_get.add_argument_group()
@@ -4169,6 +4427,16 @@ def main():
             else:
                 single_alert = alert_instance.retrieve_a_single_alerting_channel(get_args.id)
                 alert_instance.print_alerting_channels([single_alert])
+        elif get_args.op_type == SYN_RESULT:
+            if get_args.test is not None:
+                test_result = syn_instance.get_all_test_results(get_args.test)
+                if get_args.id is None:
+                    syn_instance.print_result_list(test_result["items"])
+                else:
+                    a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test)
+                    syn_instance.print_result_details(a_result_details, test_result["items"])
+            else:
+                print('testid is required')
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
