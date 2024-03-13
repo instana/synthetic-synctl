@@ -1749,24 +1749,37 @@ class SyntheticTest(Base):
             else:
                 if test[0]["configuration"]["syntheticType"] in [HTTPAction_TYPE, HTTPScript_TYPE]:
                     retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
+                    retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
                     result_sub = requests.get(retrieve_url_sub,
                                               headers=headers,
                                               timeout=60,
                                               verify=self.insecure)
-
+                    result_logs = requests.get(retrieve_url_logs,
+                                               headers=headers,
+                                               timeout=60,
+                                               verify=self.insecure)
                     if _status_is_200(result_sub.status_code):
                         result["sub"] = result_sub.json()["subtransactions"]
                     elif result_sub.status_code != 404:
-                       print(f'get subtransactions for test {testid} failed, status code: {result_sub.status_code}')
+                       print(f'get subtransactions for result {resultid} failed, status code: {result_sub.status_code}')
+                    if _status_is_200(result_logs.status_code):
+                        result["logs"] = result_logs.json()["logs"]
+                    elif result_logs.status_code != 404:
+                        print(f'get logs for result {resultid} failed, status code: {result_logs.status_code}')
 
                 elif test[0]["configuration"]["syntheticType"] in  [BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
                     retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
                     retrieve_url_image = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=IMAGES"
                     retrieve_url_videos = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=VIDEOS"
+                    retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
                     result_har = requests.get(retrieve_url_har,
                                               headers=headers,
                                               timeout=60,
                                               verify=self.insecure)
+                    result_logs = requests.get(retrieve_url_logs,
+                                               headers=headers,
+                                               timeout=60,
+                                               verify=self.insecure)
                     result_image = requests.get(retrieve_url_image,
                                                 headers=headers,
                                                 timeout=60,
@@ -1778,15 +1791,19 @@ class SyntheticTest(Base):
                     if _status_is_200(result_har.status_code):
                         result["har"] = result_har.json()['har']
                     elif result_har.status_code != 404:
-                        print(f'get har for test {testid} failed, status code: {result_har.status_code}')
+                        print(f'get har for result {resultid} failed, status code: {result_har.status_code}')
+                    if _status_is_200(result_logs.status_code):
+                        result["logFiles"] = result_logs.json()["logFiles"]
+                    elif result_logs.status_code != 404:
+                        print(f"get logs for result {resultid} failed, status code: {result_logs.status_code}")
                     if _status_is_200(result_image.status_code):
                         result["image"] = result_image.content
                     elif result_image.status_code != 404:
-                        print(f'get image for test {testid} failed, status code: {result_image.status_code}')
+                        print(f'get image for result {resultid} failed, status code: {result_image.status_code}')
                     if _status_is_200(result_videos.status_code):
                         result["video"] = result_videos.content
                     elif result_videos.status_code != 404:
-                        print(f'get videos for test {testid} failed, status code: {result_videos.status_code}')
+                        print(f'get videos for result {resultid} failed, status code: {result_videos.status_code}')
             return result
         except requests.ConnectTimeout as timeout_error:
             self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
@@ -1849,9 +1866,35 @@ class SyntheticTest(Base):
                     file_path = os.path.join(har_path, "HAR.json")
                     with open(file_path, 'w') as f:
                         json.dump(result_details['har'], f)
-                    print(self.fill_space("har", 30), f"HAR has been saved to {har_path}/HAR.json")
+                    print(self.fill_space("HAR", 30), f"HAR has been saved to {file_path}")
                 else:
-                    print(self.fill_space("har", 30), "N/A")
+                    print(self.fill_space("HAR", 30), "N/A")
+                if "logs" in result_details:
+                    log_path = os.path.join(result_details["testid"], result_details["resultid"])
+                    os.makedirs(log_path, exist_ok=True)
+                    file_path = os.path.join(log_path, "Logs")
+                    with open(file_path, 'w') as f:
+                        f.write(result_details['logs'])
+                    print(self.fill_space("Console Logs", 30), f"Console Logs has been saved to {file_path}")
+                else:
+                    print(self.fill_space("Console Logs", 30), "N/A")
+                if "logFiles" in result_details:
+                    log_path = os.path.join(result_details["testid"], result_details["resultid"])
+                    os.makedirs(log_path, exist_ok=True)
+                    if "console.log" in result_details["logFiles"]:
+                        file_path = os.path.join(log_path, "consolelogs")
+                        with open(file_path, 'w') as f:
+                            f.write(result_details["logFiles"]['console.log'])
+                        print(self.fill_space("Console Logs", 30), f"Console Logs has been saved to {file_path}")
+                    else:
+                        print(self.fill_space("Console Logs", 30), "N/A")
+                    if "browser.json" in result_details["logFiles"]:
+                        file_path = os.path.join(log_path, "browserlogs")
+                        with open(file_path, 'w') as f:
+                            f.write(result_details["logFiles"]['browser.json'])
+                        print(self.fill_space("Browser Logs", 30), f"Browser Logs has been saved to {file_path}")
+                    else:
+                        print(self.fill_space("Browser Logs", 30), "N/A")
                 if "image" in result_details:
                     with open("images.tar", "wb") as f:
                         f.write(result_details["image"])
