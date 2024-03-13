@@ -1735,6 +1735,7 @@ class SyntheticTest(Base):
         token = self.auth["token"]
         test = self.retrieve_a_synthetic_test(testid)
         result = {}
+        result["testid"] = testid
         result["resultid"] = resultid
 
         headers = {
@@ -1843,17 +1844,21 @@ class SyntheticTest(Base):
                 print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
                 print(self.fill_space("Response Size", 30), str(formatted_response_size))
                 if "har" in result_details:
-                    with open("HAR.json", "w") as file:
-                        json.dump(result_details['har'], file)
-                    print(self.fill_space("har", 30), "HAR has been saved to 'HAR.json'")
+                    har_path = os.path.join(result_details["testid"], result_details["resultid"])
+                    os.makedirs(har_path, exist_ok=True)
+                    file_path = os.path.join(har_path, "HAR.json")
+                    with open(file_path, 'w') as f:
+                        json.dump(result_details['har'], f)
+                    print(self.fill_space("har", 30), f"HAR has been saved to {har_path}/HAR.json")
                 else:
                     print(self.fill_space("har", 30), "N/A")
                 if "image" in result_details:
                     with open("images.tar", "wb") as f:
                         f.write(result_details["image"])
                     with tarfile.open("images.tar", "r") as tar:
-                        tar.extractall(path="ExtractedImageFiles")
-                    print(self.fill_space("Screenshots", 30), "Screenshots has been saved to ExtractedImageFiles")
+                        images_path = os.path.join(result_details["testid"], result_details["resultid"], "Screenshots")
+                        tar.extractall(path=images_path)
+                    print(self.fill_space("Screenshots", 30), f"Screenshots has been saved to {images_path}")
                 else:
                     print(self.fill_space("Screenshots", 30), "N/A")
                 if "video" in result_details:
@@ -1861,8 +1866,9 @@ class SyntheticTest(Base):
                     with open("videos.tar", "wb") as f:
                         f.write(result_details["video"])
                     with tarfile.open("videos.tar", "r") as tar:
-                        tar.extractall(path="ExtractedVideoFiles")
-                    print(self.fill_space("Recordings", 30), "Recordings has been saved to ExtractedVideoFiles")
+                        videos_path = os.path.join(result_details["testid"], result_details["resultid"], "Recordings")
+                        tar.extractall(path=videos_path)
+                    print(self.fill_space("Recordings", 30), f"Recordings has been saved to {videos_path}")
                 else:
                     print(self.fill_space("Recordings", 30), "N/A")
                 if "sub" in result_details:
