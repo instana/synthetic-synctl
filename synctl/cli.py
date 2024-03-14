@@ -1793,7 +1793,7 @@ class SyntheticTest(Base):
                     elif result_har.status_code != 404:
                         print(f'get har for result {resultid} failed, status code: {result_har.status_code}')
                     if _status_is_200(result_logs.status_code):
-                        result["logFiles"] = result_logs.json()["logFiles"]
+                        result["logs"] = result_logs.json()["logFiles"]
                     elif result_logs.status_code != 404:
                         print(f"get logs for result {resultid} failed, status code: {result_logs.status_code}")
                     if _status_is_200(result_image.status_code):
@@ -1870,28 +1870,20 @@ class SyntheticTest(Base):
                 else:
                     print(self.fill_space("HAR", 30), "N/A")
                 if "logs" in result_details:
-                    log_path = os.path.join(result_details["testid"], result_details["resultid"])
-                    os.makedirs(log_path, exist_ok=True)
-                    file_path = os.path.join(log_path, "Logs")
-                    with open(file_path, 'w') as f:
-                        f.write(result_details['logs'])
-                    print(self.fill_space("Console Logs", 30), f"Console Logs has been saved to {file_path}")
-                else:
-                    print(self.fill_space("Console Logs", 30), "N/A")
-                if "logFiles" in result_details:
-                    log_path = os.path.join(result_details["testid"], result_details["resultid"])
-                    os.makedirs(log_path, exist_ok=True)
-                    if "console.log" in result_details["logFiles"]:
-                        file_path = os.path.join(log_path, "consolelogs")
-                        with open(file_path, 'w') as f:
-                            f.write(result_details["logFiles"]['console.log'])
-                        print(self.fill_space("Console Logs", 30), f"Console Logs has been saved to {file_path}")
+                    print("")
+                    print("Console logs ")
+                    print(self.__fix_length("*", 80))
+                    if "console.log" in result_details["logs"]:
+                        print(result_details["logs"]["console.log"])
                     else:
-                        print(self.fill_space("Console Logs", 30), "N/A")
-                    if "browser.json" in result_details["logFiles"]:
+                        print(result_details["logs"])
+                    print(self.__fix_length("*", 80))
+                    if "browser.json" in result_details["logs"]:
+                        log_path = os.path.join(result_details["testid"], result_details["resultid"])
+                        os.makedirs(log_path, exist_ok=True)
                         file_path = os.path.join(log_path, "browserlogs")
                         with open(file_path, 'w') as f:
-                            f.write(result_details["logFiles"]['browser.json'])
+                            f.write(result_details["logs"]['browser.json'])
                         print(self.fill_space("Browser Logs", 30), f"Browser Logs has been saved to {file_path}")
                     else:
                         print(self.fill_space("Browser Logs", 30), "N/A")
@@ -1905,7 +1897,6 @@ class SyntheticTest(Base):
                 else:
                     print(self.fill_space("Screenshots", 30), "N/A")
                 if "video" in result_details:
-                    print(self.__fix_length("*", 80))
                     with open("videos.tar", "wb") as f:
                         f.write(result_details["video"])
                     with tarfile.open("videos.tar", "r") as tar:
