@@ -1810,12 +1810,13 @@ class SyntheticTest(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def get_all_test_results(self, test_id, page=1):
+    def get_all_test_results(self, test_id, window_size):
         total_hits = 0
-        result_list = self.retrieve_test_results(test_id)
-
+        result_instance = SyntheticResult()
+        window_size_ms = result_instance.get_window_size(window_size)
+        result_list = self.retrieve_test_results(test_id,window_size=window_size_ms)
         if result_list is not None:
-            page = result_list["page"] if page in result_list else 1
+            page = result_list["page"] if "page" in result_list else 1
             page_size = result_list["pageSize"] if "pageSize" in result_list else 200
             if "totalHits" in result_list:
                 total_hits = result_list["totalHits"]
@@ -1827,7 +1828,10 @@ class SyntheticTest(Base):
                 if (total_pages - round(total_pages)) > 0:
                     total_pages += 1
                 for x in range(0, round(total_pages)):
-                    result_list = self.retrieve_test_results(test_id, page=x+1)
+                    result_list = self.retrieve_test_results(test_id=test_id,
+                                                             page=x+1,
+                                                             page_size=200,
+                                                             window_size=window_size_ms)
                     return result_list
         else:
             return None
@@ -3998,6 +4002,9 @@ class ParseParameter:
             '--test', type=str, nargs='+', metavar="<id>", help="test id, support multiple test id")
 
         self.parser_create.add_argument(
+            '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1,60]m, [1-24]h")
+
+        self.parser_create.add_argument(
             '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
 
         self.parser_create.add_argument(
@@ -4469,7 +4476,10 @@ def main():
                 alert_instance.print_alerting_channels([single_alert])
         elif get_args.op_type == SYN_RESULT:
             if get_args.test is not None:
-                test_result = syn_instance.get_all_test_results(get_args.test)
+                if get_args.window_size is None:
+                    test_result = syn_instance.get_all_test_results(get_args.test)
+                else:
+                    test_result = syn_instance.get_all_test_results(get_args.test, get_args.window_size)
                 if get_args.id is None:
                     syn_instance.print_result_list(test_result["items"])
                 else:
