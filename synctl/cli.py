@@ -1862,12 +1862,12 @@ class SyntheticTest(Base):
         return formatted_date_time
 
     def print_result_details(self, result_details, result_list):
-        print(self.fill_space("Name".upper(), 30), "Value".upper())
         for result in result_list:
             formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
             status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
 
             if result["testResultCommonProperties"]["id"] == result_details["resultid"]:
+                print(self.fill_space("Name".upper(), 30), "Value".upper())
                 print(self.fill_space("Result Id", 30), result_details["resultid"])
                 print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
                 print(self.fill_space("Status", 30), status)
@@ -1882,24 +1882,6 @@ class SyntheticTest(Base):
                     print(self.fill_space("HAR", 30), f"HAR has been saved to {file_path}")
                 else:
                     print(self.fill_space("HAR", 30), "N/A")
-                if "logs" in result_details:
-                    print("")
-                    print("Console logs ")
-                    print(self.__fix_length("*", 80))
-                    if "console.log" in result_details["logs"]:
-                        print(result_details["logs"]["console.log"])
-                    else:
-                        print(result_details["logs"])
-                    print(self.__fix_length("*", 80))
-                    if "browser.json" in result_details["logs"]:
-                        log_path = os.path.join(result_details["testid"], result_details["resultid"])
-                        os.makedirs(log_path, exist_ok=True)
-                        file_path = os.path.join(log_path, "browserlogs")
-                        with open(file_path, 'w') as f:
-                            f.write(result_details["logs"]['browser.json'])
-                        print(self.fill_space("Browser Logs", 30), f"Browser Logs has been saved to {file_path}")
-                    else:
-                        print(self.fill_space("Browser Logs", 30), "N/A")
                 if "image" in result_details:
                     with open("images.tar", "wb") as f:
                         f.write(result_details["image"])
@@ -1918,6 +1900,24 @@ class SyntheticTest(Base):
                     print(self.fill_space("Recordings", 30), f"Recordings has been saved to {videos_path}")
                 else:
                     print(self.fill_space("Recordings", 30), "N/A")
+                if "logs" in result_details:
+                    print("")
+                    print("Console logs ")
+                    print(self.__fix_length("*", 80))
+                    if "console.log" in result_details["logs"]:
+                        print(result_details["logs"]["console.log"])
+                    else:
+                        print(result_details["logs"])
+                    print(self.__fix_length("*", 80))
+                    if "browser.json" in result_details["logs"]:
+                        log_path = os.path.join(result_details["testid"], result_details["resultid"])
+                        os.makedirs(log_path, exist_ok=True)
+                        file_path = os.path.join(log_path, "browserlogs")
+                        with open(file_path, 'w') as f:
+                            f.write(result_details["logs"]['browser.json'])
+                        print(self.fill_space("Browser Logs", 30), f"Browser Logs has been saved to {file_path}")
+                    else:
+                        print(self.fill_space("Browser Logs", 30), "N/A")
                 if "sub" in result_details:
                     print("")
                     print(self.__fix_length("*", 80))
@@ -1942,6 +1942,9 @@ class SyntheticTest(Base):
                         print(e)
                 else:
                     print(self.fill_space("Error", 30), "N/A")
+                break
+        else:
+            print(f"no result \"{result_details['resultid']}\" found, ensure the window-size is correct.")
 
     def print_result_list(self, result_list):
         id_length = 38
