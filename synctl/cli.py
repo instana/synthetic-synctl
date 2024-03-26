@@ -120,6 +120,15 @@ def identify_hyphen():
         for a in sys.argv
     ]
 
+def validate_args(args):
+    seen = set()
+    for item in args:
+        if item in seen:
+            print(f"{item} should not be provided multiple times")
+            sys.exit()
+        else:
+            seen.add(item)
+
 COMMAND_CONFIG = 'config'
 COMMAND_CREATE = 'create'
 COMMAND_GET = 'get'
@@ -1854,12 +1863,12 @@ class SyntheticTest(Base):
 
     def print_result_details(self, result_details, result_list):
         print(self.fill_space("Name".upper(), 30), "Value".upper())
-        print(self.fill_space("Result Id", 30), result_details["resultid"])
         for result in result_list:
             formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
             status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
 
             if result["testResultCommonProperties"]["id"] == result_details["resultid"]:
+                print(self.fill_space("Result Id", 30), result_details["resultid"])
                 print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
                 print(self.fill_space("Status", 30), status)
                 print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
@@ -4274,6 +4283,7 @@ def main():
     update_args = get_args.__dict__.items()
 
     sys_args = sys.argv
+    validate_args(sys_args)
 
     if len(sys_args) <= 1:
         general_helper()
