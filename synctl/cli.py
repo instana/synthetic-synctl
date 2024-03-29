@@ -1746,6 +1746,7 @@ class SyntheticTest(Base):
         result = {}
         result["testid"] = testid
         result["resultid"] = resultid
+        result["syntheticType"] = test[0]["configuration"]["syntheticType"]
 
         headers = {
             'Content-Type': 'application/json',
@@ -1900,24 +1901,6 @@ class SyntheticTest(Base):
                     print(self.fill_space("Recordings", 30), f"Recordings has been saved to {videos_path}")
                 else:
                     print(self.fill_space("Recordings", 30), "N/A")
-                if "logs" in result_details:
-                    print("")
-                    print("Console logs ")
-                    print(self.__fix_length("*", 80))
-                    if "console.log" in result_details["logs"]:
-                        print(result_details["logs"]["console.log"])
-                    else:
-                        print(result_details["logs"])
-                    print(self.__fix_length("*", 80))
-                    if "browser.json" in result_details["logs"]:
-                        log_path = os.path.join(result_details["testid"], result_details["resultid"])
-                        os.makedirs(log_path, exist_ok=True)
-                        file_path = os.path.join(log_path, "browserlogs")
-                        with open(file_path, 'w') as f:
-                            f.write(result_details["logs"]['browser.json'])
-                        print(self.fill_space("Browser Logs", 30), f"Browser Logs has been saved to {file_path}")
-                    else:
-                        print(self.fill_space("Browser Logs", 30), "N/A")
                 if "sub" in result_details:
                     print("")
                     print(self.__fix_length("*", 80))
@@ -1932,9 +1915,27 @@ class SyntheticTest(Base):
                         print(self.fill_space(key, 30), value)
                 else:
                     print(self.fill_space("Subtransactions", 30), "N/A")
-                if "errors" in result["testResultCommonProperties"]:
+                if "logs" in result_details:
                     print("")
+                    print("\nConsole logs ")
                     print(self.__fix_length("*", 80))
+                    if "console.log" in result_details["logs"]:
+                        print(result_details["logs"]["console.log"])
+                    else:
+                        print(result_details["logs"])
+                    print(self.__fix_length("*", 80))
+                    if result_details["syntheticType"] != HTTPScript_TYPE:
+                        if "browser.json" in result_details["logs"]:
+                            print("Browser logs")
+                            print(self.__fix_length("*", 80))
+                            browserlogs = json.loads(result_details["logs"]["browser.json"])
+                            for logs in browserlogs:
+                                print(logs["level"]+ "\n" + self.change_time_format(logs["timestamp"]) + "\n" +  logs["message"])
+                            print("")
+                            print(self.__fix_length("*", 80))
+                        else:
+                            print(self.fill_space("Browser Logs", 30), "N/A")
+                if "errors" in result["testResultCommonProperties"]:
                     print("Error")
                     print(self.__fix_length("*", 80))
                     errors = result["testResultCommonProperties"]["errors"][0].split(",")
