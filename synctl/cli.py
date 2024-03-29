@@ -1738,7 +1738,7 @@ class SyntheticTest(Base):
             result_list, reverse=True, key=lambda result: result["metrics"]["response_time"][0][0] if result is not None else [])
         return new_list
 
-    def retrieve_test_result_details(self, resultid, testid):
+    def retrieve_test_result_details(self, resultid, testid, HAR):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
@@ -1778,14 +1778,19 @@ class SyntheticTest(Base):
                         print(f'get logs for result {resultid} failed, status code: {result_logs.status_code}')
 
                 elif test[0]["configuration"]["syntheticType"] in  [BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
-                    retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
+                    if HAR:
+                        retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
+                        result_har = requests.get(retrieve_url_har,
+                                                  headers=headers,
+                                                  timeout=60,
+                                                  verify=self.insecure)
+                        if _status_is_200(result_har.status_code):
+                            result["har"] = result_har.json()['har']
+                        elif result_har.status_code != 404:
+                            print(f'get har for result {resultid} failed, status code: {result_har.status_code}')
                     retrieve_url_image = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=IMAGES"
                     retrieve_url_videos = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=VIDEOS"
                     retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
-                    result_har = requests.get(retrieve_url_har,
-                                              headers=headers,
-                                              timeout=60,
-                                              verify=self.insecure)
                     result_logs = requests.get(retrieve_url_logs,
                                                headers=headers,
                                                timeout=60,
@@ -1798,10 +1803,6 @@ class SyntheticTest(Base):
                                                  headers=headers,
                                                  timeout=60,
                                                  verify=self.insecure)
-                    if _status_is_200(result_har.status_code):
-                        result["har"] = result_har.json()['har']
-                    elif result_har.status_code != 404:
-                        print(f'get har for result {resultid} failed, status code: {result_har.status_code}')
                     if _status_is_200(result_logs.status_code):
                         result["logs"] = result_logs.json()["logFiles"]
                     elif result_logs.status_code != 404:
@@ -4070,7 +4071,7 @@ class ParseParameter:
         self.parser_get.add_argument(
             '--test', type=str, nargs='?', metavar="id", help="test id")
         self.parser_get.add_argument(
-            '--logs', action="store_true", help="show logs")
+            '--har', action="store_true", help="show har")
 
         # application
         application_group = self.parser_get.add_argument_group()
@@ -4488,6 +4489,7 @@ def main():
             else:
                 single_alert = alert_instance.retrieve_a_single_alerting_channel(get_args.id)
                 alert_instance.print_alerting_channels([single_alert])
+        # show test results
         elif get_args.op_type == SYN_RESULT:
             if get_args.test is not None:
                 if get_args.window_size is None:
@@ -4497,7 +4499,10 @@ def main():
                 if get_args.id is None:
                     syn_instance.print_result_list(test_result["items"])
                 else:
-                    a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test)
+                    if get_args.har is None:
+                        a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test)
+                    else:
+                        a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test, get_args.har)
                     syn_instance.print_result_details(a_result_details, test_result["items"])
             else:
                 print('testid is required')

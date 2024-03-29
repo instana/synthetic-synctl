@@ -822,6 +822,7 @@ synctl get result [id] [options]
 -h, --help               show this help message and exit
 --test                   synthetic-test id
 --window-size <window>   set synthetic result window size, support [1,60]m, [1-24]h
+--har                    save HAR to local
 --use-env, -e <name>     use a specified config
 --host <host>            set hostname
 --token <token>          set token
@@ -833,6 +834,9 @@ synctl get result --test <test-id> --window-size 30m
 
 # show result details with --window-size, support [1, 60]m, [1-24]h
 synctl get result <id> --test <test-id> --window-size 6h
+
+# save har to local 
+synctl get result <id> --test <test-id> --har
 ```
 # Create Smart alert
 `synctl create alert` is used to create Smart Alerts.
