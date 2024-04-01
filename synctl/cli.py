@@ -1907,13 +1907,15 @@ class SyntheticTest(Base):
                     print(self.__fix_length("*", 80))
                     print("Subtransactions ")
                     print(self.__fix_length("*", 80))
-                    for key, value in result_details["sub"][0]["properties"].items():
-                        if key == 'finishTime' or key == 'startTime':
-                            print(self.fill_space(key, 30), self.format_time(value))
-                        else:
+                    for x in range(len(result_details["sub"])):
+                        for key, value in result_details["sub"][x]["properties"].items():
+                            if key == 'finishTime' or key == 'startTime':
+                                print(self.fill_space(key, 30), self.format_time(value))
+                            else:
+                                print(self.fill_space(key, 30), value)
+                        for key, value in result_details['sub'][x]["metrics"].items():
                             print(self.fill_space(key, 30), value)
-                    for key, value in result_details['sub'][0]["metrics"].items():
-                        print(self.fill_space(key, 30), value)
+                        print(self.__fix_length("*", 80))
                 else:
                     print(self.fill_space("Subtransactions", 30), "N/A")
                 if "logs" in result_details:
