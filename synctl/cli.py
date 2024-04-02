@@ -120,6 +120,15 @@ def identify_hyphen():
         for a in sys.argv
     ]
 
+def validate_args(args):
+    seen = set()
+    for item in args:
+        if item in seen:
+            print(f"{item} should not be provided multiple times")
+            sys.exit()
+        else:
+            seen.add(item)
+
 COMMAND_CONFIG = 'config'
 COMMAND_CREATE = 'create'
 COMMAND_GET = 'get'
@@ -1729,13 +1738,15 @@ class SyntheticTest(Base):
             result_list, reverse=True, key=lambda result: result["metrics"]["response_time"][0][0] if result is not None else [])
         return new_list
 
-    def retrieve_test_result_details(self, resultid, testid):
+    def retrieve_test_result_details(self, resultid, testid, HAR):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
         test = self.retrieve_a_synthetic_test(testid)
         result = {}
+        result["testid"] = testid
         result["resultid"] = resultid
+        result["syntheticType"] = test[0]["configuration"]["syntheticType"]
 
         headers = {
             'Content-Type': 'application/json',
@@ -1748,24 +1759,42 @@ class SyntheticTest(Base):
             else:
                 if test[0]["configuration"]["syntheticType"] in [HTTPAction_TYPE, HTTPScript_TYPE]:
                     retrieve_url_sub = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=SUBTRANSACTIONS"
+                    retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
                     result_sub = requests.get(retrieve_url_sub,
                                               headers=headers,
                                               timeout=60,
                                               verify=self.insecure)
-
+                    result_logs = requests.get(retrieve_url_logs,
+                                               headers=headers,
+                                               timeout=60,
+                                               verify=self.insecure)
                     if _status_is_200(result_sub.status_code):
                         result["sub"] = result_sub.json()["subtransactions"]
                     elif result_sub.status_code != 404:
-                       print(f'get subtransactions for test {testid} failed, status code: {result_sub.status_code}')
+                       print(f'get subtransactions for result {resultid} failed, status code: {result_sub.status_code}')
+                    if _status_is_200(result_logs.status_code):
+                        result["logs"] = result_logs.json()["logs"]
+                    elif result_logs.status_code != 404:
+                        print(f'get logs for result {resultid} failed, status code: {result_logs.status_code}')
 
                 elif test[0]["configuration"]["syntheticType"] in  [BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
-                    retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
+                    if HAR:
+                        retrieve_url_har = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=HAR"
+                        result_har = requests.get(retrieve_url_har,
+                                                  headers=headers,
+                                                  timeout=60,
+                                                  verify=self.insecure)
+                        if _status_is_200(result_har.status_code):
+                            result["har"] = result_har.json()['har']
+                        elif result_har.status_code != 404:
+                            print(f'get har for result {resultid} failed, status code: {result_har.status_code}')
                     retrieve_url_image = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=IMAGES"
                     retrieve_url_videos = f"{host}/api/synthetics/results/{testid}/{resultid}/file?type=VIDEOS"
-                    result_har = requests.get(retrieve_url_har,
-                                              headers=headers,
-                                              timeout=60,
-                                              verify=self.insecure)
+                    retrieve_url_logs = f"{host}/api/synthetics/results/{testid}/{resultid}/detail?type=LOGS"
+                    result_logs = requests.get(retrieve_url_logs,
+                                               headers=headers,
+                                               timeout=60,
+                                               verify=self.insecure)
                     result_image = requests.get(retrieve_url_image,
                                                 headers=headers,
                                                 timeout=60,
@@ -1774,30 +1803,31 @@ class SyntheticTest(Base):
                                                  headers=headers,
                                                  timeout=60,
                                                  verify=self.insecure)
-                    if _status_is_200(result_har.status_code):
-                        result["har"] = result_har.json()['har']
-                    elif result_har.status_code != 404:
-                        print(f'get har for test {testid} failed, status code: {result_har.status_code}')
+                    if _status_is_200(result_logs.status_code):
+                        result["logs"] = result_logs.json()["logFiles"]
+                    elif result_logs.status_code != 404:
+                        print(f"get logs for result {resultid} failed, status code: {result_logs.status_code}")
                     if _status_is_200(result_image.status_code):
                         result["image"] = result_image.content
                     elif result_image.status_code != 404:
-                        print(f'get image for test {testid} failed, status code: {result_image.status_code}')
+                        print(f'get image for result {resultid} failed, status code: {result_image.status_code}')
                     if _status_is_200(result_videos.status_code):
                         result["video"] = result_videos.content
                     elif result_videos.status_code != 404:
-                        print(f'get videos for test {testid} failed, status code: {result_videos.status_code}')
+                        print(f'get videos for result {resultid} failed, status code: {result_videos.status_code}')
             return result
         except requests.ConnectTimeout as timeout_error:
             self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def get_all_test_results(self, test_id, page=1):
+    def get_all_test_results(self, test_id, window_size):
         total_hits = 0
-        result_list = self.retrieve_test_results(test_id)
-
+        result_instance = SyntheticResult()
+        window_size_ms = result_instance.get_window_size(window_size)
+        result_list = self.retrieve_test_results(test_id,window_size=window_size_ms)
         if result_list is not None:
-            page = result_list["page"] if page in result_list else 1
+            page = result_list["page"] if "page" in result_list else 1
             page_size = result_list["pageSize"] if "pageSize" in result_list else 200
             if "totalHits" in result_list:
                 total_hits = result_list["totalHits"]
@@ -1809,7 +1839,10 @@ class SyntheticTest(Base):
                 if (total_pages - round(total_pages)) > 0:
                     total_pages += 1
                 for x in range(0, round(total_pages)):
-                    result_list = self.retrieve_test_results(test_id, page=x+1)
+                    result_list = self.retrieve_test_results(test_id=test_id,
+                                                             page=x+1,
+                                                             page_size=200,
+                                                             window_size=window_size_ms)
                     return result_list
         else:
             return None
@@ -1831,38 +1864,42 @@ class SyntheticTest(Base):
         return formatted_date_time
 
     def print_result_details(self, result_details, result_list):
-        print(self.fill_space("Name".upper(), 30), "Value".upper())
-        print(self.fill_space("Result Id", 30), result_details["resultid"])
         for result in result_list:
             formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
             status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
 
             if result["testResultCommonProperties"]["id"] == result_details["resultid"]:
+                print(self.fill_space("Name".upper(), 30), "Value".upper())
+                print(self.fill_space("Result Id", 30), result_details["resultid"])
                 print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
                 print(self.fill_space("Status", 30), status)
                 print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
                 print(self.fill_space("Response Size", 30), str(formatted_response_size))
                 if "har" in result_details:
-                    with open("HAR.json", "w") as file:
-                        json.dump(result_details['har'], file)
-                    print(self.fill_space("har", 30), "HAR has been saved to 'HAR.json'")
+                    har_path = os.path.join(result_details["testid"], result_details["resultid"])
+                    os.makedirs(har_path, exist_ok=True)
+                    file_path = os.path.join(har_path, "HAR.json")
+                    with open(file_path, 'w') as f:
+                        json.dump(result_details['har'], f)
+                    print(self.fill_space("HAR", 30), f"HAR has been saved to {file_path}")
                 else:
-                    print(self.fill_space("har", 30), "N/A")
+                    print(self.fill_space("HAR", 30), "N/A")
                 if "image" in result_details:
                     with open("images.tar", "wb") as f:
                         f.write(result_details["image"])
                     with tarfile.open("images.tar", "r") as tar:
-                        tar.extractall(path="ExtractedImageFiles")
-                    print(self.fill_space("Screenshots", 30), "Screenshots has been saved to ExtractedImageFiles")
+                        images_path = os.path.join(result_details["testid"], result_details["resultid"], "Screenshots")
+                        tar.extractall(path=images_path)
+                    print(self.fill_space("Screenshots", 30), f"Screenshots has been saved to {images_path}")
                 else:
                     print(self.fill_space("Screenshots", 30), "N/A")
                 if "video" in result_details:
-                    print(self.__fix_length("*", 80))
                     with open("videos.tar", "wb") as f:
                         f.write(result_details["video"])
                     with tarfile.open("videos.tar", "r") as tar:
-                        tar.extractall(path="ExtractedVideoFiles")
-                    print(self.fill_space("Recordings", 30), "Recordings has been saved to ExtractedVideoFiles")
+                        videos_path = os.path.join(result_details["testid"], result_details["resultid"], "Recordings")
+                        tar.extractall(path=videos_path)
+                    print(self.fill_space("Recordings", 30), f"Recordings has been saved to {videos_path}")
                 else:
                     print(self.fill_space("Recordings", 30), "N/A")
                 if "sub" in result_details:
@@ -1870,18 +1907,38 @@ class SyntheticTest(Base):
                     print(self.__fix_length("*", 80))
                     print("Subtransactions ")
                     print(self.__fix_length("*", 80))
-                    for key, value in result_details["sub"][0]["properties"].items():
-                        if key == 'finishTime' or key == 'startTime':
-                            print(self.fill_space(key, 30), self.format_time(value))
-                        else:
+                    for x in range(len(result_details["sub"])):
+                        for key, value in result_details["sub"][x]["properties"].items():
+                            if key == 'finishTime' or key == 'startTime':
+                                print(self.fill_space(key, 30), self.format_time(value))
+                            else:
+                                print(self.fill_space(key, 30), value)
+                        for key, value in result_details['sub'][x]["metrics"].items():
                             print(self.fill_space(key, 30), value)
-                    for key, value in result_details['sub'][0]["metrics"].items():
-                        print(self.fill_space(key, 30), value)
+                        print(self.__fix_length("*", 80))
                 else:
                     print(self.fill_space("Subtransactions", 30), "N/A")
-                if "errors" in result["testResultCommonProperties"]:
+                if "logs" in result_details:
                     print("")
+                    print("\nConsole logs ")
                     print(self.__fix_length("*", 80))
+                    if "console.log" in result_details["logs"]:
+                        print(result_details["logs"]["console.log"])
+                    else:
+                        print(result_details["logs"])
+                    print(self.__fix_length("*", 80))
+                    if result_details["syntheticType"] != HTTPScript_TYPE:
+                        if "browser.json" in result_details["logs"]:
+                            print("Browser logs")
+                            print(self.__fix_length("*", 80))
+                            browserlogs = json.loads(result_details["logs"]["browser.json"])
+                            for logs in browserlogs:
+                                print(logs["level"]+ "\n" + self.change_time_format(logs["timestamp"]) + "\n" +  logs["message"])
+                            print("")
+                            print(self.__fix_length("*", 80))
+                        else:
+                            print(self.fill_space("Browser Logs", 30), "N/A")
+                if "errors" in result["testResultCommonProperties"]:
                     print("Error")
                     print(self.__fix_length("*", 80))
                     errors = result["testResultCommonProperties"]["errors"][0].split(",")
@@ -1889,6 +1946,9 @@ class SyntheticTest(Base):
                         print(e)
                 else:
                     print(self.fill_space("Error", 30), "N/A")
+                break
+        else:
+            print(f"no result \"{result_details['resultid']}\" found, ensure the window-size is correct.")
 
     def print_result_list(self, result_list):
         id_length = 38
@@ -3958,6 +4018,9 @@ class ParseParameter:
             '--test', type=str, nargs='+', metavar="<id>", help="test id, support multiple test id")
 
         self.parser_create.add_argument(
+            '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1,60]m, [1-24]h")
+
+        self.parser_create.add_argument(
             '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
 
         self.parser_create.add_argument(
@@ -4010,7 +4073,7 @@ class ParseParameter:
         self.parser_get.add_argument(
             '--test', type=str, nargs='?', metavar="id", help="test id")
         self.parser_get.add_argument(
-            '--logs', action="store_true", help="show logs")
+            '--har', action="store_true", help="show har")
 
         # application
         application_group = self.parser_get.add_argument_group()
@@ -4227,6 +4290,7 @@ def main():
     update_args = get_args.__dict__.items()
 
     sys_args = sys.argv
+    validate_args(sys_args)
 
     if len(sys_args) <= 1:
         general_helper()
@@ -4427,13 +4491,20 @@ def main():
             else:
                 single_alert = alert_instance.retrieve_a_single_alerting_channel(get_args.id)
                 alert_instance.print_alerting_channels([single_alert])
+        # show test results
         elif get_args.op_type == SYN_RESULT:
             if get_args.test is not None:
-                test_result = syn_instance.get_all_test_results(get_args.test)
+                if get_args.window_size is None:
+                    test_result = syn_instance.get_all_test_results(get_args.test)
+                else:
+                    test_result = syn_instance.get_all_test_results(get_args.test, get_args.window_size)
                 if get_args.id is None:
                     syn_instance.print_result_list(test_result["items"])
                 else:
-                    a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test)
+                    if get_args.har is None:
+                        a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test)
+                    else:
+                        a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test, get_args.har)
                     syn_instance.print_result_details(a_result_details, test_result["items"])
             else:
                 print('testid is required')
