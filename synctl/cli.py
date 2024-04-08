@@ -365,7 +365,7 @@ class PopConfiguration(Base):
         self.javascript = {
             "testCount" : 20,
             "frequency": 1,
-            "cpuLimit" : 600,
+            "cpuLimit" : 800,
             "memLimit" : 300,
             "imageSize" : 400,
         }
@@ -393,46 +393,57 @@ class PopConfiguration(Base):
 
     def pop_size_estimate(self):
         print("Please answer below questions for estimating the self-hosted PoP hardware size\n")
-        api_simple = (self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
-        if api_simple != 0:
-            api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests ? (1-120)  "))
+        try:
+            api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
+            if api_simple != 0:
+                api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests ? (1-120)  "))
+                http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
+            else:
+                http_pod_count = 0
 
-        api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
-        if api_script != 0:
-            api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests ? (1-120) "))
+            api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
+            if api_script != 0:
+                api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests ? (1-120) "))
+                javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
+            else:
+                javascript_pod_count = 0
 
-        browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webage Script and BrowserScript) do you want to create? (0 if no) "))
-        if browser_script != 0:
-            browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests ? (1-120) "))
+            browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webage Script and BrowserScript) do you want to create? (0 if no) "))
+            if browser_script != 0:
+                browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests ? (1-120) "))
+                browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
+            else:
+                browserscript_pod_count = 0
 
-        agent = self.ask_question("Do you want to install the demo to monitor? (Y/N) ", options=["Y", "N"])
-        if agent == "Y":
-            worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
+            agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N"])
+            if agent == "Y":
+                worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
+            else:
+                worker_nodes = 0
 
-        http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
-        javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
-        browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
-        controller_pod_count = 1
-        redis_pod_count = 1
-        k8ssensor_pod_count = 3
+            controller_pod_count = 1
+            redis_pod_count = 1
+            k8ssensor_pod_count = 3
 
-        cpu = self.controller["cpuLimit"] * controller_pod_count + self.redis["cpuLimit"] * redis_pod_count + http_pod_count * self.http["cpuLimit"] + \
-              javascript_pod_count * self.javascript["cpuLimit"] + browserscript_pod_count * self.browserscript["cpuLimit"] + \
-              worker_nodes * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * k8ssensor_pod_count
+            cpu = self.controller["cpuLimit"] * controller_pod_count + self.redis["cpuLimit"] * redis_pod_count + http_pod_count * self.http["cpuLimit"] + \
+                  javascript_pod_count * self.javascript["cpuLimit"] + browserscript_pod_count * self.browserscript["cpuLimit"] + \
+                  worker_nodes * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * k8ssensor_pod_count
 
-        memory = http_pod_count * self.http["memLimit"] + javascript_pod_count * self.javascript["memLimit"] + \
-                 browserscript_pod_count * self.browserscript["memLimit"] + worker_nodes * self.agent["memLimit"] +  \
-                 self.k8ssensor["memLimit"] * k8ssensor_pod_count +  self.controller["memLimit"] * controller_pod_count + \
-                 self.redis["memLimit"] * redis_pod_count
+            memory = http_pod_count * self.http["memLimit"] + javascript_pod_count * self.javascript["memLimit"] + \
+                     browserscript_pod_count * self.browserscript["memLimit"] + worker_nodes * self.agent["memLimit"] +  \
+                     self.k8ssensor["memLimit"] * k8ssensor_pod_count +  self.controller["memLimit"] * controller_pod_count + \
+                     self.redis["memLimit"] * redis_pod_count
 
-        disk_size = http_pod_count * self.http["imageSize"] + javascript_pod_count * self.javascript["imageSize"] + \
-                    browserscript_pod_count * self.browserscript["imageSize"] + controller_pod_count * self.controller["imageSize"] + \
-                    redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
-                    k8ssensor_pod_count * self.k8ssensor["imageSize"]
+            disk_size = http_pod_count * self.http["imageSize"] + javascript_pod_count * self.javascript["imageSize"] + \
+                        browserscript_pod_count * self.browserscript["imageSize"] + controller_pod_count * self.controller["imageSize"] + \
+                        redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
+                        k8ssensor_pod_count * self.k8ssensor["imageSize"]
 
-        print(f"\nThe estimated sizing is:    CPU {cpu}m,  Memory: {memory} Mi, Disk: {disk_size} GB")
-        print(f"\nThe recommended engine pods:  {http_pod_count} http playback engines, {javascript_pod_count} javascript engines,"
-              f"{browserscript_pod_count} browserscript engines")
+            print(f"\nThe estimated sizing is:    CPU {cpu}m,  Memory: {memory} Mi, Disk: {disk_size} GB")
+            print(f"\nThe recommended engine pods:  {http_pod_count} http playback engines, {javascript_pod_count} javascript engines,"
+                  f"{browserscript_pod_count} browserscript engines")
+        except ValueError:
+            print("Invalid input")
 
 
 class ConfigurationFile(Base):
