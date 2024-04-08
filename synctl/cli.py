@@ -16,6 +16,7 @@ import sys
 
 import tarfile
 import getpass
+import math
 # import textwrap
 import time
 from datetime import datetime
@@ -330,6 +331,108 @@ class Base:
         if message != '':
             print(message)
         sys.exit(error_code)
+
+class PopConfiguration(Base):
+    def __init__(self) -> None:
+        Base.__init__(self)
+        self.agent = {
+            "cpuLimit" : 1500,
+            "memLimit" : 768,
+            "imageSize" : 600,
+        }
+        self.k8ssensor = {
+            "cpuLimit" : 500,
+            "memLimit" : 1536,
+            "imageSize" : 80,
+        }
+        self.controller = {
+            "cpuLimit" : 300,
+            "memLimit" : 300,
+            "imageSize" : 900,
+        }
+        self.redis = {
+            "cpuLimit" : 300,
+            "memLimit" : 200,
+            "imageSize" : 500,
+        }
+        self.http = {
+            "testCount" : 2000,
+            "frequency": 1,
+            "cpuLimit" : 300,
+            "memLimit" : 500,
+            "imageSize" : 400,
+        }
+        self.javascript = {
+            "testCount" : 20,
+            "frequency": 1,
+            "cpuLimit" : 600,
+            "memLimit" : 300,
+            "imageSize" : 400,
+        }
+        self.browserscript = {
+            "testCount" : 5,
+            "frequency": 5,
+            "cpuLimit" : 4000,
+            "memLimit" : 3000,
+            "imageSize" : 1500,
+        }
+
+    def ask_question(self,question, options=None):
+        answer = input(question)
+        if options:
+            while answer not in options:
+                print("Invalid input.")
+                answer = input(question)
+        return answer
+
+    def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
+
+        pod_estimate = int(user_tests * default_frequency) / int(user_frequency * default_tests)
+        return math.ceil(pod_estimate)
+
+
+    def pop_size_estimate(self):
+        print("Please answer below questions for estimating the self-hosted PoP hardware size\n")
+        api_simple = (self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
+        if api_simple != 0:
+            api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests ? (1-120)  "))
+
+        api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
+        if api_script != 0:
+            api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests ? (1-120) "))
+
+        browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webage Script and BrowserScript) do you want to create? (0 if no) "))
+        if browser_script != 0:
+            browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests ? (1-120) "))
+
+        agent = self.ask_question("Do you want to install the demo to monitor? (Y/N) ", options=["Y", "N"])
+        if agent == "Y":
+            worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
+
+        http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
+        javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
+        browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
+        controller_pod_count = 1
+        redis_pod_count = 1
+        k8ssensor_pod_count = 3
+
+        cpu = self.controller["cpuLimit"] * controller_pod_count + self.redis["cpuLimit"] * redis_pod_count + http_pod_count * self.http["cpuLimit"] + \
+              javascript_pod_count * self.javascript["cpuLimit"] + browserscript_pod_count * self.browserscript["cpuLimit"] + \
+              worker_nodes * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * k8ssensor_pod_count
+
+        memory = http_pod_count * self.http["memLimit"] + javascript_pod_count * self.javascript["memLimit"] + \
+                 browserscript_pod_count * self.browserscript["memLimit"] + worker_nodes * self.agent["memLimit"] +  \
+                 self.k8ssensor["memLimit"] * k8ssensor_pod_count +  self.controller["memLimit"] * controller_pod_count + \
+                 self.redis["memLimit"] * redis_pod_count
+
+        disk_size = http_pod_count * self.http["imageSize"] + javascript_pod_count * self.javascript["imageSize"] + \
+                    browserscript_pod_count * self.browserscript["imageSize"] + controller_pod_count * self.controller["imageSize"] + \
+                    redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
+                    k8ssensor_pod_count * self.k8ssensor["imageSize"]
+
+        print(f"\nThe estimated sizing is:    CPU {cpu}m,  Memory: {memory} Mi, Disk: {disk_size} GB")
+        print(f"\nThe recommended engine pods:  {http_pod_count} http playback engines, {javascript_pod_count} javascript engines,"
+              f"{browserscript_pod_count} browserscript engines")
 
 
 class ConfigurationFile(Base):
@@ -3911,6 +4014,9 @@ class ParseParameter:
             '--version', '-v', action="store_true", default=True, help="show version")
         self.parser.add_argument(
             "--verify-tls", action="store_true", default=False, help="verify tls certificate")
+        self.parser.add_argument(
+            "--pop-sizing-estimate", action="store_true", help="show estimate pop size"
+        )
 
     def config_command_options(self):
         self.parser_config.add_argument(
@@ -4301,6 +4407,7 @@ def main():
         show_version()
         sys.exit(NORMAL_CODE)
 
+    pop_estimate = PopConfiguration()
     auth_instance = Authentication()
 
     syn_instance = SyntheticTest()
@@ -4313,6 +4420,11 @@ def main():
 
     summary_instance = SyntheticResult()
     app_instance = Application()
+
+    # show pop size
+    if "--pop-sizing-estimate" in sys_args:
+        pop_estimate.pop_size_estimate()
+        sys.exit(NORMAL_CODE)
 
     # set --verify-tls
     if get_args.verify_tls is not None:
