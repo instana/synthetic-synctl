@@ -382,7 +382,7 @@ class PopConfiguration(Base):
         answer = input(question)
         if options:
             while answer not in options:
-                print("Invalid input.")
+                print("Invalid input")
                 answer = input(question)
         return answer
 
@@ -456,9 +456,22 @@ class PopConfiguration(Base):
                         redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
                         k8ssensor_pod_count * self.k8ssensor["imageSize"]
 
-            print(f"\nThe estimated sizing is:    CPU {cpu}m,  Memory: {memory} Mi, Disk: {(disk_size)/1000} GB")
-            print(f"\nThe recommended engine pods:  {http_pod_count} http playback engines, {javascript_pod_count} javascript engines,"
-                  f"{browserscript_pod_count} browserscript engines")
+            max_label_length = max(len(str(api_simple)), len(str(api_script)), len(str(browser_script)), len(str(agent)))
+            print("\nYour requirement is:")
+            print(f"   API Simple: {api_simple:<{max_label_length}}       Frequency: {api_simple_frequency}" if api_simple > 0 else f"   API Simple: {api_simple:<{max_label_length}}")
+            print(f"   API Script: {api_script:<{max_label_length}}       Frequency: {api_script_frequency}" if api_script > 0 else f"   API Script: {api_script:<{max_label_length}}")
+            print(f"   Browser Test: {browser_script:<{max_label_length}}     Frequency: {browser_script_frequency}" if browser_script > 0 else f"   Browser Test: {browser_script:<{max_label_length}}")
+            print(f"   Install Agent: {agent:<{max_label_length}}    Worker Nodes: {worker_nodes}" if agent == "Y" else f"   Install Agent: {agent:<{max_label_length}}")
+
+            print("\nThe estimated sizing is:")
+            print(f"   CPU:     {cpu}m")
+            print(f"   Memory:  {memory}Mi")
+            print(f"   Disk:    {disk_size/1000}GB")
+
+            print("\nThe recommended engine pods:")
+            print(f"   http           playback engines: {http_pod_count} \n"
+                  f"   javascript     playback engines: {javascript_pod_count} \n"
+                  f"   browserscript  playback engines: {browserscript_pod_count} ")
         except ValueError:
             print("Invalid input")
 
