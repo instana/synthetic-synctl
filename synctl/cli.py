@@ -59,6 +59,7 @@ SYN_APP = "app"  # short for application
 SYN_CRED = "cred"  # short for credentials
 SYN_ALERT = "alert"  # short for smart alerts
 SYN_RESULT = "result"
+POP_SIZE = "pop-size"
 
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
@@ -390,34 +391,50 @@ class PopConfiguration(Base):
         pod_estimate = int(user_tests * default_frequency) / int(user_frequency * default_tests)
         return math.ceil(pod_estimate)
 
-
     def pop_size_estimate(self):
         print("Please answer below questions for estimating the self-hosted PoP hardware size\n")
         try:
             api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
-            if api_simple != 0:
-                api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests ? (1-120)  "))
-                http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
+            if api_simple > 0:
+                while True:
+                    api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests ? (1-120)  "))
+                    if api_simple_frequency > 0 and api_simple_frequency <= 120:
+                        http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
+                        break
+                    else:
+                        print("frequency is not valid, it should be in [1,120]")
             else:
                 http_pod_count = 0
 
             api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
-            if api_script != 0:
-                api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests ? (1-120) "))
-                javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
+            if api_script > 0:
+                while True:
+                    api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests ? (1-120) "))
+                    if api_script_frequency > 0 and api_script_frequency <= 120:
+                        javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
+                        break
+                    else:
+                        print("frequency is not valid, it should be in [1,120]")
             else:
                 javascript_pod_count = 0
 
             browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webage Script and BrowserScript) do you want to create? (0 if no) "))
-            if browser_script != 0:
-                browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests ? (1-120) "))
-                browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
+            if browser_script > 0:
+                while True:
+                    browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests ? (1-120) "))
+                    if browser_script_frequency > 0 and browser_script_frequency <= 120:
+                        browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
+                        break
+                    else:
+                        print("frequency is not valid, it should be in [1,120]")
             else:
                 browserscript_pod_count = 0
 
             agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N"])
             if agent == "Y":
                 worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
+                if worker_nodes <= 0:
+                    print("Number of worker nodes must be greater than 0.")
             else:
                 worker_nodes = 0
 
@@ -439,7 +456,7 @@ class PopConfiguration(Base):
                         redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
                         k8ssensor_pod_count * self.k8ssensor["imageSize"]
 
-            print(f"\nThe estimated sizing is:    CPU {cpu}m,  Memory: {memory} Mi, Disk: {disk_size} GB")
+            print(f"\nThe estimated sizing is:    CPU {cpu}m,  Memory: {memory} Mi, Disk: {(disk_size)/1000} GB")
             print(f"\nThe recommended engine pods:  {http_pod_count} http playback engines, {javascript_pod_count} javascript engines,"
                   f"{browserscript_pod_count} browserscript engines")
         except ValueError:
@@ -4025,9 +4042,6 @@ class ParseParameter:
             '--version', '-v', action="store_true", default=True, help="show version")
         self.parser.add_argument(
             "--verify-tls", action="store_true", default=False, help="verify tls certificate")
-        self.parser.add_argument(
-            "--pop-sizing-estimate", action="store_true", help="show estimate pop size"
-        )
 
     def config_command_options(self):
         self.parser_config.add_argument(
@@ -4160,7 +4174,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -4432,10 +4446,6 @@ def main():
     summary_instance = SyntheticResult()
     app_instance = Application()
 
-    # show pop size
-    if "--pop-sizing-estimate" in sys_args:
-        pop_estimate.pop_size_estimate()
-        sys.exit(NORMAL_CODE)
 
     # set --verify-tls
     if get_args.verify_tls is not None:
@@ -4631,6 +4641,8 @@ def main():
                     syn_instance.print_result_details(a_result_details, test_result["items"])
             else:
                 print('testid is required')
+        elif get_args.op_type == POP_SIZE:
+            pop_estimate.pop_size_estimate()
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
