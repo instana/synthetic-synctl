@@ -418,7 +418,7 @@ class PopConfiguration(Base):
             else:
                 javascript_pod_count = 0
 
-            browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webage Script and BrowserScript) do you want to create? (0 if no) "))
+            browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
             if browser_script > 0:
                 while True:
                     browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests ? (1-120) "))
