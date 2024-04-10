@@ -102,7 +102,7 @@ synctl can be used to estimate the size of the PoP hardware configuration.
 
 ### synctl pop-sizing Syntax
 ```
-synctl --pop-sizing-estimate
+synctl get pop-size
 ```
 # Configure an Instana Backend
 `synctl` support three types of configurations:
