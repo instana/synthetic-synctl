@@ -409,7 +409,7 @@ class PopConfiguration(Base):
             api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
             if api_script > 0:
                 while True:
-                    api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests ? (1-120) "))
+                    api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
                     if api_script_frequency > 0 and api_script_frequency <= 120:
                         javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
                         break
