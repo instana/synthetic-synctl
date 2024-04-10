@@ -387,7 +387,6 @@ class PopConfiguration(Base):
         return answer
 
     def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
-
         pod_estimate = int(user_tests * default_frequency) / int(user_frequency * default_tests)
         return math.ceil(pod_estimate)
 
@@ -430,7 +429,7 @@ class PopConfiguration(Base):
             else:
                 browserscript_pod_count = 0
 
-            agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N"])
+            agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
             if agent == "Y":
                 worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
                 if worker_nodes <= 0:
