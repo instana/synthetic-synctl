@@ -397,7 +397,7 @@ class PopConfiguration(Base):
             api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
             if api_simple > 0:
                 while True:
-                    api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests ? (1-120)  "))
+                    api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests? (1-120)  "))
                     if api_simple_frequency > 0 and api_simple_frequency <= 120:
                         http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
                         break
