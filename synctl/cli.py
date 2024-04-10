@@ -421,7 +421,7 @@ class PopConfiguration(Base):
             browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
             if browser_script > 0:
                 while True:
-                    browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests ? (1-120) "))
+                    browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
                     if browser_script_frequency > 0 and browser_script_frequency <= 120:
                         browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
                         break
