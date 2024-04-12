@@ -432,48 +432,50 @@ class PopConfiguration(Base):
             agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
             if agent == "Y":
                 worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
+                k8ssensor_pod_count = 3
                 if worker_nodes <= 0:
                     print("Number of worker nodes must be greater than 0.")
             else:
                 worker_nodes = 0
+                k8ssensor_pod_count = 0
 
             if api_simple == 0 and api_script == 0 and browser_script == 0:
-                self.exit_synctl("\nWith zero tests, no pods will be created.")
+                controller_pod_count = 0
+                redis_pod_count = 0
             else:
                 controller_pod_count = 1
                 redis_pod_count = 1
-                k8ssensor_pod_count = 3
 
-                cpu = self.controller["cpuLimit"] * controller_pod_count + self.redis["cpuLimit"] * redis_pod_count + http_pod_count * self.http["cpuLimit"] + \
-                      javascript_pod_count * self.javascript["cpuLimit"] + browserscript_pod_count * self.browserscript["cpuLimit"] + \
-                      worker_nodes * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * k8ssensor_pod_count
+            cpu = self.controller["cpuLimit"] * controller_pod_count + self.redis["cpuLimit"] * redis_pod_count + http_pod_count * self.http["cpuLimit"] + \
+                  javascript_pod_count * self.javascript["cpuLimit"] + browserscript_pod_count * self.browserscript["cpuLimit"] + \
+                  worker_nodes * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * k8ssensor_pod_count
 
-                memory = http_pod_count * self.http["memLimit"] + javascript_pod_count * self.javascript["memLimit"] + \
-                         browserscript_pod_count * self.browserscript["memLimit"] + worker_nodes * self.agent["memLimit"] +  \
-                         self.k8ssensor["memLimit"] * k8ssensor_pod_count +  self.controller["memLimit"] * controller_pod_count + \
-                         self.redis["memLimit"] * redis_pod_count
+            memory = http_pod_count * self.http["memLimit"] + javascript_pod_count * self.javascript["memLimit"] + \
+                     browserscript_pod_count * self.browserscript["memLimit"] + worker_nodes * self.agent["memLimit"] +  \
+                     self.k8ssensor["memLimit"] * k8ssensor_pod_count +  self.controller["memLimit"] * controller_pod_count + \
+                     self.redis["memLimit"] * redis_pod_count
 
-                disk_size = http_pod_count * self.http["imageSize"] + javascript_pod_count * self.javascript["imageSize"] + \
-                            browserscript_pod_count * self.browserscript["imageSize"] + controller_pod_count * self.controller["imageSize"] + \
-                            redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
-                            k8ssensor_pod_count * self.k8ssensor["imageSize"]
+            disk_size = http_pod_count * self.http["imageSize"] + javascript_pod_count * self.javascript["imageSize"] + \
+                        browserscript_pod_count * self.browserscript["imageSize"] + controller_pod_count * self.controller["imageSize"] + \
+                        redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
+                        k8ssensor_pod_count * self.k8ssensor["imageSize"]
 
-                max_label_length = max(len(str(api_simple)), len(str(api_script)), len(str(browser_script)), len(str(agent)))
-                print("\nYour requirement is:")
-                print(f"   API Simple: {api_simple:<{max_label_length}}       Frequency: {api_simple_frequency}min" if api_simple > 0 else f"   API Simple: {api_simple:<{max_label_length}}")
-                print(f"   API Script: {api_script:<{max_label_length}}       Frequency: {api_script_frequency}min" if api_script > 0 else f"   API Script: {api_script:<{max_label_length}}")
-                print(f"   Browser Test: {browser_script:<{max_label_length}}     Frequency: {browser_script_frequency}min" if browser_script > 0 else f"   Browser Test: {browser_script:<{max_label_length}}")
-                print(f"   Install Agent: {agent:<{max_label_length}}    Worker Nodes: {worker_nodes}" if agent == "Y" else f"   Install Agent: {agent:<{max_label_length}}")
+            max_label_length = max(len(str(api_simple)), len(str(api_script)), len(str(browser_script)), len(str(agent)))
+            print("\nYour requirement is:")
+            print(f"   API Simple: {api_simple:<{max_label_length}}       Frequency: {api_simple_frequency}min" if api_simple > 0 else f"   API Simple: {api_simple:<{max_label_length}}")
+            print(f"   API Script: {api_script:<{max_label_length}}       Frequency: {api_script_frequency}min" if api_script > 0 else f"   API Script: {api_script:<{max_label_length}}")
+            print(f"   Browser Test: {browser_script:<{max_label_length}}     Frequency: {browser_script_frequency}min" if browser_script > 0 else f"   Browser Test: {browser_script:<{max_label_length}}")
+            print(f"   Install Agent: {agent:<{max_label_length}}    Worker Nodes: {worker_nodes}" if agent == "Y" else f"   Install Agent: {agent:<{max_label_length}}")
 
-                print("\nThe estimated sizing is:")
-                print(f"   CPU:     {cpu}m")
-                print(f"   Memory:  {memory}Mi")
-                print(f"   Disk:    {disk_size/1000}GB")
+            print("\nThe estimated sizing is:")
+            print(f"   CPU:     {cpu}m")
+            print(f"   Memory:  {memory}Mi")
+            print(f"   Disk:    {disk_size/1000}GB")
 
-                print("\nThe recommended engine pods:")
-                print(f"   http           playback engines: {http_pod_count} \n"
-                      f"   javascript     playback engines: {javascript_pod_count} \n"
-                      f"   browserscript  playback engines: {browserscript_pod_count} ")
+            print("\nThe recommended engine pods:")
+            print(f"   http           playback engines: {http_pod_count} \n"
+                  f"   javascript     playback engines: {javascript_pod_count} \n"
+                  f"   browserscript  playback engines: {browserscript_pod_count} ")
         except ValueError:
             print("Invalid input")
 
