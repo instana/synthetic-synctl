@@ -393,51 +393,67 @@ class PopConfiguration(Base):
     def pop_size_estimate(self):
         print("Please answer below questions for estimating the self-hosted PoP hardware size\n")
         try:
-            api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
-            if api_simple > 0:
-                while True:
+            while True:
+                api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
+                if api_simple > 0:
                     api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests? (1-120)  "))
                     if api_simple_frequency > 0 and api_simple_frequency <= 120:
                         http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
                         break
                     else:
                         print("frequency is not valid, it should be in [1,120]")
-            else:
-                http_pod_count = 0
+                    break
+                elif api_simple == 0:
+                    http_pod_count = 0
+                    break
+                else:
+                    print("Invalid input")
 
-            api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
-            if api_script > 0:
-                while True:
-                    api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
-                    if api_script_frequency > 0 and api_script_frequency <= 120:
-                        javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
+            while True:
+                api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
+                if api_script > 0:
+                        api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
+                        if api_script_frequency > 0 and api_script_frequency <= 120:
+                            javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
+                            break
+                        else:
+                            print("frequency is not valid, it should be in [1,120]")
                         break
-                    else:
-                        print("frequency is not valid, it should be in [1,120]")
-            else:
-                javascript_pod_count = 0
+                elif api_script == 0:
+                    javascript_pod_count = 0
+                    break
+                else:
+                    print("Invalid input")
 
-            browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
-            if browser_script > 0:
-                while True:
-                    browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
-                    if browser_script_frequency > 0 and browser_script_frequency <= 120:
-                        browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
+            while True:
+                browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
+                if browser_script > 0:
+                        browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
+                        if browser_script_frequency > 0 and browser_script_frequency <= 120:
+                            browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
+                            break
+                        else:
+                            print("frequency is not valid, it should be in [1,120]")
                         break
-                    else:
-                        print("frequency is not valid, it should be in [1,120]")
-            else:
-                browserscript_pod_count = 0
+                elif browser_script == 0:
+                    browserscript_pod_count = 0
+                    break
+                else:
+                    print("Invalid input")
 
             agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
-            if agent == "Y":
-                worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
-                k8ssensor_pod_count = 3
-                if worker_nodes <= 0:
-                    print("Number of worker nodes must be greater than 0.")
-            else:
-                worker_nodes = 0
-                k8ssensor_pod_count = 0
+            while True:
+                if agent in ["y", "Y"]:
+                    worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
+                    k8ssensor_pod_count = 3
+                    if worker_nodes <= 0:
+                        print("Number of worker nodes must be greater than 0.")
+                    elif worker_nodes > 0:
+                        break
+                else:
+                    worker_nodes = 0
+                    k8ssensor_pod_count = 0
+                    break
 
             if api_simple == 0 and api_script == 0 and browser_script == 0:
                 controller_pod_count = 0
