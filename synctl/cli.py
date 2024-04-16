@@ -499,8 +499,8 @@ class PopConfiguration(Base):
                   f"   javascript     playback engines: {javascript_pod_count} \n"
                   f"   browserscript  playback engines: {browserscript_pod_count} ")
 
-        except ValueError:
-            print("Invalid input")
+        except ValueError as e:
+            print(f"Exception: {e}")
 
 
 class ConfigurationFile(Base):
