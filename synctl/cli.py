@@ -4058,7 +4058,7 @@ class ParseParameter:
         self.parser_create._optionals.title = OPTIONS_PARAMS
 
         self.parser_get = sub_parsers.add_parser(
-            'get', help='get Synthetic test, location, credential or alert', usage=GET_USAGE)
+            'get', help='get Synthetic test, location, credential, alert or pop-size', usage=GET_USAGE)
         self.parser_get._positionals.title = POSITION_PARAMS
         self.parser_get._optionals.title = OPTIONS_PARAMS
 
