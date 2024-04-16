@@ -394,7 +394,7 @@ class PopConfiguration(Base):
         return math.ceil(pod_estimate)
 
     def pop_size_estimate(self):
-        print("Please answer below questions for estimating the self-hosted PoP hardware size\n")
+        print("Please answer below questions for estimating the self-hosted PoP hardware size:\n")
         try:
             while True:
                 api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
@@ -484,10 +484,10 @@ class PopConfiguration(Base):
 
             max_label_length = max(len(str(api_simple)), len(str(api_script)), len(str(browser_script)), len(str(agent)))
             print("\nYour requirement is:")
-            print(f"   API Simple: {api_simple:<{max_label_length}}       Frequency: {api_simple_frequency}min" if api_simple > 0 else f"   API Simple: {api_simple:<{max_label_length}}")
-            print(f"   API Script: {api_script:<{max_label_length}}       Frequency: {api_script_frequency}min" if api_script > 0 else f"   API Script: {api_script:<{max_label_length}}")
-            print(f"   Browser Test: {browser_script:<{max_label_length}}     Frequency: {browser_script_frequency}min" if browser_script > 0 else f"   Browser Test: {browser_script:<{max_label_length}}")
-            print(f"   Install Agent: {agent:<{max_label_length}}    Worker Nodes: {worker_nodes}" if agent == "Y" else f"   Install Agent: {agent:<{max_label_length}}")
+            print(f"   API    Simple: {api_simple:<{max_label_length}}        Frequency: {api_simple_frequency}min" if api_simple > 0 else f"   API    Simple: {api_simple:<{max_label_length}}")
+            print(f"   API    Script: {api_script:<{max_label_length}}        Frequency: {api_script_frequency}min" if api_script > 0 else f"   API    Script: {api_script:<{max_label_length}}")
+            print(f"   Browser  Test: {browser_script:<{max_label_length}}        Frequency: {browser_script_frequency}min" if browser_script > 0 else f"   Browser  Test: {browser_script:<{max_label_length}}")
+            print(f"   Install Agent: {agent:<{max_label_length}}        Worker Nodes: {worker_nodes}" if agent == "Y" else f"   Install Agent: {agent:<{max_label_length}}")
 
             print("\nThe estimated sizing is:")
             print(f"   CPU:     {cpu}m")
