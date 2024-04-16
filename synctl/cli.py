@@ -107,7 +107,7 @@ Options:
 Commands:
     config              manage configuration file
     create              create a Synthetic test, credential and smart alert
-    get                 get Synthetic tests, locations, credentials and smart alert
+    get                 get Synthetic tests, locations, credentials, smart alert and pop-size
     patch               patch a Synthetic test
     update              update a Synthetic test and smart alert
     delete              delete Synthetic tests, locations credentials and smart alert
