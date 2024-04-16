@@ -105,7 +105,6 @@ synctl can be used to estimate the size of the PoP hardware configuration.
 ```
 synctl get pop-size
 ```
-# 
 # Configure an Instana Backend
 `synctl` support three types of configurations:
 - Use configurations file, the default config file is under `~/.synthetic/config.json`.
