@@ -5,6 +5,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 - [Features](#features)
 - [Installation](#installation)
 - [Upgrade](#upgrade)
+- [Size the PoP hardware configuration](#size-the-pop-hardware-configuration)
 - [Configure an Instana Backend](#configure-an-instana-backend)
 - [Estimate the cost of Instana-hosted PoP](#estimate-the-cost-of-instana-hosted-pop)
     - [Use a configuration file](#use-a-configuration-file-recommended)
