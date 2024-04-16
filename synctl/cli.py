@@ -16,6 +16,7 @@ import sys
 
 import tarfile
 import getpass
+import math
 # import textwrap
 import time
 from datetime import datetime
@@ -58,6 +59,7 @@ SYN_APP = "app"  # short for application
 SYN_CRED = "cred"  # short for credentials
 SYN_ALERT = "alert"  # short for smart alerts
 SYN_RESULT = "result"
+POP_SIZE = "pop-size"
 
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
@@ -175,7 +177,7 @@ synctl create cred --key MY_PASS --value password123
 synctl create alert --name "Smart-alert" --alert-channel "$ALERT_CHANNEL" --test "$SYNTHETIC_TEST" --violation-count 2
 """
 
-GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert} [id] [options]
+GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert, pop-size} [id] [options]
 
 examples:
 # display all tests
@@ -192,7 +194,10 @@ synctl get test <id> --show-details
 synctl get cred
 
 # Display all alert
-synctl get alert"""
+synctl get alert
+
+# Estimate the size of the PoP hardware configuration
+synctl get pop-size"""
 
 PATCH_USAGE = """synctl patch test id [options]
 
@@ -330,6 +335,172 @@ class Base:
         if message != '':
             print(message)
         sys.exit(error_code)
+
+class PopConfiguration(Base):
+    def __init__(self) -> None:
+        Base.__init__(self)
+        self.agent = {
+            "cpuLimit": 1500,
+            "memLimit": 768,
+            "imageSize": 600,
+        }
+        self.k8ssensor = {
+            "cpuLimit": 500,
+            "memLimit": 1536,
+            "imageSize": 80,
+        }
+        self.controller = {
+            "cpuLimit": 300,
+            "memLimit": 300,
+            "imageSize": 900,
+        }
+        self.redis = {
+            "cpuLimit": 300,
+            "memLimit": 200,
+            "imageSize": 500,
+        }
+        self.http = {
+            "testCount": 2000,
+            "frequency": 1,
+            "cpuLimit": 300,
+            "memLimit" : 500,
+            "imageSize": 400,
+        }
+        self.javascript = {
+            "testCount": 20,
+            "frequency": 1,
+            "cpuLimit": 800,
+            "memLimit": 300,
+            "imageSize": 400,
+        }
+        self.browserscript = {
+            "testCount": 5,
+            "frequency": 5,
+            "cpuLimit": 4000,
+            "memLimit": 3000,
+            "imageSize": 1500,
+        }
+
+    def ask_question(self,question, options=None):
+        answer = input(question)
+        if options:
+            while answer not in options:
+                print("Invalid input")
+                answer = input(question)
+        return answer
+
+    def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
+        pod_estimate = int(user_tests * default_frequency) / int(user_frequency * default_tests)
+        return math.ceil(pod_estimate)
+
+    def pop_size_estimate(self):
+        print("Please answer below questions for estimating the self-hosted PoP hardware size:\n")
+        try:
+            while True:
+                api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
+                if api_simple > 0:
+                    while True:
+                        api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests? (1-120)  "))
+                        if api_simple_frequency > 0 and api_simple_frequency <= 120:
+                            http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
+                            break
+                        else:
+                            print("frequency is not valid, it should be in [1,120]")
+                    break
+                elif api_simple == 0:
+                    http_pod_count = 0
+                    break
+                else:
+                    print("Invalid input")
+
+            while True:
+                api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
+                if api_script > 0:
+                    while True:
+                        api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
+                        if api_script_frequency > 0 and api_script_frequency <= 120:
+                            javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
+                            break
+                        else:
+                            print("frequency is not valid, it should be in [1,120]")
+                    break
+                elif api_script == 0:
+                    javascript_pod_count = 0
+                    break
+                else:
+                    print("Invalid input")
+
+            while True:
+                browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
+                if browser_script > 0:
+                    while True:
+                        browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
+                        if browser_script_frequency > 0 and browser_script_frequency <= 120:
+                            browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
+                            break
+                        else:
+                            print("frequency is not valid, it should be in [1,120]")
+                    break
+                elif browser_script == 0:
+                    browserscript_pod_count = 0
+                    break
+                else:
+                    print("Invalid input")
+
+            agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
+            while True:
+                if agent in ["y", "Y"]:
+                    worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
+                    k8ssensor_pod_count = 3
+                    if worker_nodes <= 0:
+                        print("Number of worker nodes must be greater than 0.")
+                    elif worker_nodes > 0:
+                        break
+                else:
+                    worker_nodes = 0
+                    k8ssensor_pod_count = 0
+                    break
+
+            if api_simple == 0 and api_script == 0 and browser_script == 0:
+                controller_pod_count = 0
+                redis_pod_count = 0
+            else:
+                controller_pod_count = 1
+                redis_pod_count = 1
+
+            cpu = self.controller["cpuLimit"] * controller_pod_count + self.redis["cpuLimit"] * redis_pod_count + http_pod_count * self.http["cpuLimit"] + \
+                  javascript_pod_count * self.javascript["cpuLimit"] + browserscript_pod_count * self.browserscript["cpuLimit"] + \
+                  worker_nodes * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * k8ssensor_pod_count
+
+            memory = http_pod_count * self.http["memLimit"] + javascript_pod_count * self.javascript["memLimit"] + \
+                     browserscript_pod_count * self.browserscript["memLimit"] + worker_nodes * self.agent["memLimit"] +  \
+                     self.k8ssensor["memLimit"] * k8ssensor_pod_count +  self.controller["memLimit"] * controller_pod_count + \
+                     self.redis["memLimit"] * redis_pod_count
+
+            disk_size = http_pod_count * self.http["imageSize"] + javascript_pod_count * self.javascript["imageSize"] + \
+                        browserscript_pod_count * self.browserscript["imageSize"] + controller_pod_count * self.controller["imageSize"] + \
+                        redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
+                        k8ssensor_pod_count * self.k8ssensor["imageSize"]
+
+            max_label_length = max(len(str(api_simple)), len(str(api_script)), len(str(browser_script)), len(str(agent)))
+            print("\nYour requirement is:")
+            print(f"   API    Simple: {api_simple:<{max_label_length}}        Frequency: {api_simple_frequency}min" if api_simple > 0 else f"   API    Simple: {api_simple:<{max_label_length}}")
+            print(f"   API    Script: {api_script:<{max_label_length}}        Frequency: {api_script_frequency}min" if api_script > 0 else f"   API    Script: {api_script:<{max_label_length}}")
+            print(f"   Browser  Test: {browser_script:<{max_label_length}}        Frequency: {browser_script_frequency}min" if browser_script > 0 else f"   Browser  Test: {browser_script:<{max_label_length}}")
+            print(f"   Install Agent: {agent:<{max_label_length}}        Worker Nodes: {worker_nodes}" if agent == "Y" else f"   Install Agent: {agent:<{max_label_length}}")
+
+            print("\nThe estimated sizing is:")
+            print(f"   CPU:     {cpu}m")
+            print(f"   Memory:  {memory}Mi")
+            print(f"   Disk:    {disk_size/1000}GB")
+
+            print("\nThe recommended engine pods:")
+            print(f"   http           playback engines: {http_pod_count} \n"
+                  f"   javascript     playback engines: {javascript_pod_count} \n"
+                  f"   browserscript  playback engines: {browserscript_pod_count} ")
+
+        except ValueError as e:
+            print(f"Exception: {e}")
 
 
 class ConfigurationFile(Base):
@@ -4043,7 +4214,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -4301,6 +4472,7 @@ def main():
         show_version()
         sys.exit(NORMAL_CODE)
 
+    pop_estimate = PopConfiguration()
     auth_instance = Authentication()
 
     syn_instance = SyntheticTest()
@@ -4313,6 +4485,7 @@ def main():
 
     summary_instance = SyntheticResult()
     app_instance = Application()
+
 
     # set --verify-tls
     if get_args.verify_tls is not None:
@@ -4508,6 +4681,8 @@ def main():
                     syn_instance.print_result_details(a_result_details, test_result["items"])
             else:
                 print('testid is required')
+        elif get_args.op_type == POP_SIZE:
+            pop_estimate.pop_size_estimate()
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()

@@ -97,7 +97,13 @@ Upgrade `synctl` to a specified version.
 pip3 install --upgrade synctl==<version>
 ```
 
+# Size the PoP hardware configuration
+synctl can be used to estimate the size of the PoP hardware configuration.
 
+### synctl pop-sizing Syntax
+```
+synctl get pop-size
+```
 # Configure an Instana Backend
 `synctl` support three types of configurations:
 - Use configurations file, the default config file is under `~/.synthetic/config.json`.
