@@ -60,6 +60,7 @@ SYN_CRED = "cred"  # short for credentials
 SYN_ALERT = "alert"  # short for smart alerts
 SYN_RESULT = "result"
 POP_SIZE = "pop-size"
+POP_COST = "cost"
 
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
@@ -107,7 +108,7 @@ Options:
 Commands:
     config              manage configuration file
     create              create a Synthetic test, credential and smart alert
-    get                 get Synthetic tests, locations, credentials and smart alert
+    get                 get Synthetic tests, locations, credentials,smart alert and cost
     patch               patch a Synthetic test
     update              update a Synthetic test and smart alert
     delete              delete Synthetic tests, locations credentials and smart alert
@@ -177,7 +178,7 @@ synctl create cred --key MY_PASS --value password123
 synctl create alert --name "Smart-alert" --alert-channel "$ALERT_CHANNEL" --test "$SYNTHETIC_TEST" --violation-count 2
 """
 
-GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert, pop-size} [id] [options]
+GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert, pop-size, cost} [id] [options]
 
 examples:
 # display all tests
@@ -197,7 +198,10 @@ synctl get cred
 synctl get alert
 
 # Estimate the size of the PoP hardware configuration
-synctl get pop-size"""
+synctl get pop-size
+
+# Estimate the cost of Instana-hosted Pop
+synctl get cost"""
 
 PATCH_USAGE = """synctl patch test id [options]
 
@@ -381,6 +385,12 @@ class PopConfiguration(Base):
             "imageSize": 1500,
         }
 
+        self.factors = {
+            "browserTest" : 1,
+            "APIScript": 0.042,
+            "APISimple" : 0.025
+        }
+
     def ask_question(self,question, options=None):
         answer = input(question)
         if options:
@@ -499,6 +509,93 @@ class PopConfiguration(Base):
                   f"   javascript     playback engines: {javascript_pod_count} \n"
                   f"   browserscript  playback engines: {browserscript_pod_count} ")
 
+        except ValueError as e:
+            print(f"Exception: {e}")
+
+    def test_exec_estimate(self, tests, frequency, loc):
+        #The total test executions per month(30 days)
+        exec = tests * ((30 * 24 * 60) / frequency) * loc
+        return exec
+
+    def cost_estimate(self):
+        print("Please answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs\n ")
+        try:
+            while True:
+                locations = int(self.ask_question("How many managed locations will be used? "))
+                if locations > 0:
+                    while True:
+                        api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
+                        if api_simple > 0:
+                            while True:
+                                api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests? (1-120)  "))
+                                if api_simple_frequency > 0 and api_simple_frequency <= 120:
+                                    api_simple_test_exec = self.test_exec_estimate(api_simple, api_simple_frequency, locations)
+                                    # resource units per month
+                                    api_simple_res = api_simple_test_exec * self.factors["APISimple"]
+                                    break
+                                else:
+                                    print("frequency is not valid, it should be in [1,120]")
+                            break
+                        elif api_simple == 0:
+                            api_simple_test_exec = 0
+                            api_simple_res = 0
+                            break
+                        else:
+                            print("Invalid input")
+                    while True:
+                        api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
+                        if api_script > 0:
+                            while True:
+                                api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
+                                if api_script_frequency > 0 and api_script_frequency <= 120:
+                                    api_script_test_exec = self.test_exec_estimate(api_script, api_script_frequency, locations)
+                                    api_script_res = api_script_test_exec * self.factors["APIScript"]
+                                    break
+                                else:
+                                    print("frequency is not valid, it should be in [1,120]")
+                            break
+                        elif api_script == 0:
+                            api_script_test_exec = 0
+                            api_script_res = 0
+                            break
+                        else:
+                            print("Invalid input")
+
+                    while True:
+                        browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
+                        if browser_script > 0:
+                            while True:
+                                browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
+                                if browser_script_frequency > 0 and browser_script_frequency <= 120:
+                                    browserscript_test_exec = self.test_exec_estimate(browser_script, browser_script_frequency, locations)
+                                    browserscript_res = browserscript_test_exec * self.factors["browserTest"]
+                                    break
+                                else:
+                                    print("frequency is not valid, it should be in [1,120]")
+                            break
+                        elif browser_script == 0:
+                            browserscript_test_exec = 0
+                            browserscript_res = 0
+                            break
+                        else:
+                            print("Invalid input")
+
+                    # Total resource units per month
+                    total_resource = api_simple_res + api_script_res + browserscript_res
+
+                    # Total parts per month
+                    total_parts = round(total_resource/1000, 0)
+
+                    # Total estimated cost per month
+                    # List price for 1 unit = $12
+                    total_cost = total_parts * 12
+
+                    print(f"\nThe total estimated \n    cost per month is : ${total_cost}")
+                    print(f"    Number of part numbers per month is: {total_parts}")
+                    print(f"    Resource Units per month is : {total_resource}\n")
+                    break
+                else:
+                    print("number of locations cannot be zero")
         except ValueError as e:
             print(f"Exception: {e}")
 
@@ -4214,7 +4311,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'cost'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -4683,6 +4780,8 @@ def main():
                 print('testid is required')
         elif get_args.op_type == POP_SIZE:
             pop_estimate.pop_size_estimate()
+        elif get_args.op_type == POP_COST:
+            pop_estimate.cost_estimate()
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
