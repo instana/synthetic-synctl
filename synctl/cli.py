@@ -386,9 +386,9 @@ class PopConfiguration(Base):
         }
 
         self.factors = {
-            "browserTest" : 1,
+            "browserTest": 1,
             "APIScript": 0.042,
-            "APISimple" : 0.025
+            "APISimple": 0.025
         }
 
     def ask_question(self,question, options=None):
