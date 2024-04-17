@@ -108,7 +108,7 @@ Options:
 Commands:
     config              manage configuration file
     create              create a Synthetic test, credential and smart alert
-    get                 get Synthetic tests, locations, credentials,smart alert, pop-size and cost
+    get                 get Synthetic tests, locations, credentials, smart alert, pop-size and cost
     patch               patch a Synthetic test
     update              update a Synthetic test and smart alert
     delete              delete Synthetic tests, locations credentials and smart alert
@@ -595,7 +595,7 @@ class PopConfiguration(Base):
                     print(f"    Resource Units per month is : {total_resource}\n")
                     break
                 else:
-                    print("number of locations cannot be zero")
+                    print("number of locations cannot be less than 1")
         except ValueError as e:
             print(f"Exception: {e}")
 
