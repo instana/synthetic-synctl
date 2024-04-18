@@ -514,7 +514,7 @@ class PopConfiguration(Base):
 
     def test_exec_estimate(self, tests, frequency, loc):
         #The total test executions per month(30 days)
-        exec = tests * ((30 * 24 * 60) / frequency) * loc
+       return tests * ((30 * 24 * 60) / frequency) * loc
         return exec
 
     def cost_estimate(self):
