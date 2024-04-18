@@ -4310,7 +4310,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'pop-cost'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'size', 'pop-cost', 'cost'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
