@@ -4777,7 +4777,7 @@ def main():
                     syn_instance.print_result_details(a_result_details, test_result["items"])
             else:
                 print('testid is required')
-        elif get_args.op_type == POP_SIZE:
+        elif get_args.op_type == POP_SIZE or get_args.op_type == 'size':
             pop_estimate.pop_size_estimate()
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
             pop_estimate.cost_estimate()
