@@ -4779,7 +4779,7 @@ def main():
                 print('testid is required')
         elif get_args.op_type == POP_SIZE:
             pop_estimate.pop_size_estimate()
-        elif get_args.op_type == POP_COST:
+        elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
             pop_estimate.cost_estimate()
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
