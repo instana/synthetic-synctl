@@ -60,7 +60,7 @@ SYN_CRED = "cred"  # short for credentials
 SYN_ALERT = "alert"  # short for smart alerts
 SYN_RESULT = "result"
 POP_SIZE = "pop-size"
-POP_COST = "cost"
+POP_COST = "pop-cost"
 
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
@@ -108,7 +108,7 @@ Options:
 Commands:
     config              manage configuration file
     create              create a Synthetic test, credential and smart alert
-    get                 get Synthetic tests, locations, credentials, smart alert, pop-size and cost
+    get                 get Synthetic tests, locations, credentials, smart alert, pop-size and pop-cost
     patch               patch a Synthetic test
     update              update a Synthetic test and smart alert
     delete              delete Synthetic tests, locations credentials and smart alert
@@ -178,7 +178,7 @@ synctl create cred --key MY_PASS --value password123
 synctl create alert --name "Smart-alert" --alert-channel "$ALERT_CHANNEL" --test "$SYNTHETIC_TEST" --violation-count 2
 """
 
-GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert, pop-size, cost} [id] [options]
+GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert, pop-size, pop-cost} [id] [options]
 
 examples:
 # display all tests
@@ -201,7 +201,7 @@ synctl get alert
 synctl get pop-size
 
 # Estimate the cost of Instana-hosted Pop
-synctl get cost"""
+synctl get pop-cost"""
 
 PATCH_USAGE = """synctl patch test id [options]
 
@@ -4155,7 +4155,7 @@ class ParseParameter:
         self.parser_create._optionals.title = OPTIONS_PARAMS
 
         self.parser_get = sub_parsers.add_parser(
-            'get', help='get Synthetic test, location, credential, alert or pop-size', usage=GET_USAGE)
+            'get', help='get Synthetic test, location, credential, alert, pop-size or pop-cost', usage=GET_USAGE)
         self.parser_get._positionals.title = POSITION_PARAMS
         self.parser_get._optionals.title = OPTIONS_PARAMS
 
@@ -4311,7 +4311,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'cost'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'pop-cost'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')

@@ -111,7 +111,7 @@ synctl can be used to estimate the cost of Instana-hosted synthetic PoP.
 
 ### synctl cost estimation Syntax
 ```
-synctl get cost
+synctl get pop-cost
 ```
 # Configure an Instana Backend
 `synctl` support three types of configurations:
