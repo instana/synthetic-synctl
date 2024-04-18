@@ -451,10 +451,10 @@ class PopConfiguration(Base):
             while True:
                 if agent in ["y", "Y"]:
                     worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
-                    k8ssensor_pod_count = worker_nodes
                     if worker_nodes <= 0:
                         print("Number of worker nodes must be greater than 0.")
-                    elif worker_nodes > 0:
+                    else:
+                        k8ssensor_pod_count = 3 if worker_nodes >= 3 else 1
                         break
                 else:
                     worker_nodes = 0
