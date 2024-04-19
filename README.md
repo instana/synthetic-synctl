@@ -104,14 +104,18 @@ synctl can be used to estimate the size of the PoP hardware configuration.
 
 ### synctl pop-sizing Syntax
 ```
-synctl get pop-size
+# synctl get pop-size
+
+# synctl get size
 ```
 # Estimate the cost of Instana-hosted PoP
 synctl can be used to estimate the cost of Instana-hosted synthetic PoP.
 
 ### synctl cost estimation Syntax
 ```
-synctl get pop-cost
+# synctl get pop-cost
+
+# synctl get cost
 ```
 # Configure an Instana Backend
 `synctl` support three types of configurations:
