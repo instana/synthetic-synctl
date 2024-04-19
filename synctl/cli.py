@@ -399,63 +399,85 @@ class PopConfiguration(Base):
                 answer = input(question)
         return answer
 
+    def get_api_simple_test(self):
+        api_simple_test = {}
+        api_simple_test["testCount"] = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
+        if api_simple_test["testCount"] > 0:
+            while True:
+                api_simple_test["frequency"] = int(self.ask_question("What is the test frequency for your API Simple tests? (1-120)  "))
+                if api_simple_test["frequency"] > 0 and api_simple_test["frequency"] <= 120:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,120]")
+        return api_simple_test
+
+    def get_api_script_test(self):
+        api_script_test = {}
+        api_script_test["testCount"] = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
+        if api_script_test["testCount"] > 0:
+            while True:
+                api_script_test["frequency"] = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
+                if api_script_test["frequency"] > 0 and api_script_test["frequency"] <= 120:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,120]")
+        return api_script_test
+
+    def get_browser_script_test(self):
+        browser_script_test = {}
+        browser_script_test["testCount"] = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
+        if browser_script_test["testCount"] > 0:
+            while True:
+                browser_script_test["frequency"] = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
+                if browser_script_test["frequency"] > 0 and browser_script_test["frequency"] <= 120:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,120]")
+        return browser_script_test
+
     def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
         pod_estimate = int(user_tests * default_frequency) / int(user_frequency * default_tests)
         return math.ceil(pod_estimate)
+
+    def test_exec_estimate(self, tests, frequency, loc):
+        #The total test executions per month(30 days)
+        return int(tests * ((30 * 24 * 60) / frequency) * loc)
 
     def pop_size_estimate(self):
         print("Please answer below questions for estimating the self-hosted PoP hardware size:\n")
         try:
             while True:
-                api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
-                if api_simple > 0:
-                    while True:
-                        api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests? (1-120)  "))
-                        if api_simple_frequency > 0 and api_simple_frequency <= 120:
-                            http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
-                            break
-                        else:
-                            print("frequency is not valid, it should be in [1,120]")
-                    break
-                elif api_simple == 0:
+                api_simple = self.get_api_simple_test()
+                if api_simple["testCount"] == 0:
                     http_pod_count = 0
                     break
-                else:
+                elif api_simple["testCount"] < 0:
                     print("Invalid input")
+                else:
+                    http_pod_count = int(self.size_estimate(api_simple["testCount"], self.http["frequency"], api_simple["frequency"], self.http["testCount"]))
+                    break
 
             while True:
-                api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
-                if api_script > 0:
-                    while True:
-                        api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
-                        if api_script_frequency > 0 and api_script_frequency <= 120:
-                            javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
-                            break
-                        else:
-                            print("frequency is not valid, it should be in [1,120]")
-                    break
-                elif api_script == 0:
+                api_script = self.get_api_script_test()
+                if api_script["testCount"] == 0:
                     javascript_pod_count = 0
                     break
-                else:
+                elif api_script["testCount"] < 0:
                     print("Invalid input")
+                else:
+                    javascript_pod_count = int(self.size_estimate(api_script["testCount"], self.javascript["frequency"], api_script["frequency"], self.javascript["testCount"]))
+                    break
 
             while True:
-                browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
-                if browser_script > 0:
-                    while True:
-                        browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
-                        if browser_script_frequency > 0 and browser_script_frequency <= 120:
-                            browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
-                            break
-                        else:
-                            print("frequency is not valid, it should be in [1,120]")
-                    break
-                elif browser_script == 0:
+                browser_script = self.get_browser_script_test()
+                if browser_script["testCount"] == 0:
                     browserscript_pod_count = 0
                     break
-                else:
+                elif browser_script["testCount"] < 0:
                     print("Invalid input")
+                else:
+                    browserscript_pod_count = int(self.size_estimate(browser_script["testCount"], self.browserscript["frequency"], browser_script["frequency"], self.browserscript["testCount"]))
+                    break
 
             agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
             while True:
@@ -471,7 +493,7 @@ class PopConfiguration(Base):
                     k8ssensor_pod_count = 0
                     break
 
-            if api_simple == 0 and api_script == 0 and browser_script == 0:
+            if api_simple["testCount"] == 0 and api_script["testCount"] == 0 and browser_script["testCount"] == 0:
                 controller_pod_count = 0
                 redis_pod_count = 0
             else:
@@ -492,11 +514,11 @@ class PopConfiguration(Base):
                         redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
                         k8ssensor_pod_count * self.k8ssensor["imageSize"]
 
-            max_label_length = max(len(str(api_simple)), len(str(api_script)), len(str(browser_script)), len(str(agent)))
+            max_label_length = max(len(str(api_simple["testCount"])), len(str(api_script["testCount"])), len(str(browser_script["testCount"])), len(str(agent)))
             print("\nYour requirement is:")
-            print(f"   API    Simple: {api_simple:<{max_label_length}}        Frequency: {api_simple_frequency}min" if api_simple > 0 else f"   API    Simple: {api_simple:<{max_label_length}}")
-            print(f"   API    Script: {api_script:<{max_label_length}}        Frequency: {api_script_frequency}min" if api_script > 0 else f"   API    Script: {api_script:<{max_label_length}}")
-            print(f"   Browser  Test: {browser_script:<{max_label_length}}        Frequency: {browser_script_frequency}min" if browser_script > 0 else f"   Browser  Test: {browser_script:<{max_label_length}}")
+            print(f'   API    Simple: {api_simple["testCount"]:<{max_label_length}}        Frequency: {api_simple["frequency"]}min' if api_simple["testCount"] > 0 else f'   API    Simple: {api_simple["testCount"]:<{max_label_length}}')
+            print(f'   API    Script: {api_script["testCount"]:<{max_label_length}}        Frequency: {api_script["frequency"]}min' if api_script["testCount"] > 0 else f'   API    Script: {api_script["testCount"]:<{max_label_length}}')
+            print(f'   Browser  Test: {browser_script["testCount"]:<{max_label_length}}        Frequency: {browser_script["frequency"]}min' if browser_script["testCount"] > 0 else f'   Browser  Test: {browser_script["testCount"]:<{max_label_length}}')
             print(f"   Install Agent: {agent:<{max_label_length}}        Worker Nodes: {worker_nodes}" if agent == "Y" else f"   Install Agent: {agent:<{max_label_length}}")
 
             print("\nThe estimated sizing is:")
@@ -512,10 +534,6 @@ class PopConfiguration(Base):
         except ValueError as e:
             print(f"Exception: {e}")
 
-    def test_exec_estimate(self, tests, frequency, loc):
-        #The total test executions per month(30 days)
-        return tests * ((30 * 24 * 60) / frequency) * loc
-
     def cost_estimate(self):
         print("Please answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs\n ")
         try:
@@ -523,61 +541,44 @@ class PopConfiguration(Base):
                 locations = int(self.ask_question("How many managed locations will be used? "))
                 if locations > 0:
                     while True:
-                        api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
-                        if api_simple > 0:
-                            while True:
-                                api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests? (1-120)  "))
-                                if api_simple_frequency > 0 and api_simple_frequency <= 120:
-                                    api_simple_test_exec = self.test_exec_estimate(api_simple, api_simple_frequency, locations)
-                                    # resource units per month
-                                    api_simple_res = api_simple_test_exec * self.factors["APISimple"]
-                                    break
-                                else:
-                                    print("frequency is not valid, it should be in [1,120]")
-                            break
-                        elif api_simple == 0:
+                        api_simple = self.get_api_simple_test()
+                        if api_simple["testCount"] == 0:
                             api_simple_test_exec = 0
                             api_simple_res = 0
                             break
-                        else:
+                        elif api_simple["testCount"] < 0:
                             print("Invalid input")
-                    while True:
-                        api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
-                        if api_script > 0:
-                            while True:
-                                api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
-                                if api_script_frequency > 0 and api_script_frequency <= 120:
-                                    api_script_test_exec = self.test_exec_estimate(api_script, api_script_frequency, locations)
-                                    api_script_res = api_script_test_exec * self.factors["APIScript"]
-                                    break
-                                else:
-                                    print("frequency is not valid, it should be in [1,120]")
+                        else:
+                            api_simple_test_exec = self.test_exec_estimate(api_simple["testCount"], api_simple["frequency"], locations)
+                            # resource units per month
+                            api_simple_res = api_simple_test_exec * self.factors["APISimple"]
                             break
-                        elif api_script == 0:
+
+                    while True:
+                        api_script = self.get_api_script_test()
+                        if api_script["testCount"] == 0:
                             api_script_test_exec = 0
                             api_script_res = 0
                             break
-                        else:
+                        elif api_script["testCount"] < 0:
                             print("Invalid input")
+                        else:
+                            api_script_test_exec = self.test_exec_estimate(api_script["testCount"], api_script["frequency"], locations)
+                            api_script_res = api_script_test_exec * self.factors["APIScript"]
+                            break
 
                     while True:
-                        browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
-                        if browser_script > 0:
-                            while True:
-                                browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
-                                if browser_script_frequency > 0 and browser_script_frequency <= 120:
-                                    browserscript_test_exec = self.test_exec_estimate(browser_script, browser_script_frequency, locations)
-                                    browserscript_res = browserscript_test_exec * self.factors["browserTest"]
-                                    break
-                                else:
-                                    print("frequency is not valid, it should be in [1,120]")
-                            break
-                        elif browser_script == 0:
+                        browser_script = self.get_browser_script_test()
+                        if browser_script["testCount"] == 0:
                             browserscript_test_exec = 0
                             browserscript_res = 0
                             break
-                        else:
+                        elif browser_script["testCount"] < 0:
                             print("Invalid input")
+                        else:
+                            browserscript_test_exec = self.test_exec_estimate(browser_script["testCount"], browser_script["frequency"], locations)
+                            browserscript_res = browserscript_test_exec * self.factors["browserTest"]
+                            break
 
                     # Total resource units per month
                     total_resource = api_simple_res + api_script_res + browserscript_res
