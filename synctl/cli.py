@@ -444,92 +444,79 @@ class PopConfiguration(Base):
         return int(tests * ((30 * 24 * 60) / frequency) * loc)
 
     def pop_size_estimate(self):
+        pop_estimate_size = {}
         print("Please answer below questions for estimating the self-hosted PoP hardware size:\n")
         try:
             while True:
-                api_simple = self.get_api_simple_test()
-                if api_simple["testCount"] == 0:
-                    http_pod_count = 0
+                pop_estimate_size["api_simple"] = self.get_api_simple_test()
+                if pop_estimate_size["api_simple"]["testCount"] == 0:
+                    pop_estimate_size["http_pod_count"] = 0
                     break
-                elif api_simple["testCount"] < 0:
+                elif pop_estimate_size["api_simple"]["testCount"] < 0:
                     print("Invalid input")
                 else:
-                    http_pod_count = int(self.size_estimate(api_simple["testCount"], self.http["frequency"], api_simple["frequency"], self.http["testCount"]))
+                    pop_estimate_size["http_pod_count"] = int(self.size_estimate(pop_estimate_size["api_simple"]["testCount"], self.http["frequency"], pop_estimate_size["api_simple"]["frequency"], self.http["testCount"]))
                     break
 
             while True:
-                api_script = self.get_api_script_test()
-                if api_script["testCount"] == 0:
-                    javascript_pod_count = 0
+                pop_estimate_size["api_script"] = self.get_api_script_test()
+                if pop_estimate_size["api_script"]["testCount"] == 0:
+                    pop_estimate_size["javascript_pod_count"] = 0
                     break
-                elif api_script["testCount"] < 0:
+                elif pop_estimate_size["api_script"]["testCount"] < 0:
                     print("Invalid input")
                 else:
-                    javascript_pod_count = int(self.size_estimate(api_script["testCount"], self.javascript["frequency"], api_script["frequency"], self.javascript["testCount"]))
+                    pop_estimate_size["javascript_pod_count"] = int(self.size_estimate(pop_estimate_size["api_script"]["testCount"], self.javascript["frequency"], pop_estimate_size["api_script"]["frequency"], self.javascript["testCount"]))
                     break
 
             while True:
-                browser_script = self.get_browser_script_test()
-                if browser_script["testCount"] == 0:
-                    browserscript_pod_count = 0
+                pop_estimate_size["browser_script"] = self.get_browser_script_test()
+                if pop_estimate_size["browser_script"]["testCount"] == 0:
+                    pop_estimate_size["browserscript_pod_count"] = 0
                     break
-                elif browser_script["testCount"] < 0:
+                elif pop_estimate_size["browser_script"]["testCount"] < 0:
                     print("Invalid input")
                 else:
-                    browserscript_pod_count = int(self.size_estimate(browser_script["testCount"], self.browserscript["frequency"], browser_script["frequency"], self.browserscript["testCount"]))
+                    pop_estimate_size["browserscript_pod_count"] = int(self.size_estimate(pop_estimate_size["browser_script"]["testCount"], self.browserscript["frequency"], pop_estimate_size["browser_script"]["frequency"], self.browserscript["testCount"]))
                     break
 
-            agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
+            pop_estimate_size["agent"] = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
             while True:
-                if agent in ["y", "Y"]:
-                    worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
-                    k8ssensor_pod_count = 3
-                    if worker_nodes <= 0:
+                if pop_estimate_size["agent"] in ["y", "Y"]:
+                    pop_estimate_size["worker_nodes"] = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
+                    pop_estimate_size["k8ssensor_pod_count"] = 3
+                    if pop_estimate_size["worker_nodes"] <= 0:
                         print("Number of worker nodes must be greater than 0.")
-                    elif worker_nodes > 0:
+                    elif pop_estimate_size["worker_nodes"] > 0:
                         break
                 else:
-                    worker_nodes = 0
-                    k8ssensor_pod_count = 0
+                    pop_estimate_size["worker_nodes"] = 0
+                    pop_estimate_size["k8ssensor_pod_count"] = 0
                     break
 
-            if api_simple["testCount"] == 0 and api_script["testCount"] == 0 and browser_script["testCount"] == 0:
-                controller_pod_count = 0
-                redis_pod_count = 0
+            if pop_estimate_size["api_simple"]["testCount"] == 0 and pop_estimate_size["api_script"]["testCount"] == 0 and pop_estimate_size["browser_script"]["testCount"] == 0:
+                pop_estimate_size["controller_pod_count"] = 0
+                pop_estimate_size["redis_pod_count"] = 0
             else:
-                controller_pod_count = 1
-                redis_pod_count = 1
+                pop_estimate_size["controller_pod_count"] = 1
+                pop_estimate_size["redis_pod_count"] = 1
 
-            cpu = self.controller["cpuLimit"] * controller_pod_count + self.redis["cpuLimit"] * redis_pod_count + http_pod_count * self.http["cpuLimit"] + \
-                  javascript_pod_count * self.javascript["cpuLimit"] + browserscript_pod_count * self.browserscript["cpuLimit"] + \
-                  worker_nodes * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * k8ssensor_pod_count
+            pop_estimate_size["cpu"] = self.controller["cpuLimit"] * pop_estimate_size["controller_pod_count"] + self.redis["cpuLimit"] * pop_estimate_size["redis_pod_count"] + pop_estimate_size["http_pod_count"] * self.http["cpuLimit"] + \
+                  pop_estimate_size["javascript_pod_count"] * self.javascript["cpuLimit"] + pop_estimate_size["browserscript_pod_count"] * self.browserscript["cpuLimit"] + \
+                  pop_estimate_size["worker_nodes"] * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * pop_estimate_size["k8ssensor_pod_count"]
 
-            memory = http_pod_count * self.http["memLimit"] + javascript_pod_count * self.javascript["memLimit"] + \
-                     browserscript_pod_count * self.browserscript["memLimit"] + worker_nodes * self.agent["memLimit"] +  \
-                     self.k8ssensor["memLimit"] * k8ssensor_pod_count +  self.controller["memLimit"] * controller_pod_count + \
-                     self.redis["memLimit"] * redis_pod_count
+            pop_estimate_size["memory"] = pop_estimate_size["http_pod_count"] * self.http["memLimit"] + pop_estimate_size["javascript_pod_count"] * self.javascript["memLimit"] + \
+                     pop_estimate_size["browserscript_pod_count"] * self.browserscript["memLimit"] + pop_estimate_size["worker_nodes"] * self.agent["memLimit"] +  \
+                     self.k8ssensor["memLimit"] * pop_estimate_size["k8ssensor_pod_count"] +  self.controller["memLimit"] * pop_estimate_size["controller_pod_count"] + \
+                     self.redis["memLimit"] * pop_estimate_size["redis_pod_count"]
 
-            disk_size = http_pod_count * self.http["imageSize"] + javascript_pod_count * self.javascript["imageSize"] + \
-                        browserscript_pod_count * self.browserscript["imageSize"] + controller_pod_count * self.controller["imageSize"] + \
-                        redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
-                        k8ssensor_pod_count * self.k8ssensor["imageSize"]
+            pop_estimate_size["disk_size"] = pop_estimate_size["http_pod_count"] * self.http["imageSize"] + pop_estimate_size["javascript_pod_count"] * self.javascript["imageSize"] + \
+                        pop_estimate_size["browserscript_pod_count"] * self.browserscript["imageSize"] + pop_estimate_size["controller_pod_count"] * self.controller["imageSize"] + \
+                        pop_estimate_size["redis_pod_count"] * self.redis["imageSize"] + pop_estimate_size["worker_nodes"] * self.agent["imageSize"] + \
+                        pop_estimate_size["k8ssensor_pod_count"] * self.k8ssensor["imageSize"]
 
-            max_label_length = max(len(str(api_simple["testCount"])), len(str(api_script["testCount"])), len(str(browser_script["testCount"])), len(str(agent)))
-            print("\nYour requirement is:")
-            print(f'   API    Simple: {api_simple["testCount"]:<{max_label_length}}        Frequency: {api_simple["frequency"]}min' if api_simple["testCount"] > 0 else f'   API    Simple: {api_simple["testCount"]:<{max_label_length}}')
-            print(f'   API    Script: {api_script["testCount"]:<{max_label_length}}        Frequency: {api_script["frequency"]}min' if api_script["testCount"] > 0 else f'   API    Script: {api_script["testCount"]:<{max_label_length}}')
-            print(f'   Browser  Test: {browser_script["testCount"]:<{max_label_length}}        Frequency: {browser_script["frequency"]}min' if browser_script["testCount"] > 0 else f'   Browser  Test: {browser_script["testCount"]:<{max_label_length}}')
-            print(f"   Install Agent: {agent:<{max_label_length}}        Worker Nodes: {worker_nodes}" if agent == "Y" else f"   Install Agent: {agent:<{max_label_length}}")
-
-            print("\nThe estimated sizing is:")
-            print(f"   CPU:     {cpu}m")
-            print(f"   Memory:  {memory}Mi")
-            print(f"   Disk:    {disk_size/1000}GB")
-
-            print("\nThe recommended engine pods:")
-            print(f"   http           playback engines: {http_pod_count} \n"
-                  f"   javascript     playback engines: {javascript_pod_count} \n"
-                  f"   browserscript  playback engines: {browserscript_pod_count} ")
+            return pop_estimate_size 
+           
 
         except ValueError as e:
             print(f"Exception: {e}")
@@ -599,6 +586,25 @@ class PopConfiguration(Base):
         except ValueError as e:
             print(f"Exception: {e}")
 
+    def print_estimated_pop_size(self):
+
+        pop_estimate_size = self.pop_size_estimate()
+        max_label_length = max(len(str(pop_estimate_size["api_simple"]["testCount"])), len(str(pop_estimate_size["api_script"]["testCount"])), len(str(pop_estimate_size["browser_script"]["testCount"])), len(str(pop_estimate_size["agent"])))
+        print("\nYour requirement is:")
+        print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}        Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
+        print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}        Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
+        print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}        Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
+        print(f'   Install Agent: {pop_estimate_size["agent"]:<{max_label_length}}        Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"] == "Y" else f'  Install Agent: {pop_estimate_size["agent"]:<{max_label_length}}')
+
+        print("\nThe estimated sizing is:")
+        print(f'   CPU:     {pop_estimate_size["cpu"]}m')
+        print(f'   Memory:  {pop_estimate_size["memory"]}Mi')
+        print(f'   Disk:    {pop_estimate_size["disk_size"]/1000}GB')
+
+        print("\nThe recommended engine pods:")
+        print(f'   http           playback engines: {pop_estimate_size["http_pod_count"]} \n'
+              f'   javascript     playback engines: {pop_estimate_size["javascript_pod_count"]} \n'
+              f'   browserscript  playback engines: {pop_estimate_size["browserscript_pod_count"]}')
 
 class ConfigurationFile(Base):
     def __init__(self) -> None:
@@ -4779,7 +4785,7 @@ def main():
             else:
                 print('testid is required')
         elif get_args.op_type == POP_SIZE or get_args.op_type == 'size':
-            pop_estimate.pop_size_estimate()
+            pop_estimate.print_estimated_pop_size()
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
             pop_estimate.cost_estimate()
     elif COMMAND_CREATE == get_args.sub_command:
