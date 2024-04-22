@@ -608,9 +608,14 @@ class PopConfiguration(Base):
     def print_estimated_cost(self):
 
         cost_estimate = self.cost_estimate()
-        print(f'\nThe total estimated \n    cost per month is : ${cost_estimate["total_cost"]}')
+        print(f'\nThe total executions \n    API   Simple executions: {cost_estimate["api_simple_test_exec"]}/month')
+        print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]}/month')
+        print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]}/month\n')
+
+
+        print(f'\nThe total estimated \n    cost per month is: ${cost_estimate["total_cost"]}')
         print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]}')
-        print(f'    Resource Units per month is : {cost_estimate["total_resource"]}\n')
+        print(f'    Resource Units per month is: {cost_estimate["total_resource"]}\n')
 
 class ConfigurationFile(Base):
     def __init__(self) -> None:
