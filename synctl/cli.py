@@ -527,8 +527,9 @@ class PopConfiguration(Base):
         "   ● 1 simple API test executed = 0.025 RU \n"
         "   ● 1 API script test executed = 0.042 RU \n"
         "   ● 1 Browser    test executed = 1 RU")
+        print("The minimum quantity per month is 30 part numbers , priced at $360.")
 
-        print("Please answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs\n ")
+        print("\nPlease answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs\n ")
         try:
             while True:
                 cost_estimate["locations"] = int(self.ask_question("How many managed locations will be used? "))
@@ -582,6 +583,11 @@ class PopConfiguration(Base):
                     # Total estimated cost per month
                     # List price for 1 unit = $12
                     cost_estimate["total_cost"] = cost_estimate["total_parts"] * 12
+
+                    if cost_estimate["total_cost"] < 360:
+                        cost_estimate["total_resource"] = 29920.32
+                        cost_estimate["total_parts"] = 30.0
+                        cost_estimate["total_cost"] = 360.0
 
                     return cost_estimate
                     break
