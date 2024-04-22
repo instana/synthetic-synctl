@@ -482,12 +482,12 @@ class PopConfiguration(Base):
 
             pop_estimate_size["agent"] = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
             while True:
-                if pop_estimate_size["agent"] in ["y", "Y"]:
+                if pop_estimate_size["agent" in ["y", "Y"]:
                     pop_estimate_size["worker_nodes"] = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
-                    pop_estimate_size["k8ssensor_pod_count"] = 3
                     if pop_estimate_size["worker_nodes"] <= 0:
                         print("Number of worker nodes must be greater than 0.")
-                    elif pop_estimate_size["worker_nodes"] > 0:
+                    else:
+                        pop_estimate_size["k8ssensor_pod_count"] = 3 if pop_estimate_size["worker_nodes"] >= 3 else 1
                         break
                 else:
                     pop_estimate_size["worker_nodes"] = 0
