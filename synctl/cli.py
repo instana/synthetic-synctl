@@ -515,14 +515,19 @@ class PopConfiguration(Base):
                         pop_estimate_size["redis_pod_count"] * self.redis["imageSize"] + pop_estimate_size["worker_nodes"] * self.agent["imageSize"] + \
                         pop_estimate_size["k8ssensor_pod_count"] * self.k8ssensor["imageSize"]
 
-            return pop_estimate_size 
-           
-
+            return pop_estimate_size
         except ValueError as e:
             print(f"Exception: {e}")
 
     def cost_estimate(self):
         cost_estimate = {}
+
+        print("\nList price for 1 unit is $12")
+        print("1 part number entitles 1000 Resource Units (RU) per month and allows to execute 3 different kind of test \n"
+        "   ● 1 simple API test executed = 0.025 RU \n"
+        "   ● 1 API script test executed = 0.042 RU \n"
+        "   ● 1 Browser    test executed = 1 RU")
+
         print("Please answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs\n ")
         try:
             while True:
