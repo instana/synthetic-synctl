@@ -522,64 +522,63 @@ class PopConfiguration(Base):
             print(f"Exception: {e}")
 
     def cost_estimate(self):
+        cost_estimate = {}
         print("Please answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs\n ")
         try:
             while True:
-                locations = int(self.ask_question("How many managed locations will be used? "))
-                if locations > 0:
+                cost_estimate["locations"] = int(self.ask_question("How many managed locations will be used? "))
+                if cost_estimate["locations"] > 0:
                     while True:
-                        api_simple = self.get_api_simple_test()
-                        if api_simple["testCount"] == 0:
-                            api_simple_test_exec = 0
-                            api_simple_res = 0
+                        cost_estimate["api_simple"] = self.get_api_simple_test()
+                        if cost_estimate["api_simple"]["testCount"] == 0:
+                            cost_estimate["api_simple_test_exec"] = 0
+                            cost_estimate["api_simple_res"] = 0
                             break
-                        elif api_simple["testCount"] < 0:
+                        elif cost_estimate["api_simple"]["testCount"] < 0:
                             print("Invalid input")
                         else:
-                            api_simple_test_exec = self.test_exec_estimate(api_simple["testCount"], api_simple["frequency"], locations)
+                            cost_estimate["api_simple_test_exec"] = self.test_exec_estimate(cost_estimate["api_simple"]["testCount"], cost_estimate["api_simple"]["frequency"], cost_estimate["locations"])
                             # resource units per month
-                            api_simple_res = api_simple_test_exec * self.factors["APISimple"]
+                            cost_estimate["api_simple_res"] = cost_estimate["api_simple_test_exec"] * self.factors["APISimple"]
                             break
 
                     while True:
-                        api_script = self.get_api_script_test()
-                        if api_script["testCount"] == 0:
-                            api_script_test_exec = 0
-                            api_script_res = 0
+                        cost_estimate["api_script"] = self.get_api_script_test()
+                        if cost_estimate["api_script"]["testCount"] == 0:
+                            cost_estimate["api_script_test_exec"] = 0
+                            cost_estimate["api_script_res"] = 0
                             break
-                        elif api_script["testCount"] < 0:
+                        elif cost_estimate["api_script"]["testCount"] < 0:
                             print("Invalid input")
                         else:
-                            api_script_test_exec = self.test_exec_estimate(api_script["testCount"], api_script["frequency"], locations)
-                            api_script_res = api_script_test_exec * self.factors["APIScript"]
+                            cost_estimate["api_script_test_exec"] = self.test_exec_estimate(cost_estimate["api_script"]["testCount"], cost_estimate["api_script"]["frequency"], cost_estimate["locations"])
+                            cost_estimate["api_script_res"] = cost_estimate["api_script_test_exec"] * self.factors["APIScript"]
                             break
 
                     while True:
-                        browser_script = self.get_browser_script_test()
-                        if browser_script["testCount"] == 0:
-                            browserscript_test_exec = 0
-                            browserscript_res = 0
+                        cost_estimate["browser_script"] = self.get_browser_script_test()
+                        if cost_estimate["browser_script"]["testCount"] == 0:
+                            cost_estimate["browserscript_test_exec"] = 0
+                            cost_estimate["browserscript_res"] = 0
                             break
-                        elif browser_script["testCount"] < 0:
+                        elif cost_estimate["browser_script"]["testCount"] < 0:
                             print("Invalid input")
                         else:
-                            browserscript_test_exec = self.test_exec_estimate(browser_script["testCount"], browser_script["frequency"], locations)
-                            browserscript_res = browserscript_test_exec * self.factors["browserTest"]
+                            cost_estimate["browserscript_test_exec"] = self.test_exec_estimate(cost_estimate["browser_script"]["testCount"], cost_estimate["browser_script"]["frequency"], cost_estimate["locations"])
+                            cost_estimate["browserscript_res"] = cost_estimate["browserscript_test_exec"] * self.factors["browserTest"]
                             break
 
                     # Total resource units per month
-                    total_resource = api_simple_res + api_script_res + browserscript_res
+                    cost_estimate["total_resource"] = cost_estimate["api_simple_res"] + cost_estimate["api_script_res"] + cost_estimate["browserscript_res"]
 
                     # Total parts per month
-                    total_parts = round(total_resource/1000, 0)
+                    cost_estimate["total_parts"] = round(cost_estimate["total_resource"]/1000, 0)
 
                     # Total estimated cost per month
                     # List price for 1 unit = $12
-                    total_cost = total_parts * 12
+                    cost_estimate["total_cost"] = cost_estimate["total_parts"] * 12
 
-                    print(f"\nThe total estimated \n    cost per month is : ${total_cost}")
-                    print(f"    Number of part numbers per month is: {total_parts}")
-                    print(f"    Resource Units per month is : {total_resource}\n")
+                    return cost_estimate
                     break
                 else:
                     print("number of locations cannot be less than 1")
@@ -605,6 +604,13 @@ class PopConfiguration(Base):
         print(f'   http           playback engines: {pop_estimate_size["http_pod_count"]} \n'
               f'   javascript     playback engines: {pop_estimate_size["javascript_pod_count"]} \n'
               f'   browserscript  playback engines: {pop_estimate_size["browserscript_pod_count"]}')
+
+    def print_estimated_cost(self):
+
+        cost_estimate = self.cost_estimate()
+        print(f'\nThe total estimated \n    cost per month is : ${cost_estimate["total_cost"]}')
+        print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]}')
+        print(f'    Resource Units per month is : {cost_estimate["total_resource"]}\n')
 
 class ConfigurationFile(Base):
     def __init__(self) -> None:
@@ -4787,7 +4793,7 @@ def main():
         elif get_args.op_type == POP_SIZE or get_args.op_type == 'size':
             pop_estimate.print_estimated_pop_size()
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
-            pop_estimate.cost_estimate()
+            pop_estimate.print_estimated_cost()
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
