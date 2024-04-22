@@ -519,7 +519,7 @@ class PopConfiguration(Base):
         except ValueError as e:
             print(f"Exception: {e}")
 
-    def cost_estimate(self):
+    def pop_cost_estimate(self):
         cost_estimate = {}
 
         print("\nList price for 1 unit is $12")
@@ -612,7 +612,7 @@ class PopConfiguration(Base):
 
     def print_estimated_cost(self):
 
-        cost_estimate = self.cost_estimate()
+        cost_estimate = self.pop_cost_estimate()
         print(f'\nThe total executions \n    API   Simple executions: {cost_estimate["api_simple_test_exec"]}/month')
         print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]}/month')
         print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]}/month\n')
