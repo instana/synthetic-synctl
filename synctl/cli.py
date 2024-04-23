@@ -101,9 +101,9 @@ def general_helper() -> None:
     m = """Usage: synctl [--verify-tls] <command> [options]
 
 Options:
-  -h, --help            show this help message and exit
-  --version, -v         show version
-  --verify-tls          verify tls certificate
+    -h, --help          show this help message and exit
+    --version, -v       show version
+    --verify-tls        verify tls certificate
 
 Commands:
     config              manage configuration file
@@ -235,11 +235,11 @@ synctl update test <test-id> --label "simple-ping" \\
 
 # update alert with multiple options
 synctl update alert <alert-id> --name "Smart-alert" \\
-       --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \\
-       --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \\
-       --violation-count 2 \\
-       --severity warning 
-       
+    --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \\
+    --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \\
+    --violation-count 2 \\
+    --severity warning
+
 # enable/disable a smart alert
 synctl update alert <alert-id> --enable
 synctl update alert <alert-id> --disable
@@ -483,7 +483,7 @@ class PopConfiguration(Base):
             pop_estimate_size["agent"] = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
             while True:
                 if pop_estimate_size["agent"] in ["y", "Y"]:
-                    pop_estimate_size["worker_nodes"] = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
+                    pop_estimate_size["worker_nodes"] = int(self.ask_question("How many worker nodes in your kubernetes cluster? "))
                     if pop_estimate_size["worker_nodes"] <= 0:
                         print("Number of worker nodes must be greater than 0.")
                     else:
@@ -522,14 +522,14 @@ class PopConfiguration(Base):
     def pop_cost_estimate(self):
         cost_estimate = {}
 
-        print("\nList price for 1 unit is $12")
-        print("1 part number entitles 1000 Resource Units (RU) per month and allows to execute 3 different kind of test \n"
+        print("List price for 1 unit(part number) is $12/month and 1 part number entitles 1000 Resource Units (RU) per month.")
+        print("The relationship between RU and test executions are:\n"
         "   ● 1 API Simple test executed = 0.025 RU \n"
         "   ● 1 API Script test executed = 0.042 RU \n"
         "   ● 1 Browser    test executed = 1 RU")
-        print("The minimum quantity per month is 30 part numbers , priced at $360.")
+        print("The minimum quantity per month is 30 part numbers, priced at $360.")
 
-        print("\nPlease answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs\n ")
+        print("\nPlease answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs.\n")
         try:
             while True:
                 cost_estimate["locations"] = int(self.ask_question("How many managed locations will be used? "))
@@ -603,7 +603,8 @@ class PopConfiguration(Base):
         print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
         print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
         print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
-        print(f'   Install Agent: {pop_estimate_size["agent"]:<{max_label_length}}        Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"] == "Y" else f'  Install Agent: {pop_estimate_size["agent"]:<{max_label_length}}')
+        agent_yes = "Yes" if pop_estimate_size["agent"] in ["y", "Y"] else "No"
+        print(f'   Install Agent: {agent_yes:<{max_label_length}}        Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"].upper() == "Y" else f'   Install Agent: {agent_yes:<{max_label_length}}')
 
         print("\nThe estimated sizing is:")
         print(f'   CPU:     {pop_estimate_size["cpu"]:,}m')
@@ -618,14 +619,13 @@ class PopConfiguration(Base):
     def print_estimated_cost(self):
 
         cost_estimate = self.pop_cost_estimate()
-        print(f'\nThe total executions per month \n    API   Simple executions: {cost_estimate["api_simple_test_exec"]:,}')
+        print(f'\nThe total executions per month:\n    API   Simple executions: {cost_estimate["api_simple_test_exec"]:,}')
         print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]:,}')
         print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]:,}\n')
 
-
-        print(f'\nThe total cost estimated \n    Cost per month is: ${cost_estimate["total_cost"]:,}')
+        print(f'The total cost estimated:\n    Cost per month is: ${cost_estimate["total_cost"]:,}')
         print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]:,}')
-        print(f'    Resource Units per month is: {cost_estimate["total_resource"]:,}\n')
+        print(f'    Resource Units per month is: {cost_estimate["total_resource"]:,}')
 
 class ConfigurationFile(Base):
     def __init__(self) -> None:
