@@ -517,7 +517,7 @@ class PopConfiguration(Base):
 
             return pop_estimate_size
         except ValueError as e:
-            print(f"Exception: {e}")
+            self.exit_synctl(ERROR_CODE, f"Exception: {e}")
 
     def pop_cost_estimate(self):
         cost_estimate = {}
@@ -590,26 +590,25 @@ class PopConfiguration(Base):
                         cost_estimate["total_cost"] = 360.0
 
                     return cost_estimate
-                    break
                 else:
                     print("number of locations cannot be less than 1")
         except ValueError as e:
-            print(f"Exception: {e}")
+            self.exit_synctl(ERROR_CODE,f"Exception: {e}")
 
     def print_estimated_pop_size(self):
 
         pop_estimate_size = self.pop_size_estimate()
         max_label_length = max(len(str(pop_estimate_size["api_simple"]["testCount"])), len(str(pop_estimate_size["api_script"]["testCount"])), len(str(pop_estimate_size["browser_script"]["testCount"])), len(str(pop_estimate_size["agent"])))
         print("\nYour requirement is:")
-        print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}        Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
-        print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}        Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
-        print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}        Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
+        print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
+        print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
+        print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
         print(f'   Install Agent: {pop_estimate_size["agent"]:<{max_label_length}}        Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"] == "Y" else f'  Install Agent: {pop_estimate_size["agent"]:<{max_label_length}}')
 
         print("\nThe estimated sizing is:")
-        print(f'   CPU:     {pop_estimate_size["cpu"]}m')
-        print(f'   Memory:  {pop_estimate_size["memory"]}Mi')
-        print(f'   Disk:    {pop_estimate_size["disk_size"]/1000}GB')
+        print(f'   CPU:     {pop_estimate_size["cpu"]:,}m')
+        print(f'   Memory:  {pop_estimate_size["memory"]:,}Mi')
+        print(f'   Disk:    {pop_estimate_size["disk_size"]/1000:,}GB')
 
         print("\nThe recommended engine pods:")
         print(f'   http           playback engines: {pop_estimate_size["http_pod_count"]} \n'
@@ -619,14 +618,14 @@ class PopConfiguration(Base):
     def print_estimated_cost(self):
 
         cost_estimate = self.pop_cost_estimate()
-        print(f'\nThe total executions per month \n    API   Simple executions: {cost_estimate["api_simple_test_exec"]}')
-        print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]}')
-        print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]}\n')
+        print(f'\nThe total executions per month \n    API   Simple executions: {cost_estimate["api_simple_test_exec"]:,}')
+        print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]:,}')
+        print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]:,}\n')
 
 
-        print(f'\nThe total cost \n    Cost per month is: ${cost_estimate["total_cost"]}')
-        print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]}')
-        print(f'    Resource Units per month is: {cost_estimate["total_resource"]}\n')
+        print(f'\nThe total cost estimated \n    Cost per month is: ${cost_estimate["total_cost"]:,}')
+        print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]:,}')
+        print(f'    Resource Units per month is: {cost_estimate["total_resource"]:,}\n')
 
 class ConfigurationFile(Base):
     def __init__(self) -> None:
