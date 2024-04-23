@@ -624,7 +624,7 @@ class PopConfiguration(Base):
         print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]}\n')
 
 
-        print(f'\nThe total estimated \n    cost per month is: ${cost_estimate["total_cost"]}')
+        print(f'\nThe total cost \n    Cost per month is: ${cost_estimate["total_cost"]}')
         print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]}')
         print(f'    Resource Units per month is: {cost_estimate["total_resource"]}\n')
 
