@@ -524,7 +524,7 @@ class PopConfiguration(Base):
 
         print("\nList price for 1 unit is $12")
         print("1 part number entitles 1000 Resource Units (RU) per month and allows to execute 3 different kind of test \n"
-        "   ● 1 simple API test executed = 0.025 RU \n"
+        "   ● 1 API Simple test executed = 0.025 RU \n"
         "   ● 1 API script test executed = 0.042 RU \n"
         "   ● 1 Browser    test executed = 1 RU")
         print("The minimum quantity per month is 30 part numbers , priced at $360.")
