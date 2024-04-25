@@ -7,6 +7,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 - [Upgrade](#upgrade)
 - [Size the PoP hardware configuration](#size-the-pop-hardware-configuration)
 - [Configure an Instana Backend](#configure-an-instana-backend)
+- [Estimate the cost of Instana-hosted PoP](#estimate-the-cost-of-instana-hosted-pop)
     - [Use a configuration file](#use-a-configuration-file-recommended)
     - [Use command options](#use-command-options)
     - [Use environment variables](#use-environment-variables)
@@ -103,7 +104,18 @@ synctl can be used to estimate the size of the PoP hardware configuration.
 
 ### synctl pop-sizing Syntax
 ```
-synctl get pop-size
+# synctl get pop-size
+
+# synctl get size
+```
+# Estimate the cost of Instana-hosted PoP
+synctl can be used to estimate the cost of Instana-hosted synthetic PoP.
+
+### synctl cost estimation Syntax
+```
+# synctl get pop-cost
+
+# synctl get cost
 ```
 # Configure an Instana Backend
 `synctl` support three types of configurations:
