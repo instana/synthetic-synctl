@@ -41,6 +41,7 @@ HTTPScript_TYPE = "HTTPScript"
 BrowserScript_TYPE = "BrowserScript"
 WebpageScript_TYPE = "WebpageScript"
 WebpageAction_TYPE = "WebpageAction"
+SSLCertificate_TYPE = "SSLCertificate"
 
 # supported Synthetic type
 synthetic_type = (
@@ -48,7 +49,8 @@ synthetic_type = (
     HTTPScript_TYPE,     # 1
     BrowserScript_TYPE,  # 2
     WebpageScript_TYPE,  # 3
-    WebpageAction_TYPE   # 4
+    WebpageAction_TYPE,  # 4
+    SSLCertificate_TYPE  # 5
 )
 
 SYN_TEST = "test"
@@ -1001,6 +1003,12 @@ class SyntheticConfiguration(Base):
             "recordVideo": False
         }
 
+        # syntheticType SSLCertificate
+        self.SSL_certificate_conf = {
+            "syntheticType": "WebpageAction",
+            "hostname": ""
+        }
+
         self.script_type = [HTTPScript_TYPE, BrowserScript_TYPE]
         if syn_type in [HTTPAction_TYPE, HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
             self.syn_type = syn_type
@@ -1208,6 +1216,18 @@ class SyntheticConfiguration(Base):
     def set_record_video(self, record_video):
         if record_video is not None:
             self.syn_test_config["configuration"]["recordVideo"] = record_video
+
+    def set_host(self, hostname):
+        if hostname is not None:
+            self.syn_test_config["configuration"]["hostname"] = hostname
+
+    def set_port(self, port):
+        if port is not None:
+            self.syn_test_config["configuration"]["port"] = port
+
+    def set_remaining_days(self, remaining_days):
+        if remaining_days is not None:
+            self.syn_test_config["configuration"]["daysRemainingCheck"] = remaining_days
 
     def read_js_file(self, file_name: str) -> str:
         """read javascript file"""
@@ -2504,6 +2524,8 @@ class SyntheticTest(Base):
             syn_type = "Webpage Script"
         elif syn_type == BrowserScript_TYPE:
             syn_type = "Browser Script"
+        elif syn_type == SSLCertificate_TYPE:
+            syn_type = "SSLCertificate"
 
         return syn_type
 
@@ -2595,7 +2617,7 @@ class SyntheticTest(Base):
                 syn_type = self.map_synthetic_type_label(syn_type)
 
                 current_type = t['configuration']['syntheticType']
-                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
+                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE, SSLCertificate_TYPE):
                     if len(t['locations']) > 0:
                         # locations,
                         location_str = ','.join(t['locationDisplayLabels'])
@@ -4226,8 +4248,8 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, metavar="<int>", help="Synthetic type:"
-                                                                                                     + "HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4]")
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4,5], required=False, metavar="<int>", help="Synthetic type:"
+                                                                                                     + "HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4], SSLCertificate[5]")
 
         # support multiple locations
         # --location location_id_1 location_id_2 location_id_3
@@ -4295,6 +4317,14 @@ class ParseParameter:
 
         self.parser_create.add_argument(
             '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+
+        # SSLCertificate
+        self.parser_create.add_argument(
+            '--hostname', type=str, metavar="<url>", help='set host name')
+        self.parser_create.add_argument(
+            '--port', type=str, help='set port')
+        self.parser_create.add_argument(
+            '--remaining-days', type=str, help='check remaining days')
 
         # full payload in json file
         self.parser_create.add_argument(
@@ -4705,7 +4735,7 @@ def main():
                 try:
                     syn_type_t = synthetic_type[get_args.type]
                 except IndexError:
-                    print("Synthetic type only support 0 1 2 3 4", syn_type_t)
+                    print("Synthetic type only support 0 1 2 3 4 5", syn_type_t)
 
             if get_args.id is None:
                 if get_args.filter is not None:
@@ -4839,7 +4869,7 @@ def main():
             alert_instance.set_alert_payload(alert_payload.get_json())
             alert_instance.create_synthetic_alert()
         elif get_args.syn_type == SYN_TEST:
-            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4]:
+            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4, 5]:
                 syn_type_t = synthetic_type[get_args.type]
                 payload = SyntheticConfiguration(syn_type_t)
 
@@ -4948,6 +4978,14 @@ def main():
                         payload.set_ping_url(get_args.url)
                     else:
                         print("URL is required")
+
+                if get_args.type == 5:
+                    if get_args.host is not None:
+                        payload.set_host(get_args.host)
+                    if get_args.port is not None:
+                        payload.set_port(get_args.port)
+                    if get_args.remaining_days is not None:
+                        payload.set_remaining_days(get_args.remaining_days)
 
                 # global operation, add label, location, description, frequency, etc.
                 if get_args.label is not None:
