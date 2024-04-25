@@ -286,7 +286,7 @@ synctl create test [options]
 ```
 -h, --help                          show this help message and exit
 
--t <int>, --type <int>              Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple
+-t <int>, --type <int>              Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple, 5 SSLCertificate 
 --location id [id ...]              location id, support multiple locations id
 --label <string>                    friendly name of the Synthetic test
 --description, -d <string>          the description of Synthetic test
@@ -501,6 +501,15 @@ synctl create test -t 4 \
     --location "$LOCATION" --frequency 5 \
     --record-video true \
     --browser chrome
+```
+
+#### Create SSLCertificate test
+```
+synctl create test -t 5 \
+    --label "ssl-certificate-test" \
+    --frequency 1 --host "httpbin.org \
+    --port 443 --remaining-days 30 \
+    --lo "$LOCATION"  
 ```
 
 #### Create Synthetic test with json payload  
