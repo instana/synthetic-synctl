@@ -18,7 +18,7 @@ Commands:
 Use "synctl <command> -h/--help" for more information about a command.
 ```
 
-# Document
+# Documentation
 - [synctl config](synctl-config.md) - Add configuration of Instana.
 - [synctl get test](synctl-get-test.md) - Display Synthetic tests.
 - [synctl get result](synctl-get-result.md) - Display Synthetic test result.

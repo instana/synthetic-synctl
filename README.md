@@ -1,9 +1,10 @@
 # Synthetic CLI Command
-Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations and credentials.
+Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations, credentials and smart alert.
 
 # Table of Contents
 - [Features](#features)
 - [Synthetic CLI Documentation](docs/synctl-cli.md)
+- [Prerequisites](#Prerequisites)
 - [Installation](#installation)
 - [Upgrade](#upgrade)
 - [Configuration](#configuration)
@@ -17,6 +18,7 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 
 # Prerequisites
 - [Python 3.6+](https://www.python.org/downloads/)
+- [pip3](https://pip.pypa.io/en/stable/installation/)
 
 # Installation
 If you have installed synctl(version 1.0.x) before, make sure remove it via `rm /usr/local/bin/synctl`. 
