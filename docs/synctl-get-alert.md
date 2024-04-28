@@ -1,6 +1,7 @@
 
-# Query Smart Alerts
-`synctl get alert ` can be used to query Smart Alerts. 
+# synctl get alert
+
+Query and list Smart Alerts. 
 
 ## Syntax
 ```
@@ -24,12 +25,12 @@ Get Smart Alert
 synctl get alert
 ```
 
-Show a smart alert details
+Show smart alert details.
 ```
 synctl get alert <id> --show-details
 ```
 
-Show a smart alert payload in json format.
+Show smart alert payload in json format.
 ```
 synctl get alert <id> --show-json
 ```

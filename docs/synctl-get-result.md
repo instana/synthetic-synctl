@@ -6,7 +6,7 @@ Query Synthetic test results
 synctl get result [id] [options]
 ```
 
-### Options
+## Options
 ```
     -h, --help               show this help message and exit
     --test                   Synthetic test id
@@ -19,13 +19,12 @@ synctl get result [id] [options]
 
 ## Examples
 
-Display result list with time window, default time window is 1h.
+Display result list with time window, default time window is 1h
 ```
 synctl get result --test <test-id> --window-size 30m
 ```
 
-
-Show result details, note that time window need to be same with result list.
+Show result details, note that time window need to be same with result list
 ```
 synctl get result <id> --test <test-id> --window-size 6h
 ```

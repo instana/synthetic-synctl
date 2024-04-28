@@ -1,4 +1,5 @@
 # synctl delete test
+
 Delete Synthetic test.
 
 ## Syntax
@@ -19,14 +20,14 @@ synctl delete test [id...] [options]
     --token <token>       set token
 ```
 
-### Examples
+## Examples
 
 Delete Synthetic with id:
 ```
 synctl delete test <synthetic-id>
 ```
 
-Delete several synthetic tests:
+Delete several Synthetic tests:
 ```
 synctl delete test <id-1> <-id-2> <id-3> ...
 ```
@@ -46,7 +47,7 @@ Delete all tests with <location-id>, it will not delete tests with multiple loca
 synctl delete test --match-location <location-id>
 ```
 
-Delete all tests whose locations are empty.
+Delete all tests whose locations are empty
 ```
 synctl delete test --no-locations
 ```

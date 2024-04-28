@@ -1,5 +1,7 @@
 ## synctl delete alert
 
+Delete Synthetic smart alert.
+
 ## Syntax
 ```
 synctl delete alert [id...] 
@@ -7,7 +9,7 @@ synctl delete alert [id...]
 
 ## Examples
 
-Delete a smart test
+Delete a smart alert
 ```
 synctl delete alert <alert-id>
 ```

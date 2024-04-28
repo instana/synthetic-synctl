@@ -1,5 +1,6 @@
-# Create Smart alert
-`synctl create alert` is used to create Smart Alerts.
+# synctl create alert 
+
+Create Synthetic Smart alert.
 
 ## Syntax
 ```
@@ -9,7 +10,8 @@ synctl create alert [options]
 ## Options
 ```
     -h, --help                        show this help message and exit
-    --test id [id ...]                synthetic-test id, support multiple synthetic tests id
+
+    --test id [id ...]                Synthetic test id, support multiple Synthetic tests id
     --name <string>                   friendly name of the Smart Alerts
     --description, -d <string>        the description of Smart Alerts
     --severity <string>               the severity of alert is either warning or critical
@@ -28,7 +30,7 @@ synctl create alert --name "Smart-alert" \
        --violation-count 2
 ```
 
-Schedule a smart alert for multiple synthetic tests
+Schedule a smart alert for multiple Synthetic tests
 ```
 synctl create alert --name "Smart-alert" \
        --alert-channel "$ALERT_CHANNEL" \

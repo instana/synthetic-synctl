@@ -1,12 +1,13 @@
-# Update Synthetic Test
-The `synctl update` command can be to update multiple attributes of Synthetic test.
+# synctl update test
 
-### Syntax
+Update Synthetic test properties.
+
+## Syntax
 ```
 synctl update test <id> [options]
 ```
 
-### synctl update Options
+## Options
 ```
     -h, --help            show this help message and exit
 

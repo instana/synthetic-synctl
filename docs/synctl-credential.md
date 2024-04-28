@@ -1,23 +1,23 @@
 # Manage Credentials
 
-## Display all credentials
+### Display all credentials
 ```
 synctl get cred
 ```
 
-## Create a credential
+### Create a credential
 
 ```
 synctl create cred --key <key-name> --value <value>
 ```
 
-## Update a credential
+### Update a credential
 
 ```
 synctl update cred <cred-name> --value <value>
 ```
 
-## Delete a credential
+### Delete a credential
 
 ```
 synctl delete cred <key-name>

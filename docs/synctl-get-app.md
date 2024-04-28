@@ -1,6 +1,6 @@
 # Manage Application
-List Instana Application, application can be used to create Synthetic test.
 
+List Instana Application, application can be used to create Synthetic test.
 
 ## Syntax
 ```
