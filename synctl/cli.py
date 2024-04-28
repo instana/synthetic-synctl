@@ -60,6 +60,7 @@ SYN_CRED = "cred"  # short for credentials
 SYN_ALERT = "alert"  # short for smart alerts
 SYN_RESULT = "result"
 POP_SIZE = "pop-size"
+POP_COST = "pop-cost"
 
 POSITION_PARAMS = "commands"
 OPTIONS_PARAMS = "options"
@@ -100,14 +101,14 @@ def general_helper() -> None:
     m = """Usage: synctl [--verify-tls] <command> [options]
 
 Options:
-  -h, --help            show this help message and exit
-  --version, -v         show version
-  --verify-tls          verify tls certificate
+    -h, --help          show this help message and exit
+    --version, -v       show version
+    --verify-tls        verify tls certificate
 
 Commands:
     config              manage configuration file
     create              create a Synthetic test, credential and smart alert
-    get                 get Synthetic tests, locations, credentials, smart alert and pop-size
+    get                 get Synthetic tests, locations, credentials, smart alert, pop-size and pop-cost
     patch               patch a Synthetic test
     update              update a Synthetic test and smart alert
     delete              delete Synthetic tests, locations credentials and smart alert
@@ -177,7 +178,7 @@ synctl create cred --key MY_PASS --value password123
 synctl create alert --name "Smart-alert" --alert-channel "$ALERT_CHANNEL" --test "$SYNTHETIC_TEST" --violation-count 2
 """
 
-GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert, pop-size} [id] [options]
+GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert, pop-size, pop-cost} [id] [options]
 
 examples:
 # display all tests
@@ -197,7 +198,10 @@ synctl get cred
 synctl get alert
 
 # Estimate the size of the PoP hardware configuration
-synctl get pop-size"""
+synctl get pop-size
+
+# Estimate the cost of Instana-hosted Pop
+synctl get pop-cost"""
 
 PATCH_USAGE = """synctl patch test id [options]
 
@@ -231,11 +235,11 @@ synctl update test <test-id> --label "simple-ping" \\
 
 # update alert with multiple options
 synctl update alert <alert-id> --name "Smart-alert" \\
-       --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \\
-       --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \\
-       --violation-count 2 \\
-       --severity warning 
-       
+    --alert-channel "$ALERT_CHANNEL1" "$ALERT_CHANNEL2" "$ALERT_CHANNEL3" ... \\
+    --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \\
+    --violation-count 2 \\
+    --severity warning
+
 # enable/disable a smart alert
 synctl update alert <alert-id> --enable
 synctl update alert <alert-id> --disable
@@ -381,6 +385,12 @@ class PopConfiguration(Base):
             "imageSize": 1500,
         }
 
+        self.factors = {
+            "browserTest": 1,
+            "APIScript": 0.042,
+            "APISimple": 0.025
+        }
+
     def ask_question(self,question, options=None):
         answer = input(question)
         if options:
@@ -389,119 +399,233 @@ class PopConfiguration(Base):
                 answer = input(question)
         return answer
 
+    def get_api_simple_test(self):
+        api_simple_test = {}
+        api_simple_test["testCount"] = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
+        if api_simple_test["testCount"] > 0:
+            while True:
+                api_simple_test["frequency"] = int(self.ask_question("What is the test frequency for your API Simple tests? (1-120) "))
+                if api_simple_test["frequency"] > 0 and api_simple_test["frequency"] <= 120:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,120]")
+        return api_simple_test
+
+    def get_api_script_test(self):
+        api_script_test = {}
+        api_script_test["testCount"] = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
+        if api_script_test["testCount"] > 0:
+            while True:
+                api_script_test["frequency"] = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
+                if api_script_test["frequency"] > 0 and api_script_test["frequency"] <= 120:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,120]")
+        return api_script_test
+
+    def get_browser_script_test(self):
+        browser_script_test = {}
+        browser_script_test["testCount"] = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
+        if browser_script_test["testCount"] > 0:
+            while True:
+                browser_script_test["frequency"] = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
+                if browser_script_test["frequency"] > 0 and browser_script_test["frequency"] <= 120:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,120]")
+        return browser_script_test
+
     def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
         pod_estimate = int(user_tests * default_frequency) / int(user_frequency * default_tests)
         return math.ceil(pod_estimate)
 
+    def test_exec_estimate(self, tests, frequency, loc):
+        #The total test executions per month(30 days)
+        return int(tests * ((30 * 24 * 60) / frequency) * loc)
+
     def pop_size_estimate(self):
+        pop_estimate_size = {}
         print("Please answer below questions for estimating the self-hosted PoP hardware size:\n")
         try:
             while True:
-                api_simple = int(self.ask_question("How many API Simple tests do you want to create? (0 if no) "))
-                if api_simple > 0:
-                    while True:
-                        api_simple_frequency = int(self.ask_question("What is the test frequency for your API Simple tests? (1-120)  "))
-                        if api_simple_frequency > 0 and api_simple_frequency <= 120:
-                            http_pod_count = int(self.size_estimate(api_simple, self.http["frequency"], api_simple_frequency, self.http["testCount"]))
-                            break
-                        else:
-                            print("frequency is not valid, it should be in [1,120]")
+                pop_estimate_size["api_simple"] = self.get_api_simple_test()
+                if pop_estimate_size["api_simple"]["testCount"] == 0:
+                    pop_estimate_size["http_pod_count"] = 0
                     break
-                elif api_simple == 0:
-                    http_pod_count = 0
-                    break
-                else:
+                elif pop_estimate_size["api_simple"]["testCount"] < 0:
                     print("Invalid input")
+                else:
+                    pop_estimate_size["http_pod_count"] = int(self.size_estimate(pop_estimate_size["api_simple"]["testCount"], self.http["frequency"], pop_estimate_size["api_simple"]["frequency"], self.http["testCount"]))
+                    break
 
             while True:
-                api_script = int(self.ask_question("How many API Script tests do you want to create? (0 if no) "))
-                if api_script > 0:
-                    while True:
-                        api_script_frequency = int(self.ask_question("What is the test frequency for your API Script tests? (1-120) "))
-                        if api_script_frequency > 0 and api_script_frequency <= 120:
-                            javascript_pod_count = int(self.size_estimate(api_script, self.javascript["frequency"], api_script_frequency, self.javascript["testCount"]))
-                            break
-                        else:
-                            print("frequency is not valid, it should be in [1,120]")
+                pop_estimate_size["api_script"] = self.get_api_script_test()
+                if pop_estimate_size["api_script"]["testCount"] == 0:
+                    pop_estimate_size["javascript_pod_count"] = 0
                     break
-                elif api_script == 0:
-                    javascript_pod_count = 0
-                    break
-                else:
+                elif pop_estimate_size["api_script"]["testCount"] < 0:
                     print("Invalid input")
+                else:
+                    pop_estimate_size["javascript_pod_count"] = int(self.size_estimate(pop_estimate_size["api_script"]["testCount"], self.javascript["frequency"], pop_estimate_size["api_script"]["frequency"], self.javascript["testCount"]))
+                    break
 
             while True:
-                browser_script = int(self.ask_question("How many Browser tests (Webpage Action, Webpage Script and BrowserScript) do you want to create? (0 if no) "))
-                if browser_script > 0:
-                    while True:
-                        browser_script_frequency = int(self.ask_question("What is the test frequency for Browser tests? (1-120) "))
-                        if browser_script_frequency > 0 and browser_script_frequency <= 120:
-                            browserscript_pod_count = int(self.size_estimate(browser_script, self.browserscript["frequency"], browser_script_frequency, self.browserscript["testCount"]))
-                            break
-                        else:
-                            print("frequency is not valid, it should be in [1,120]")
+                pop_estimate_size["browser_script"] = self.get_browser_script_test()
+                if pop_estimate_size["browser_script"]["testCount"] == 0:
+                    pop_estimate_size["browserscript_pod_count"] = 0
                     break
-                elif browser_script == 0:
-                    browserscript_pod_count = 0
-                    break
-                else:
+                elif pop_estimate_size["browser_script"]["testCount"] < 0:
                     print("Invalid input")
+                else:
+                    pop_estimate_size["browserscript_pod_count"] = int(self.size_estimate(pop_estimate_size["browser_script"]["testCount"], self.browserscript["frequency"], pop_estimate_size["browser_script"]["frequency"], self.browserscript["testCount"]))
+                    break
 
-            agent = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
+            pop_estimate_size["agent"] = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
             while True:
-                if agent in ["y", "Y"]:
-                    worker_nodes = int(self.ask_question("How many worker nodes in your kubernetes cluster?  "))
-                    if worker_nodes <= 0:
+                if pop_estimate_size["agent"] in ["y", "Y"]:
+                    pop_estimate_size["worker_nodes"] = int(self.ask_question("How many worker nodes in your kubernetes cluster? "))
+                    if pop_estimate_size["worker_nodes"] <= 0:
                         print("Number of worker nodes must be greater than 0.")
                     else:
-                        k8ssensor_pod_count = 3 if worker_nodes >= 3 else 1
+                        pop_estimate_size["k8ssensor_pod_count"] = 3 if pop_estimate_size["worker_nodes"] >= 3 else 1
                         break
                 else:
-                    worker_nodes = 0
-                    k8ssensor_pod_count = 0
+                    pop_estimate_size["worker_nodes"] = 0
+                    pop_estimate_size["k8ssensor_pod_count"] = 0
                     break
 
-            if api_simple == 0 and api_script == 0 and browser_script == 0:
-                controller_pod_count = 0
-                redis_pod_count = 0
+            if pop_estimate_size["api_simple"]["testCount"] == 0 and pop_estimate_size["api_script"]["testCount"] == 0 and pop_estimate_size["browser_script"]["testCount"] == 0:
+                pop_estimate_size["controller_pod_count"] = 0
+                pop_estimate_size["redis_pod_count"] = 0
             else:
-                controller_pod_count = 1
-                redis_pod_count = 1
+                pop_estimate_size["controller_pod_count"] = 1
+                pop_estimate_size["redis_pod_count"] = 1
 
-            cpu = self.controller["cpuLimit"] * controller_pod_count + self.redis["cpuLimit"] * redis_pod_count + http_pod_count * self.http["cpuLimit"] + \
-                  javascript_pod_count * self.javascript["cpuLimit"] + browserscript_pod_count * self.browserscript["cpuLimit"] + \
-                  worker_nodes * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * k8ssensor_pod_count
+            pop_estimate_size["cpu"] = self.controller["cpuLimit"] * pop_estimate_size["controller_pod_count"] + self.redis["cpuLimit"] * pop_estimate_size["redis_pod_count"] + pop_estimate_size["http_pod_count"] * self.http["cpuLimit"] + \
+                  pop_estimate_size["javascript_pod_count"] * self.javascript["cpuLimit"] + pop_estimate_size["browserscript_pod_count"] * self.browserscript["cpuLimit"] + \
+                  pop_estimate_size["worker_nodes"] * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * pop_estimate_size["k8ssensor_pod_count"]
 
-            memory = http_pod_count * self.http["memLimit"] + javascript_pod_count * self.javascript["memLimit"] + \
-                     browserscript_pod_count * self.browserscript["memLimit"] + worker_nodes * self.agent["memLimit"] +  \
-                     self.k8ssensor["memLimit"] * k8ssensor_pod_count +  self.controller["memLimit"] * controller_pod_count + \
-                     self.redis["memLimit"] * redis_pod_count
+            pop_estimate_size["memory"] = pop_estimate_size["http_pod_count"] * self.http["memLimit"] + pop_estimate_size["javascript_pod_count"] * self.javascript["memLimit"] + \
+                     pop_estimate_size["browserscript_pod_count"] * self.browserscript["memLimit"] + pop_estimate_size["worker_nodes"] * self.agent["memLimit"] +  \
+                     self.k8ssensor["memLimit"] * pop_estimate_size["k8ssensor_pod_count"] +  self.controller["memLimit"] * pop_estimate_size["controller_pod_count"] + \
+                     self.redis["memLimit"] * pop_estimate_size["redis_pod_count"]
 
-            disk_size = http_pod_count * self.http["imageSize"] + javascript_pod_count * self.javascript["imageSize"] + \
-                        browserscript_pod_count * self.browserscript["imageSize"] + controller_pod_count * self.controller["imageSize"] + \
-                        redis_pod_count * self.redis["imageSize"] + worker_nodes * self.agent["imageSize"] + \
-                        k8ssensor_pod_count * self.k8ssensor["imageSize"]
+            pop_estimate_size["disk_size"] = pop_estimate_size["http_pod_count"] * self.http["imageSize"] + pop_estimate_size["javascript_pod_count"] * self.javascript["imageSize"] + \
+                        pop_estimate_size["browserscript_pod_count"] * self.browserscript["imageSize"] + pop_estimate_size["controller_pod_count"] * self.controller["imageSize"] + \
+                        pop_estimate_size["redis_pod_count"] * self.redis["imageSize"] + pop_estimate_size["worker_nodes"] * self.agent["imageSize"] + \
+                        pop_estimate_size["k8ssensor_pod_count"] * self.k8ssensor["imageSize"]
 
-            max_label_length = max(len(str(api_simple)), len(str(api_script)), len(str(browser_script)), len(str(agent)))
-            print("\nYour requirement is:")
-            print(f"   API    Simple: {api_simple:<{max_label_length}}        Frequency: {api_simple_frequency}min" if api_simple > 0 else f"   API    Simple: {api_simple:<{max_label_length}}")
-            print(f"   API    Script: {api_script:<{max_label_length}}        Frequency: {api_script_frequency}min" if api_script > 0 else f"   API    Script: {api_script:<{max_label_length}}")
-            print(f"   Browser  Test: {browser_script:<{max_label_length}}        Frequency: {browser_script_frequency}min" if browser_script > 0 else f"   Browser  Test: {browser_script:<{max_label_length}}")
-            print(f"   Install Agent: {agent:<{max_label_length}}        Worker Nodes: {worker_nodes}" if agent == "Y" else f"   Install Agent: {agent:<{max_label_length}}")
-
-            print("\nThe estimated sizing is:")
-            print(f"   CPU:     {cpu}m")
-            print(f"   Memory:  {memory}Mi")
-            print(f"   Disk:    {disk_size/1000}GB")
-
-            print("\nThe recommended engine pods:")
-            print(f"   http           playback engines: {http_pod_count} \n"
-                  f"   javascript     playback engines: {javascript_pod_count} \n"
-                  f"   browserscript  playback engines: {browserscript_pod_count} ")
-
+            return pop_estimate_size
         except ValueError as e:
-            print(f"Exception: {e}")
+            self.exit_synctl(ERROR_CODE, f"Exception: {e}")
 
+    def pop_cost_estimate(self):
+        cost_estimate = {}
+
+        print("List price for 1 unit(part number) is $12/month and 1 part number entitles 1000 Resource Units (RU) per month.")
+        print("The relationship between RU and test executions are:\n"
+        "   ● 1 API Simple test executed = 0.025 RU \n"
+        "   ● 1 API Script test executed = 0.042 RU \n"
+        "   ● 1 Browser    test executed = 1 RU")
+        print("The minimum quantity per month is 30 part numbers, priced at $360.")
+
+        print("\nPlease answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs.\n")
+        try:
+            while True:
+                cost_estimate["locations"] = int(self.ask_question("How many managed locations will be used? "))
+                if cost_estimate["locations"] > 0:
+                    while True:
+                        cost_estimate["api_simple"] = self.get_api_simple_test()
+                        if cost_estimate["api_simple"]["testCount"] == 0:
+                            cost_estimate["api_simple_test_exec"] = 0
+                            cost_estimate["api_simple_res"] = 0
+                            break
+                        elif cost_estimate["api_simple"]["testCount"] < 0:
+                            print("Invalid input")
+                        else:
+                            cost_estimate["api_simple_test_exec"] = self.test_exec_estimate(cost_estimate["api_simple"]["testCount"], cost_estimate["api_simple"]["frequency"], cost_estimate["locations"])
+                            # resource units per month
+                            cost_estimate["api_simple_res"] = cost_estimate["api_simple_test_exec"] * self.factors["APISimple"]
+                            break
+
+                    while True:
+                        cost_estimate["api_script"] = self.get_api_script_test()
+                        if cost_estimate["api_script"]["testCount"] == 0:
+                            cost_estimate["api_script_test_exec"] = 0
+                            cost_estimate["api_script_res"] = 0
+                            break
+                        elif cost_estimate["api_script"]["testCount"] < 0:
+                            print("Invalid input")
+                        else:
+                            cost_estimate["api_script_test_exec"] = self.test_exec_estimate(cost_estimate["api_script"]["testCount"], cost_estimate["api_script"]["frequency"], cost_estimate["locations"])
+                            cost_estimate["api_script_res"] = cost_estimate["api_script_test_exec"] * self.factors["APIScript"]
+                            break
+
+                    while True:
+                        cost_estimate["browser_script"] = self.get_browser_script_test()
+                        if cost_estimate["browser_script"]["testCount"] == 0:
+                            cost_estimate["browserscript_test_exec"] = 0
+                            cost_estimate["browserscript_res"] = 0
+                            break
+                        elif cost_estimate["browser_script"]["testCount"] < 0:
+                            print("Invalid input")
+                        else:
+                            cost_estimate["browserscript_test_exec"] = self.test_exec_estimate(cost_estimate["browser_script"]["testCount"], cost_estimate["browser_script"]["frequency"], cost_estimate["locations"])
+                            cost_estimate["browserscript_res"] = cost_estimate["browserscript_test_exec"] * self.factors["browserTest"]
+                            break
+
+                    # Total resource units per month
+                    cost_estimate["total_resource"] = cost_estimate["api_simple_res"] + cost_estimate["api_script_res"] + cost_estimate["browserscript_res"]
+
+                    # Total parts per month
+                    cost_estimate["total_parts"] = round(cost_estimate["total_resource"]/1000, 0)
+
+                    # Total estimated cost per month
+                    # List price for 1 unit = $12
+                    cost_estimate["total_cost"] = cost_estimate["total_parts"] * 12
+
+                    if cost_estimate["total_cost"] < 360:
+                        cost_estimate["total_resource"] = 29920.32
+                        cost_estimate["total_parts"] = 30.0
+                        cost_estimate["total_cost"] = 360.0
+
+                    return cost_estimate
+                else:
+                    print("number of locations cannot be less than 1")
+        except ValueError as e:
+            self.exit_synctl(ERROR_CODE,f"Exception: {e}")
+
+    def print_estimated_pop_size(self):
+
+        pop_estimate_size = self.pop_size_estimate()
+        max_label_length = max(len(str(pop_estimate_size["api_simple"]["testCount"])), len(str(pop_estimate_size["api_script"]["testCount"])), len(str(pop_estimate_size["browser_script"]["testCount"])), len(str(pop_estimate_size["agent"])))
+        print("\nYour requirement is:")
+        print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
+        print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
+        print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
+        agent_yes = "Yes" if pop_estimate_size["agent"] in ["y", "Y"] else "No"
+        print(f'   Install Agent: {agent_yes:<{max_label_length}}        Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"].upper() == "Y" else f'   Install Agent: {agent_yes:<{max_label_length}}')
+
+        print("\nThe estimated sizing is:")
+        print(f'   CPU:     {pop_estimate_size["cpu"]:,}m')
+        print(f'   Memory:  {pop_estimate_size["memory"]:,}Mi')
+        print(f'   Disk:    {pop_estimate_size["disk_size"]/1000:,}GB')
+
+        print("\nThe recommended engine pods:")
+        print(f'   http           playback engines: {pop_estimate_size["http_pod_count"]} \n'
+              f'   javascript     playback engines: {pop_estimate_size["javascript_pod_count"]} \n'
+              f'   browserscript  playback engines: {pop_estimate_size["browserscript_pod_count"]}')
+
+    def print_estimated_cost(self):
+
+        cost_estimate = self.pop_cost_estimate()
+        print(f'\nThe total executions per month:\n    API   Simple executions: {cost_estimate["api_simple_test_exec"]:,}')
+        print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]:,}')
+        print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]:,}\n')
+
+        print(f'The total cost estimated:\n    Cost per month is: ${cost_estimate["total_cost"]:,}')
+        print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]:,}')
+        print(f'    Resource Units per month is: {cost_estimate["total_resource"]:,}')
 
 class ConfigurationFile(Base):
     def __init__(self) -> None:
@@ -4058,7 +4182,7 @@ class ParseParameter:
         self.parser_create._optionals.title = OPTIONS_PARAMS
 
         self.parser_get = sub_parsers.add_parser(
-            'get', help='get Synthetic test, location, credential, alert or pop-size', usage=GET_USAGE)
+            'get', help='get Synthetic test, location, credential, alert, pop-size or pop-cost', usage=GET_USAGE)
         self.parser_get._positionals.title = POSITION_PARAMS
         self.parser_get._optionals.title = OPTIONS_PARAMS
 
@@ -4214,7 +4338,7 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size'],
+            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'size', 'pop-cost', 'cost'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -4681,8 +4805,10 @@ def main():
                     syn_instance.print_result_details(a_result_details, test_result["items"])
             else:
                 print('testid is required')
-        elif get_args.op_type == POP_SIZE:
-            pop_estimate.pop_size_estimate()
+        elif get_args.op_type == POP_SIZE or get_args.op_type == 'size':
+            pop_estimate.print_estimated_pop_size()
+        elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
+            pop_estimate.print_estimated_cost()
     elif COMMAND_CREATE == get_args.sub_command:
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()

@@ -40,6 +40,7 @@ pip3 install --upgrade synctl==<version>
 ```
 
 # Configuration
+
 `synctl` support three types of configurations:
 - Use configurations file, the default config file is under `~/.synthetic/config.json`.
 - Use `--host` and `--token` options to specify the host and token.
