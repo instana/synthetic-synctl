@@ -58,7 +58,7 @@ Set test description to "New Description".
 synctl patch test <synthetic-id> --description "New Description"
 ```
 
-set test location id to id1, id2...
+Set test location id to id1, id2...
 ```
 synctl patch test <synthetic-id> --lo <id1> <id2> ...
 ```
@@ -114,18 +114,18 @@ Set validation string of API Simple to `synthetic-test`
 synctl patch test <synthetic-id> --validation-string "synthetic-test"
 ```
 
-Update bundle test with a zip file.
+Update bundle test with a zip file
 ```
 synctl patch test <synthetic-id> --bundle synthetic.zip
 ```
 
-Update bundle test using base64 string.
+Update bundle test using base64 string
 ```
 PATCH_BASE64_STR=`cat bundle.zip|base64`
 synctl patch test <synthetic-id> --bundle "${PATCH_BASE64_STR}"
 ```
 
-Set entry file of bundle test.
+Set entry file of bundle test
 ```
 synctl patch test <synthetic-id> --entry-file bundle-test/index.js
 ```
