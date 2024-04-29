@@ -1,4 +1,4 @@
-## synctl delete alert
+# synctl delete alert
 
 Delete Synthetic smart alert.
 

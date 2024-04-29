@@ -1,4 +1,4 @@
-# Query Synthetic Test
+# synctl get test
 List Synthetic test.
 
 ## Syntax
