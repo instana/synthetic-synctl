@@ -3820,6 +3820,32 @@ class PatchSyntheticTest(SyntheticTest):
             payload["customProperties"][key] = value
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
+    def patch_host(self, test_id, host):
+        """update host for SSL test"""
+        payload = {"configuration": {"hostname": ""}}
+        if host is not None:
+            payload["configuration"]["hostname"] = host
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("host should not be none")
+
+    def patch_port(self, test_id, port):
+        """update port for SSL test"""
+        payload = {"configuration": {"port": ""}}
+        if port is not None:
+            payload["configuration"]["port"] = port
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("port should not be none")
+
+    def patch_remaining_days(self, test_id, rem_days):
+        payload = {"configuration": {"daysRemainingCheck": ""}}
+        if rem_days is not None:
+            payload["configuration"]["daysRemainingCheck"] = rem_days
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("remaining_days should not be none")
+
 
 class SyntheticResult(Base):
 
@@ -4473,6 +4499,14 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
 
+        # SSL Certificate
+        patch_exclusive_group.add_argument(
+            '--hostname', type=str, metavar="<url>", help='set host name')
+        patch_exclusive_group.add_argument(
+            '--port', type=str, help='set port')
+        patch_exclusive_group.add_argument(
+            '--remaining-days', type=str, help='check remaining days')
+
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
             '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a config hostname')
@@ -5066,6 +5100,12 @@ def main():
         elif get_args.custom_property is not None:
             split_string = get_args.custom_property.split(',')
             patch_instance.patch_custom_properties(get_args.id, split_string)
+        elif get_args.hostname is not None:
+            patch_instance.patch_host(get_args.id, get_args.hostname)
+        elif get_args.port is not None:
+            patch_instance.patch_port(get_args.id, get_args.port)
+        elif get_args.remaining_days is not None:
+            patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
