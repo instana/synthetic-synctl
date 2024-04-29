@@ -1,5 +1,5 @@
 # Synthetic CLI Command
-Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations, credentials and smart alert.
+The Synthetic CLI command `synctl` is used to manage Synthetic tests, locations, credentials and smart alert easily instead of Rest API.
 
 # Table of Contents
 - [Features](#features)
@@ -14,9 +14,9 @@ Synthetic Command Line Tool(synctl) is used to manage synthetic tests, locations
 # Features
 - CRUD of Synthetic test, support API Simple, API Script, Browser Script, etc.
 - Query/delete of Synthetic location.
-- Query/create/update/delete of Synthetic credential.
+- CRUD of Synthetic credential.
+- CRUD of smart alert.
 - Support multiple configurations of backend server.
-- CRUD of Smart alerts.
 
 # Prerequisites
 - [Python 3.6+](https://www.python.org/downloads/)
