@@ -1,6 +1,6 @@
 # synctl get pop-size
 
-Size the PoP hardware configuration of Instana hosted PoP.
+Size the PoP hardware configuration of Self-hosted PoP.
 
 ## Syntax
 ```
