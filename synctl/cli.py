@@ -5042,6 +5042,8 @@ def main():
                         print("URL is required")
 
                 if get_args.type == 5:
+                    # SSL Certificate test run every 24 hours
+                    get_args.frequency = 24
                     if get_args.hostname is not None:
                         payload.set_host(get_args.hostname)
                     if get_args.port is not None:
