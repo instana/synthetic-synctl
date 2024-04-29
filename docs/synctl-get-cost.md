@@ -8,6 +8,7 @@ synctl get pop-cost|cost
 ```
 
 ## Examples
+
 ```
 synctl get pop-cost
 ```

@@ -112,21 +112,31 @@ Use "synctl <command> -h/--help" for more information about a command.
 ```
 
 # Command List
-
+Command Configuration:
 - [synctl config](docs/synctl-config.md) - Add configuration of Instana.
+
+Synthetic test management:
 - [synctl get test](docs/synctl-get-test.md) - Display Synthetic tests.
+- [synctl create test](docs/synctl-create-test.md) - Create Synthetic tests.
+- [synctl delete test](docs/synctl-delete-test.md) - Delete Synthetic tests.
+- [synctl patch test](docs/synctl-patch-test.md) - Patch Synthetic test.
+- [synctl update test](docs/synctl-update-test.md) - Update properties of Synthetic test.
 - [synctl get result](docs/synctl-get-result.md) - Display Synthetic test result.
+
+Synthetic location management:
 - [synctl get location](docs/synctl-get-loc.md) - Display Synthetic locations.
+- [synctl delete location](docs/synctl-delete-loc.md) - Delete Synthetic locations.
+
+Synthetic smart alert management:
 - [synctl get alert](docs/synctl-get-alert.md) - Display smart alert.
+- [synctl create alert](docs/synctl-create-alert.md) - Create smart alert.
+- [synctl update alert](docs/synctl-update-alert.md) - Update properties of Smart Alert.
+- [synctl delete alert](docs/synctl-delete-alert.md) - Delete smart alert.
+
+Synthetic credentials management:
+- [synctl create/update/delete cred](docs/synctl-credential.md) - Manage credentials.
+
+Others:
 - [synctl get application](docs/synctl-get-app.md) - Display Instana application.
 - [synctl get pop-cost](docs/synctl-get-cost.md) - Estimate cost of Instana hosted Synthetic POP.
 - [synctl get pop-size](docs/synctl-get-size.md) - Estimate size of Self-hosted PoP.
-- [synctl create test](docs/synctl-create-test.md) - Create Synthetic tests.
-- [synctl create alert](docs/synctl-create-alert.md) - Create smart alert.
-- [synctl create/update/delete cred](docs/synctl-credential.md) - Manage credentials.
-- [synctl delete test](docs/synctl-delete-test.md) - Delete Synthetic tests.
-- [synctl delete location](docs/synctl-delete-loc.md) - Delete Synthetic locations.
-- [synctl delete alert](docs/synctl-delete-alert.md) - Delete smart alert.
-- [synctl patch test](docs/synctl-patch-test.md) - Patch Synthetic test.
-- [synctl update alert](docs/synctl-update-alert.md) - Update properties of Smart Alert.
-- [synctl update test](docs/synctl-update-test.md) - Update properties of Synthetic test.
