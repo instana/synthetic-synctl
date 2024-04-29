@@ -2557,7 +2557,7 @@ class SyntheticTest(Base):
                 syn_type = self.map_synthetic_type_label(syn_type)
 
                 current_type = t['configuration']['syntheticType']
-                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
+                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE, SSLCertificate_TYPE):
                     if len(t['locations']) > 0:
                         # locations,
                         location_str = ','.join(t['locationDisplayLabels'])
@@ -4373,7 +4373,7 @@ class ParseParameter:
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
         self.parser_get.add_argument(
-            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction')
+            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4, 5], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction, 5 SSLCertificate')
         self.parser_get.add_argument(
             'id', type=str, nargs="?", help='Synthetic test id')
         self.parser_get.add_argument(
