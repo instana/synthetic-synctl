@@ -3374,6 +3374,26 @@ class UpdateSyntheticTest(SyntheticTest):
                 self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
             self.update_config["customProperties"][key] = value
 
+    def update_host(self, host):
+        """update host for SSL test"""
+        if host is not None:
+            self.update_config["configuration"]["hostname"] = host
+        else:
+            self.exit_synctl(ERROR_CODE, "host should not be none")
+
+    def update_port(self, port):
+        """update port for SSL test"""
+        if port is not None:
+            self.update_config["configuration"]["port"] = port
+        else:
+            self.exit_synctl(ERROR_CODE, "port should not be none")
+
+    def update_remaining_days(self, rem_days):
+        if rem_days is not None:
+            self.update_config["configuration"]["daysRemainingCheck"] = rem_days
+        else:
+            self.exit_synctl(ERROR_CODE, "remaining days should not be none")
+
     def get_updated_test_config(self):
         """return payload as json"""
         result = json.dumps(self.update_config)
@@ -3844,7 +3864,7 @@ class PatchSyntheticTest(SyntheticTest):
             payload["configuration"]["daysRemainingCheck"] = rem_days
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
-            print("remaining_days should not be none")
+            print("remaining days should not be none")
 
 
 class SyntheticResult(Base):
@@ -4567,6 +4587,14 @@ class ParseParameter:
         update_group.add_argument(
             '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
 
+        # SSL Certificate
+        update_group.add_argument(
+            '--hostname', type=str, metavar="<url>", help='set host name')
+        update_group.add_argument(
+            '--port', type=str, help='set port')
+        update_group.add_argument(
+            '--remaining-days', type=str, help='check remaining days')
+
         # update alert
         update_group.add_argument(
             '--name', type=str, metavar="<string>", help='friendly name for smart alert')
@@ -5014,8 +5042,8 @@ def main():
                         print("URL is required")
 
                 if get_args.type == 5:
-                    if get_args.host is not None:
-                        payload.set_host(get_args.host)
+                    if get_args.hostname is not None:
+                        payload.set_host(get_args.hostname)
                     if get_args.port is not None:
                         payload.set_port(get_args.port)
                     if get_args.remaining_days is not None:
@@ -5159,6 +5187,12 @@ def main():
                 if get_args.custom_property is not None:
                     split_string = get_args.custom_property.split(',')
                     update_instance.update_custom_properties(split_string)
+                if get_args.hostname is not None:
+                    update_instance.update_host(get_args.hostname)
+                if get_args.port is not None:
+                    update_instance.update_port(get_args.port)
+                if get_args.remaining_days is not None:
+                    update_instance.update_remaining_days(get_args.remaining_days)
                 updated_payload = update_instance.get_updated_test_config()
                 update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:
