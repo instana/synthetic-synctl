@@ -3,7 +3,6 @@ The Synthetic CLI command `synctl` is used to manage Synthetic tests, locations,
 
 # Table of Contents
 - [Features](#features)
-- [Synthetic CLI Documentation](docs/synctl-cli.md)
 - [Prerequisites](#Prerequisites)
 - [Installation](#installation)
 - [Upgrade](#upgrade)
@@ -12,11 +11,12 @@ The Synthetic CLI command `synctl` is used to manage Synthetic tests, locations,
 - [Command List](#Command-List)
 
 # Features
+- Support multiple configurations of backend server.
 - CRUD of Synthetic test, support API Simple, API Script, Browser Script, etc.
 - Query/delete of Synthetic location.
 - CRUD of Synthetic credential.
 - CRUD of smart alert.
-- Support multiple configurations of backend server.
+- Estimate PoP size and cost.
 
 # Prerequisites
 - [Python 3.6+](https://www.python.org/downloads/)
@@ -120,7 +120,7 @@ Use "synctl <command> -h/--help" for more information about a command.
 - [synctl get alert](synctl-get-alert.md) - Display smart alert.
 - [synctl get application](synctl-get-app.md) - Display Instana application.
 - [synctl get pop-cost](synctl-get-cost.md) - Estimate cost of Instana hosted Synthetic POP.
-- [synctl get pop-size](synctl-get-size.md) - Estimate size of Instana hosted Synthetic PoP.
+- [synctl get pop-size](synctl-get-size.md) - Estimate size of Self-hosted PoP.
 - [synctl create test](synctl-create-test.md) - Create Synthetic tests.
 - [synctl create alert](synctl-create-alert.md) - Create smart alert.
 - [synctl create/update/delete cred](synctl-credential.md) - Manage credentials.
