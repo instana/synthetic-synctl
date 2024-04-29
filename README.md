@@ -113,20 +113,20 @@ Use "synctl <command> -h/--help" for more information about a command.
 
 # Command List
 
-- [synctl config](synctl-config.md) - Add configuration of Instana.
-- [synctl get test](synctl-get-test.md) - Display Synthetic tests.
-- [synctl get result](synctl-get-result.md) - Display Synthetic test result.
-- [synctl get location](synctl-get-loc.md) - Display Synthetic locations.
-- [synctl get alert](synctl-get-alert.md) - Display smart alert.
-- [synctl get application](synctl-get-app.md) - Display Instana application.
-- [synctl get pop-cost](synctl-get-cost.md) - Estimate cost of Instana hosted Synthetic POP.
-- [synctl get pop-size](synctl-get-size.md) - Estimate size of Self-hosted PoP.
-- [synctl create test](synctl-create-test.md) - Create Synthetic tests.
-- [synctl create alert](synctl-create-alert.md) - Create smart alert.
-- [synctl create/update/delete cred](synctl-credential.md) - Manage credentials.
-- [synctl delete test](synctl-delete-test.md) - Delete Synthetic tests.
-- [synctl delete location](synctl-delete-loc.md) - Delete Synthetic locations.
-- [synctl delete alert](synctl-delete-alert.md) - Delete smart alert.
-- [synctl patch test](synctl-patch-test.md) - Patch Synthetic test.
-- [synctl update alert](synctl-update-alert.md) - Update properties of Smart Alert.
-- [synctl update test](synctl-update-test.md) - Update properties of Synthetic test.
+- [synctl config](docs/synctl-config.md) - Add configuration of Instana.
+- [synctl get test](docs/synctl-get-test.md) - Display Synthetic tests.
+- [synctl get result](docs/synctl-get-result.md) - Display Synthetic test result.
+- [synctl get location](docs/synctl-get-loc.md) - Display Synthetic locations.
+- [synctl get alert](docs/synctl-get-alert.md) - Display smart alert.
+- [synctl get application](docs/synctl-get-app.md) - Display Instana application.
+- [synctl get pop-cost](docs/synctl-get-cost.md) - Estimate cost of Instana hosted Synthetic POP.
+- [synctl get pop-size](docs/synctl-get-size.md) - Estimate size of Self-hosted PoP.
+- [synctl create test](docs/synctl-create-test.md) - Create Synthetic tests.
+- [synctl create alert](docs/synctl-create-alert.md) - Create smart alert.
+- [synctl create/update/delete cred](docs/synctl-credential.md) - Manage credentials.
+- [synctl delete test](docs/synctl-delete-test.md) - Delete Synthetic tests.
+- [synctl delete location](docs/synctl-delete-loc.md) - Delete Synthetic locations.
+- [synctl delete alert](docs/synctl-delete-alert.md) - Delete smart alert.
+- [synctl patch test](docs/synctl-patch-test.md) - Patch Synthetic test.
+- [synctl update alert](docs/synctl-update-alert.md) - Update properties of Smart Alert.
+- [synctl update test](docs/synctl-update-test.md) - Update properties of Synthetic test.
