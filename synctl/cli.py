@@ -587,7 +587,7 @@ class PopConfiguration(Base):
                     cost_estimate["total_cost"] = cost_estimate["total_parts"] * 12
 
                     if cost_estimate["total_cost"] < 360:
-                        cost_estimate["total_resource"] = 29920.32
+                        cost_estimate["total_resource"] = 30000
                         cost_estimate["total_parts"] = 30.0
                         cost_estimate["total_cost"] = 360.0
 
