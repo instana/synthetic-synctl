@@ -387,9 +387,9 @@ class PopConfiguration(Base):
         self.ism = {
             "testCount": 1,
             "frequency": 1,
-            "cpuLimit": 0,
-            "memLimit": 0,
-            "imageSize": 0,
+            "cpuLimit": 4000,
+            "memLimit": 300,
+            "imageSize": 350,
         }
 
         self.factors = {
@@ -557,9 +557,9 @@ class PopConfiguration(Base):
         print("List price for 1 unit(part number) is $12/month and 1 part number entitles 1000 Resource Units (RU) per month.")
         print("The relationship between RU and test executions are:\n"
         "   ● 1 API Simple test executed = 0.025 RU \n"
+        "   ● 1 ISM        test executed = 0.025 RU \n"
         "   ● 1 API Script test executed = 0.042 RU \n"
-        "   ● 1 Browser    test executed = 1 RU \n"
-        "   ● 1 ISM        test executed = 0.025 RU ")
+        "   ● 1 Browser    test executed = 1 RU \n")
         print("The minimum quantity per month is 30 part numbers, priced at $360.")
 
         print("\nPlease answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs.\n")
@@ -607,8 +607,21 @@ class PopConfiguration(Base):
                             cost_estimate["browserscript_res"] = cost_estimate["browserscript_test_exec"] * self.factors["browserTest"]
                             break
 
+                    while True:
+                        cost_estimate["ssl_test"] = self.get_ssl_test()
+                        if cost_estimate["ssl_test"]["testCount"] == 0:
+                            cost_estimate["ssl_test_exec"] = 0
+                            cost_estimate["ssl_test_res"] = 0
+                            break
+                        elif cost_estimate["ssl_test"]["testCount"] < 0:
+                            print("Invalid input")
+                        else:
+                            cost_estimate["ssl_test_exec"] = self.test_exec_estimate(cost_estimate["ssl_test"]["testCount"], cost_estimate["ssl_test"]["frequency"], cost_estimate["locations"])
+                            cost_estimate["ssl_test_res"] = cost_estimate["ssl_test_exec"] * self.factors["SSLTest"]
+                            break
+
                     # Total resource units per month
-                    cost_estimate["total_resource"] = cost_estimate["api_simple_res"] + cost_estimate["api_script_res"] + cost_estimate["browserscript_res"]
+                    cost_estimate["total_resource"] = cost_estimate["api_simple_res"] + cost_estimate["api_script_res"] + cost_estimate["browserscript_res"] + cost_estimate["ssl_test_res"]
 
                     # Total parts per month
                     cost_estimate["total_parts"] = round(cost_estimate["total_resource"]/1000, 0)
@@ -656,7 +669,8 @@ class PopConfiguration(Base):
         cost_estimate = self.pop_cost_estimate()
         print(f'\nThe total executions per month:\n    API   Simple executions: {cost_estimate["api_simple_test_exec"]:,}')
         print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]:,}')
-        print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]:,}\n')
+        print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]:,}')
+        print(f'    ISM     Test executions: {cost_estimate["ssl_test_exec"]:,}\n')
 
         print(f'The total cost estimated:\n    Cost per month is: ${cost_estimate["total_cost"]:,}')
         print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]:,}')
