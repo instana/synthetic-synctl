@@ -4368,9 +4368,9 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--hostname', type=str, metavar="<url>", help='set host name')
         self.parser_create.add_argument(
-            '--port', type=str, help='set port')
+            '--port', type=int, help='set port')
         self.parser_create.add_argument(
-            '--remaining-days', type=str, help='check remaining days')
+            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
 
         # full payload in json file
         self.parser_create.add_argument(
@@ -4523,9 +4523,9 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--hostname', type=str, metavar="<url>", help='set host name')
         patch_exclusive_group.add_argument(
-            '--port', type=str, help='set port')
+            '--port', type=int, help='set port')
         patch_exclusive_group.add_argument(
-            '--remaining-days', type=str, help='check remaining days')
+            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -4591,9 +4591,9 @@ class ParseParameter:
         update_group.add_argument(
             '--hostname', type=str, metavar="<url>", help='set host name')
         update_group.add_argument(
-            '--port', type=str, help='set port')
+            '--port', type=int, help='set port')
         update_group.add_argument(
-            '--remaining-days', type=str, help='check remaining days')
+            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
 
         # update alert
         update_group.add_argument(

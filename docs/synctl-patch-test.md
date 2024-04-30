@@ -30,6 +30,9 @@ synctl patch test id [options]
     --browser <string>                 browser type, support chrome and firefox
     --record-video <boolean>           enable/disable record video, false by default          
     --custom-property <key>=<value>    set custom property, should be <key,value> pair
+    --hostname <host>                  set hostname for ssl test
+    --port <int>                       set port 
+    --remaining-days <int>             set days remaining before expiration of SSL certificate
 
     --use-env, -e <name>               use a config hostname
     --host <host>                      set hostname
@@ -149,3 +152,19 @@ Set multiple custom properties of a test
 ```
 synctl patch test <synthetic-id> --custom-property "key1=value1,key2=value2,key3=value3"
 ```
+
+Set hostname of a SSLCertificate test
+```
+synctl patch test <synthetic-id> --hostname www.ibm.com
+```
+
+Set port of a SSLCertificate test
+```
+synctl patch test <synthetic-id> --port 443
+```
+
+Set remaining days of a SSLCertificate test
+```
+synctl patch test <synthetic-id> --remaining-days 30
+```
+
