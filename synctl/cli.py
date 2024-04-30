@@ -1090,12 +1090,15 @@ class SyntheticConfiguration(Base):
         """timeout <number>(ms|s|m)"""
         self.syn_test_config["configuration"]["timeout"] = timeout
 
-    def set_frequency(self, frequency: int = 15) -> None:
+    def set_frequency(self, type, frequency: int = 15) -> None:
         """testFrequency"""
-        if frequency > 0 and frequency <= 120:
-            self.syn_test_config["testFrequency"] = frequency
+        if frequency > 0:
+            if type == 5:
+                self.syn_test_config["testFrequency"] = frequency if frequency <= 1440 else 1440
+            else:
+                self.syn_test_config["testFrequency"] = frequency if frequency <= 120 else 15
         else:
-            self.syn_test_config["testFrequency"] = 15
+            self.syn_test_config["testFrequency"] = 15 if type != 5 else 1440
 
     def set_ping_url(self, url: str) -> None:
         """url"""
@@ -3246,9 +3249,13 @@ class UpdateSyntheticTest(SyntheticTest):
             self.exit_synctl(ERROR_CODE, "active should not be none")
 
     def update_frequency(self, frequency):
-        """update frequency, 1, 120"""
-        if 0 < frequency <= 120:
+        """update frequency [1,120], SSLCertificate test [1,1440]"""
+        if 0 < frequency <= 120 :
             self.update_config["testFrequency"] = frequency
+        elif self.update_config["configuration"]["syntheticType"] == SSLCertificate_TYPE and frequency <= 1440:
+            self.update_config["testFrequency"] = frequency
+        elif self.update_config["configuration"]["syntheticType"] == SSLCertificate_TYPE and frequency > 1440:
+            self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,1440]")
         else:
             self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,120]")
 
@@ -3646,15 +3653,24 @@ class PatchSyntheticTest(SyntheticTest):
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
     def patch_frequency(self, frequency):
-        """patch frequency, 1, 120"""
-        payload = {"testFrequency": 15}
+        """patch frequency [1,120], SSLCertificate test [1,1440]"""
+        test_payload = self.retrieve_a_synthetic_test(self.test_id)
+        synthetic_type = test_payload[0]["configuration"]["syntheticType"]
+        if synthetic_type == SSLCertificate_TYPE:
+            payload = {"testFrequency": 15}
+        else:
+            payload = {"testFrequency": 1440}
         if frequency is None:
-            frequency = 15
+            frequency = 1440 if synthetic_type == SSLCertificate_TYPE else 15
         if frequency > 0 and frequency <= 120:
             payload["testFrequency"] = frequency
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        elif synthetic_type == SSLCertificate_TYPE and frequency <= 1440:
+            payload["testFrequency"] = frequency
+        elif synthetic_type == SSLCertificate_TYPE and frequency > 1440:
+            self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,1440]")
         else:
-            print("frequency is not valid, it should be in [1,120]")
+            self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,120]")
+        self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
     def patch_locations(self, locations):
         """--locations patch locations"""
@@ -5042,8 +5058,6 @@ def main():
                         print("URL is required")
 
                 if get_args.type == 5:
-                    # SSL Certificate test run every 24 hours
-                    # get_args.frequency = 24
                     if get_args.hostname is not None:
                         payload.set_host(get_args.hostname)
                     if get_args.port is not None:
@@ -5059,7 +5073,7 @@ def main():
                 if get_args.description is not None:
                     payload.set_description(get_args.description)
                 if get_args.frequency is not None:
-                    payload.set_frequency(get_args.frequency)
+                    payload.set_frequency(get_args.type, get_args.frequency)
                 if get_args.app_id is not None:
                     payload.set_application_id(get_args.app_id)
                 if get_args.timeout is not None:
