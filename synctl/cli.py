@@ -126,7 +126,7 @@ def identify_hyphen():
 def validate_args(args):
     seen = set()
     for item in args:
-        if item in seen:
+        if item in seen and (item.startswith("--") or item.startswith("-")):
             print(f"{item} should not be provided multiple times")
             sys.exit()
         else:
