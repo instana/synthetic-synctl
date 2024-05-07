@@ -3657,9 +3657,9 @@ class PatchSyntheticTest(SyntheticTest):
         test_payload = self.retrieve_a_synthetic_test(self.test_id)
         synthetic_type = test_payload[0]["configuration"]["syntheticType"]
         if synthetic_type == SSLCertificate_TYPE:
-            payload = {"testFrequency": 15}
-        else:
             payload = {"testFrequency": 1440}
+        else:
+            payload = {"testFrequency": 15}
         if frequency is None:
             frequency = 1440 if synthetic_type == SSLCertificate_TYPE else 15
         if frequency > 0 and frequency <= 120:
