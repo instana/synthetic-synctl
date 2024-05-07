@@ -336,6 +336,15 @@ class Base:
         else:
             return milliseconds
 
+    def format_frequency(self, frequency):
+        if frequency > 60:
+            hours = frequency // 60
+            minutes = frequency % 60
+            test_frequency = str(hours)+"h" if minutes == 0 else str(hours)+"h"+str(minutes)+"m"
+        else:
+            test_frequency = str(frequency)+"m"
+        return test_frequency
+
     def exit_synctl(self, error_code=-1, message=''):
         """exit synctl"""
         if message != '':
@@ -2570,8 +2579,7 @@ class SyntheticTest(Base):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
                               self.fill_space(syn_type, syn_type_length),
-                              self.fill_space(str(t["testFrequency"])+"m",
-                                              test_frequency_length),
+                              self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(t["active"]), active_length),
                               self.fill_space(location_str),
                               t['configuration']['url'] if 'url' in t['configuration'] else 'None')
@@ -2585,8 +2593,7 @@ class SyntheticTest(Base):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
                               self.fill_space(syn_type, syn_type_length),
-                              self.fill_space(str(t["testFrequency"])+"m",
-                                              test_frequency_length),
+                              self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(t["active"]), active_length),
                               self.fill_space(location_str),
                               "N/A")  # None URL => N/A
@@ -2630,8 +2637,7 @@ class SyntheticTest(Base):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
                               self.fill_space(syn_type, syn_type_length),
-                              self.fill_space(str(t["testFrequency"])+"m",
-                                              test_frequency_length),
+                              self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(success_rate_value),
                                               success_rate_length),
                               self.fill_space(current_response_time,
@@ -2649,8 +2655,7 @@ class SyntheticTest(Base):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
                               self.fill_space(syn_type, syn_type_length),
-                              self.fill_space(str(t["testFrequency"])+"m",
-                                              test_frequency_length),
+                              self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(success_rate_value),
                                               success_rate_length),
                               self.fill_space(current_response_time,
@@ -2724,7 +2729,7 @@ class SyntheticTest(Base):
                     print(self.fill_space(i["testResultCommonProperties"]["testId"], id_length),
                           self.fill_space((i["testResultCommonProperties"]["testName"]), max_label_length),
                           self.fill_space(syn_type, syn_type_length),
-                          self.fill_space(str(i["testResultCommonProperties"]["testCommonProperties"]["frequency"])+'m',
+                          self.fill_space(self.format_frequency(i["testResultCommonProperties"]["testCommonProperties"]["frequency"]),
                                           test_frequency_length),
                           self.fill_space(str(success_rate),
                                           success_rate_length),
@@ -2797,6 +2802,8 @@ class SyntheticTest(Base):
             else:
                 if key == 'createdAt' or key == 'modifiedAt':
                     print(self.fill_space(key, 30), self.format_time(value))
+                elif key =="testFrequency" and value > 60:
+                    print(self.fill_space(key, 30), self.format_frequency(value))
                 else:
                     print(self.fill_space(key, 30), value)
 
