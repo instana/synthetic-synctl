@@ -173,6 +173,9 @@ synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-sc
 # create WebpageAction
 synctl create test -t 4 --label "webpageaction-test" --url <url> --location <id> --frequency 5 --record-video true
 
+# create SSLCertificate test
+synctl create test -t 5 --label "ssl-test" --hostname <host> --port <port> --remaining-days 30 --location <id> 
+
 # create a credential
 synctl create cred --key MY_PASS --value password123
 
