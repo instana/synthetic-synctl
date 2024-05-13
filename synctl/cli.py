@@ -612,13 +612,18 @@ class PopConfiguration(Base):
     def print_estimated_pop_size(self):
 
         pop_estimate_size = self.pop_size_estimate()
-        max_label_length = max(len(str(pop_estimate_size["api_simple"]["testCount"])), len(str(pop_estimate_size["api_script"]["testCount"])), len(str(pop_estimate_size["browser_script"]["testCount"])), len(str(pop_estimate_size["agent"])))
+
+        test_counts = [format(pop_estimate_size[test_type]["testCount"], ',') for test_type in ["api_simple", "api_script", "browser_script", ]]
+        max_commas = max(str(test_count).count(',') for test_count in test_counts)
+        max_label_length = max(len(str(pop_estimate_size["api_simple"]["testCount"])), len(str(pop_estimate_size["api_script"]["testCount"])),
+                               len(str(pop_estimate_size["browser_script"]["testCount"])), len(pop_estimate_size["agent"])+2) + max_commas
+
         print("\nYour requirement is:")
-        print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
-        print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
-        print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}           Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
+        print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
+        print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
+        print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
         agent_yes = "Yes" if pop_estimate_size["agent"] in ["y", "Y"] else "No"
-        print(f'   Install Agent: {agent_yes:<{max_label_length}}        Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"].upper() == "Y" else f'   Install Agent: {agent_yes:<{max_label_length}}')
+        print(f'   Install Agent: {agent_yes:<{max_label_length}}       Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"].upper() == "Y" else f'   Install Agent: {agent_yes:<{max_label_length}}')
 
         print("\nThe estimated sizing is:")
         print(f'   CPU:     {pop_estimate_size["cpu"]:,}m')
