@@ -448,7 +448,7 @@ class PopConfiguration(Base):
         ssl_test["testCount"] = int(self.ask_question("How many ISM tests (SSLCertificate) do you want to create? (0 if no) "))
         if ssl_test["testCount"] > 0:
             while True:
-                ssl_test["frequency"] = int(self.ask_question("What is the test frequency for SSLCertificate tests? (1-1440) "))
+                ssl_test["frequency"] = int(self.ask_question("What is the test frequency for ISM tests (SSLCertificate)? (1-1440) "))
                 if ssl_test["frequency"] > 0 and ssl_test["frequency"] <= 1440:
                     break
                 else:
