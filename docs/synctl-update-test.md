@@ -32,6 +32,9 @@ synctl update test <id> [options]
     --entry-file <string>              entry file of a bundle test
     --record-video <boolean>           enable/disable record video, false by default          
     --custom-property <key>=<value>    set custom property, should be <key,value> pair
+    --hostname  <host>                 set hostname for ssl test
+    --port <int>                       set port 
+    --remaining-days <int>             set days remaining before expiration of SSL certificate
 
     --use-env, -e <name>  use a config hostname
     --host <host>         set hostname

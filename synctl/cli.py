@@ -41,6 +41,7 @@ HTTPScript_TYPE = "HTTPScript"
 BrowserScript_TYPE = "BrowserScript"
 WebpageScript_TYPE = "WebpageScript"
 WebpageAction_TYPE = "WebpageAction"
+SSLCertificate_TYPE = "SSLCertificate"
 
 # supported Synthetic type
 synthetic_type = (
@@ -48,7 +49,8 @@ synthetic_type = (
     HTTPScript_TYPE,     # 1
     BrowserScript_TYPE,  # 2
     WebpageScript_TYPE,  # 3
-    WebpageAction_TYPE   # 4
+    WebpageAction_TYPE,  # 4
+    SSLCertificate_TYPE  # 5
 )
 
 SYN_TEST = "test"
@@ -126,7 +128,7 @@ def identify_hyphen():
 def validate_args(args):
     seen = set()
     for item in args:
-        if item in seen:
+        if item in seen and (item.startswith("--") or item.startswith("-")):
             print(f"{item} should not be provided multiple times")
             sys.exit()
         else:
@@ -170,6 +172,9 @@ synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-sc
 
 # create WebpageAction
 synctl create test -t 4 --label "webpageaction-test" --url <url> --location <id> --frequency 5 --record-video true
+
+# create SSLCertificate test
+synctl create test -t 5 --label "ssl-test" --hostname <host> --port <port> --remaining-days 30 --location <id> 
 
 # create a credential
 synctl create cred --key MY_PASS --value password123
@@ -333,6 +338,15 @@ class Base:
             return time.ctime(milliseconds/1000)
         else:
             return milliseconds
+
+    def format_frequency(self, frequency):
+        if frequency > 60:
+            hours = frequency // 60
+            minutes = frequency % 60
+            test_frequency = str(hours)+"h" if minutes == 0 else str(hours)+"h"+str(minutes)+"m"
+        else:
+            test_frequency = str(frequency)+"m"
+        return test_frequency
 
     def exit_synctl(self, error_code=-1, message=''):
         """exit synctl"""
@@ -644,14 +658,19 @@ class PopConfiguration(Base):
     def print_estimated_pop_size(self):
 
         pop_estimate_size = self.pop_size_estimate()
-        max_label_length = max(len(str(pop_estimate_size["api_simple"]["testCount"])), len(str(pop_estimate_size["api_script"]["testCount"])), len(str(pop_estimate_size["browser_script"]["testCount"])), len(str(pop_estimate_size["agent"])))
+
+        test_counts = [format(pop_estimate_size[test_type]["testCount"], ',') for test_type in ["api_simple", "api_script", "browser_script", ]]
+        max_commas = max(str(test_count).count(',') for test_count in test_counts)
+        max_label_length = max(len(str(pop_estimate_size["api_simple"]["testCount"])), len(str(pop_estimate_size["api_script"]["testCount"])),
+                               len(str(pop_estimate_size["browser_script"]["testCount"])), len(pop_estimate_size["agent"])+2) + max_commas
+
         print("\nYour requirement is:")
-        print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}            Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
-        print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}             Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
-        print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}             Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
-        print(f'   ISM      Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length},}            Frequency: {pop_estimate_size["ssl"]["frequency"]}min' if pop_estimate_size["ssl"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length}}')
+        print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
+        print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
+        print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
+        print(f'   ISM      Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["ssl"]["frequency"]}min' if pop_estimate_size["ssl"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length}}')
         agent_yes = "Yes" if pop_estimate_size["agent"] in ["y", "Y"] else "No"
-        print(f'   Install Agent: {agent_yes:<{max_label_length}}             Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"].upper() == "Y" else f'   Install Agent: {agent_yes:<{max_label_length}}')
+        print(f'   Install Agent: {agent_yes:<{max_label_length}}       Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"].upper() == "Y" else f'   Install Agent: {agent_yes:<{max_label_length}}')
 
         print("\nThe estimated sizing is:")
         print(f'   CPU:     {pop_estimate_size["cpu"]:,}m')
@@ -1050,6 +1069,12 @@ class SyntheticConfiguration(Base):
             "recordVideo": False
         }
 
+        # syntheticType SSLCertificate
+        self.SSL_certificate_conf = {
+            "syntheticType": "WebpageAction",
+            "hostname": ""
+        }
+
         self.script_type = [HTTPScript_TYPE, BrowserScript_TYPE]
         if syn_type in [HTTPAction_TYPE, HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
             self.syn_type = syn_type
@@ -1131,12 +1156,15 @@ class SyntheticConfiguration(Base):
         """timeout <number>(ms|s|m)"""
         self.syn_test_config["configuration"]["timeout"] = timeout
 
-    def set_frequency(self, frequency: int = 15) -> None:
+    def set_frequency(self, type, frequency: int = 15) -> None:
         """testFrequency"""
-        if frequency > 0 and frequency <= 120:
-            self.syn_test_config["testFrequency"] = frequency
+        if frequency > 0:
+            if type == 5:
+                self.syn_test_config["testFrequency"] = frequency if frequency <= 1440 else 1440
+            else:
+                self.syn_test_config["testFrequency"] = frequency if frequency <= 120 else 15
         else:
-            self.syn_test_config["testFrequency"] = 15
+            self.syn_test_config["testFrequency"] = 15 if type != 5 else 1440
 
     def set_ping_url(self, url: str) -> None:
         """url"""
@@ -1257,6 +1285,18 @@ class SyntheticConfiguration(Base):
     def set_record_video(self, record_video):
         if record_video is not None:
             self.syn_test_config["configuration"]["recordVideo"] = record_video
+
+    def set_host(self, hostname):
+        if hostname is not None:
+            self.syn_test_config["configuration"]["hostname"] = hostname
+
+    def set_port(self, port):
+        if port is not None:
+            self.syn_test_config["configuration"]["port"] = port
+
+    def set_remaining_days(self, remaining_days):
+        if remaining_days is not None:
+            self.syn_test_config["configuration"]["daysRemainingCheck"] = remaining_days
 
     def read_js_file(self, file_name: str) -> str:
         """read javascript file"""
@@ -2553,6 +2593,8 @@ class SyntheticTest(Base):
             syn_type = "Webpage Script"
         elif syn_type == BrowserScript_TYPE:
             syn_type = "Browser Script"
+        elif syn_type == SSLCertificate_TYPE:
+            syn_type = "SSLCertificate"
 
         return syn_type
 
@@ -2584,7 +2626,7 @@ class SyntheticTest(Base):
                 syn_type = self.map_synthetic_type_label(syn_type)
 
                 current_type = t['configuration']['syntheticType']
-                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
+                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE, SSLCertificate_TYPE):
                     if len(t['locations']) > 0:
                         # locations,
                         location_str = ','.join(t['locationDisplayLabels'])
@@ -2594,8 +2636,7 @@ class SyntheticTest(Base):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
                               self.fill_space(syn_type, syn_type_length),
-                              self.fill_space(str(t["testFrequency"])+"m",
-                                              test_frequency_length),
+                              self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(t["active"]), active_length),
                               self.fill_space(location_str),
                               t['configuration']['url'] if 'url' in t['configuration'] else 'None')
@@ -2609,8 +2650,7 @@ class SyntheticTest(Base):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
                               self.fill_space(syn_type, syn_type_length),
-                              self.fill_space(str(t["testFrequency"])+"m",
-                                              test_frequency_length),
+                              self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(t["active"]), active_length),
                               self.fill_space(location_str),
                               "N/A")  # None URL => N/A
@@ -2644,7 +2684,7 @@ class SyntheticTest(Base):
                 syn_type = self.map_synthetic_type_label(syn_type)
 
                 current_type = t['configuration']['syntheticType']
-                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE):
+                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE, SSLCertificate_TYPE):
                     if len(t['locations']) > 0:
                         # locations,
                         location_str = ','.join(t['locationDisplayLabels'])
@@ -2654,8 +2694,7 @@ class SyntheticTest(Base):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
                               self.fill_space(syn_type, syn_type_length),
-                              self.fill_space(str(t["testFrequency"])+"m",
-                                              test_frequency_length),
+                              self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(success_rate_value),
                                               success_rate_length),
                               self.fill_space(current_response_time,
@@ -2673,8 +2712,7 @@ class SyntheticTest(Base):
                         print(self.fill_space(t["id"], id_length),
                               self.fill_space(t['label'], max_label_length),
                               self.fill_space(syn_type, syn_type_length),
-                              self.fill_space(str(t["testFrequency"])+"m",
-                                              test_frequency_length),
+                              self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(success_rate_value),
                                               success_rate_length),
                               self.fill_space(current_response_time,
@@ -2748,7 +2786,7 @@ class SyntheticTest(Base):
                     print(self.fill_space(i["testResultCommonProperties"]["testId"], id_length),
                           self.fill_space((i["testResultCommonProperties"]["testName"]), max_label_length),
                           self.fill_space(syn_type, syn_type_length),
-                          self.fill_space(str(i["testResultCommonProperties"]["testCommonProperties"]["frequency"])+'m',
+                          self.fill_space(self.format_frequency(i["testResultCommonProperties"]["testCommonProperties"]["frequency"]),
                                           test_frequency_length),
                           self.fill_space(str(success_rate),
                                           success_rate_length),
@@ -2821,6 +2859,8 @@ class SyntheticTest(Base):
             else:
                 if key == 'createdAt' or key == 'modifiedAt':
                     print(self.fill_space(key, 30), self.format_time(value))
+                elif key =="testFrequency" and value > 60:
+                    print(self.fill_space(key, 30), self.format_frequency(value))
                 else:
                     print(self.fill_space(key, 30), value)
 
@@ -3273,9 +3313,13 @@ class UpdateSyntheticTest(SyntheticTest):
             self.exit_synctl(ERROR_CODE, "active should not be none")
 
     def update_frequency(self, frequency):
-        """update frequency, 1, 120"""
-        if 0 < frequency <= 120:
+        """update frequency [1,120], SSLCertificate test [1,1440]"""
+        if 0 < frequency <= 120 :
             self.update_config["testFrequency"] = frequency
+        elif self.update_config["configuration"]["syntheticType"] == SSLCertificate_TYPE and frequency <= 1440:
+            self.update_config["testFrequency"] = frequency
+        elif self.update_config["configuration"]["syntheticType"] == SSLCertificate_TYPE and frequency > 1440:
+            self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,1440]")
         else:
             self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,120]")
 
@@ -3400,6 +3444,26 @@ class UpdateSyntheticTest(SyntheticTest):
             if key == '' or value == '':
                 self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
             self.update_config["customProperties"][key] = value
+
+    def update_host(self, host):
+        """update host for SSL test"""
+        if host is not None:
+            self.update_config["configuration"]["hostname"] = host
+        else:
+            self.exit_synctl(ERROR_CODE, "host should not be none")
+
+    def update_port(self, port):
+        """update port for SSL test"""
+        if port is not None:
+            self.update_config["configuration"]["port"] = port
+        else:
+            self.exit_synctl(ERROR_CODE, "port should not be none")
+
+    def update_remaining_days(self, rem_days):
+        if rem_days is not None:
+            self.update_config["configuration"]["daysRemainingCheck"] = rem_days
+        else:
+            self.exit_synctl(ERROR_CODE, "remaining days should not be none")
 
     def get_updated_test_config(self):
         """return payload as json"""
@@ -3653,15 +3717,24 @@ class PatchSyntheticTest(SyntheticTest):
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
     def patch_frequency(self, frequency):
-        """patch frequency, 1, 120"""
-        payload = {"testFrequency": 15}
+        """patch frequency [1,120], SSLCertificate test [1,1440]"""
+        test_payload = self.retrieve_a_synthetic_test(self.test_id)
+        synthetic_type = test_payload[0]["configuration"]["syntheticType"]
+        if synthetic_type == SSLCertificate_TYPE:
+            payload = {"testFrequency": 1440}
+        else:
+            payload = {"testFrequency": 15}
         if frequency is None:
-            frequency = 15
+            frequency = 1440 if synthetic_type == SSLCertificate_TYPE else 15
         if frequency > 0 and frequency <= 120:
             payload["testFrequency"] = frequency
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        elif synthetic_type == SSLCertificate_TYPE and frequency <= 1440:
+            payload["testFrequency"] = frequency
+        elif synthetic_type == SSLCertificate_TYPE and frequency > 1440:
+            self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,1440]")
         else:
-            print("frequency is not valid, it should be in [1,120]")
+            self.exit_synctl(ERROR_CODE, "frequency is not valid, it should be in [1,120]")
+        self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
     def patch_locations(self, locations):
         """--locations patch locations"""
@@ -3846,6 +3919,32 @@ class PatchSyntheticTest(SyntheticTest):
 
             payload["customProperties"][key] = value
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_host(self, test_id, host):
+        """update host for SSL test"""
+        payload = {"configuration": {"hostname": ""}}
+        if host is not None:
+            payload["configuration"]["hostname"] = host
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("host should not be none")
+
+    def patch_port(self, test_id, port):
+        """update port for SSL test"""
+        payload = {"configuration": {"port": ""}}
+        if port is not None:
+            payload["configuration"]["port"] = port
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("port should not be none")
+
+    def patch_remaining_days(self, test_id, rem_days):
+        payload = {"configuration": {"daysRemainingCheck": ""}}
+        if rem_days is not None:
+            payload["configuration"]["daysRemainingCheck"] = rem_days
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("remaining days should not be none")
 
 
 class SyntheticResult(Base):
@@ -4275,8 +4374,8 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4], required=False, metavar="<int>", help="Synthetic type:"
-                                                                                                     + "HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4]")
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5], required=False, metavar="<int>", help="Synthetic type:"
+                                                                                                     + "HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4], SSLCertificate[5]")
 
         # support multiple locations
         # --location location_id_1 location_id_2 location_id_3
@@ -4345,6 +4444,14 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
 
+        # SSLCertificate
+        self.parser_create.add_argument(
+            '--hostname', type=str, metavar="<url>", help='set host name')
+        self.parser_create.add_argument(
+            '--port', type=int, help='set port')
+        self.parser_create.add_argument(
+            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
+
         # full payload in json file
         self.parser_create.add_argument(
             '--from-json', type=str, metavar="<json>", help='full Synthetic test payload, support json file')
@@ -4392,7 +4499,7 @@ class ParseParameter:
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
         self.parser_get.add_argument(
-            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction')
+            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4, 5], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction, 5 SSLCertificate')
         self.parser_get.add_argument(
             'id', type=str, nargs="?", help='Synthetic test id')
         self.parser_get.add_argument(
@@ -4492,6 +4599,14 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
 
+        # SSL Certificate
+        patch_exclusive_group.add_argument(
+            '--hostname', type=str, metavar="<url>", help='set host name')
+        patch_exclusive_group.add_argument(
+            '--port', type=int, help='set port')
+        patch_exclusive_group.add_argument(
+            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
+
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
             '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a config hostname')
@@ -4551,6 +4666,14 @@ class ParseParameter:
             '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
         update_group.add_argument(
             '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
+
+        # SSL Certificate
+        update_group.add_argument(
+            '--hostname', type=str, metavar="<url>", help='set host name')
+        update_group.add_argument(
+            '--port', type=int, help='set port')
+        update_group.add_argument(
+            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
 
         # update alert
         update_group.add_argument(
@@ -4754,7 +4877,7 @@ def main():
                 try:
                     syn_type_t = synthetic_type[get_args.type]
                 except IndexError:
-                    print("Synthetic type only support 0 1 2 3 4", syn_type_t)
+                    print("Synthetic type only support 0 1 2 3 4 5", syn_type_t)
 
             if get_args.id is None:
                 if get_args.filter is not None:
@@ -4888,7 +5011,7 @@ def main():
             alert_instance.set_alert_payload(alert_payload.get_json())
             alert_instance.create_synthetic_alert()
         elif get_args.syn_type == SYN_TEST:
-            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4]:
+            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4, 5]:
                 syn_type_t = synthetic_type[get_args.type]
                 payload = SyntheticConfiguration(syn_type_t)
 
@@ -4998,6 +5121,14 @@ def main():
                     else:
                         print("URL is required")
 
+                if get_args.type == 5:
+                    if get_args.hostname is not None:
+                        payload.set_host(get_args.hostname)
+                    if get_args.port is not None:
+                        payload.set_port(get_args.port)
+                    if get_args.remaining_days is not None:
+                        payload.set_remaining_days(get_args.remaining_days)
+
                 # global operation, add label, location, description, frequency, etc.
                 if get_args.label is not None:
                     payload.set_label(get_args.label)
@@ -5006,7 +5137,7 @@ def main():
                 if get_args.description is not None:
                     payload.set_description(get_args.description)
                 if get_args.frequency is not None:
-                    payload.set_frequency(get_args.frequency)
+                    payload.set_frequency(get_args.type, get_args.frequency)
                 if get_args.app_id is not None:
                     payload.set_application_id(get_args.app_id)
                 if get_args.timeout is not None:
@@ -5077,6 +5208,12 @@ def main():
         elif get_args.custom_property is not None:
             split_string = get_args.custom_property.split(',')
             patch_instance.patch_custom_properties(get_args.id, split_string)
+        elif get_args.hostname is not None:
+            patch_instance.patch_host(get_args.id, get_args.hostname)
+        elif get_args.port is not None:
+            patch_instance.patch_port(get_args.id, get_args.port)
+        elif get_args.remaining_days is not None:
+            patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
@@ -5130,6 +5267,12 @@ def main():
                 if get_args.custom_property is not None:
                     split_string = get_args.custom_property.split(',')
                     update_instance.update_custom_properties(split_string)
+                if get_args.hostname is not None:
+                    update_instance.update_host(get_args.hostname)
+                if get_args.port is not None:
+                    update_instance.update_port(get_args.port)
+                if get_args.remaining_days is not None:
+                    update_instance.update_remaining_days(get_args.remaining_days)
                 updated_payload = update_instance.get_updated_test_config()
                 update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:
