@@ -398,11 +398,19 @@ class PopConfiguration(Base):
             "memLimit": 3000,
             "imageSize": 1500,
         }
+        self.ism = {
+            "testCount": 2000,
+            "frequency": 1,
+            "cpuLimit": 1000,
+            "memLimit": 300,
+            "imageSize": 350,
+        }
 
         self.factors = {
             "browserTest": 1,
             "APIScript": 0.042,
-            "APISimple": 0.025
+            "APISimple": 0.025,
+            "SSLTest": 0.025
         }
 
     def ask_question(self,question, options=None):
@@ -449,6 +457,18 @@ class PopConfiguration(Base):
                     print("frequency is not valid, it should be in [1,120]")
         return browser_script_test
 
+    def get_ssl_test(self):
+        ssl_test = {}
+        ssl_test["testCount"] = int(self.ask_question("How many ISM tests (SSLCertificate) do you want to create? (0 if no) "))
+        if ssl_test["testCount"] > 0:
+            while True:
+                ssl_test["frequency"] = int(self.ask_question("What is the test frequency for ISM tests (SSLCertificate)? (1-1440) "))
+                if ssl_test["frequency"] > 0 and ssl_test["frequency"] <= 1440:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,1440]")
+        return ssl_test
+
     def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
         pod_estimate = int(user_tests * default_frequency) / int(user_frequency * default_tests)
         return math.ceil(pod_estimate)
@@ -494,6 +514,17 @@ class PopConfiguration(Base):
                     pop_estimate_size["browserscript_pod_count"] = int(self.size_estimate(pop_estimate_size["browser_script"]["testCount"], self.browserscript["frequency"], pop_estimate_size["browser_script"]["frequency"], self.browserscript["testCount"]))
                     break
 
+            while True:
+                pop_estimate_size["ssl"] = self.get_ssl_test()
+                if pop_estimate_size["ssl"]["testCount"] == 0:
+                    pop_estimate_size["ism_pod_count"] = 0
+                    break
+                elif pop_estimate_size["ssl"]["testCount"] < 0:
+                    print("Invalid input")
+                else:
+                    pop_estimate_size["ism_pod_count"] = int(self.size_estimate(pop_estimate_size["ssl"]["testCount"], self.ism["frequency"], pop_estimate_size["ssl"]["frequency"], self.ism["testCount"]))
+                    break
+
             pop_estimate_size["agent"] = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
             while True:
                 if pop_estimate_size["agent"] in ["y", "Y"]:
@@ -517,17 +548,18 @@ class PopConfiguration(Base):
 
             pop_estimate_size["cpu"] = self.controller["cpuLimit"] * pop_estimate_size["controller_pod_count"] + self.redis["cpuLimit"] * pop_estimate_size["redis_pod_count"] + pop_estimate_size["http_pod_count"] * self.http["cpuLimit"] + \
                   pop_estimate_size["javascript_pod_count"] * self.javascript["cpuLimit"] + pop_estimate_size["browserscript_pod_count"] * self.browserscript["cpuLimit"] + \
-                  pop_estimate_size["worker_nodes"] * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * pop_estimate_size["k8ssensor_pod_count"]
+                  pop_estimate_size["worker_nodes"] * self.agent["cpuLimit"] + self.k8ssensor["cpuLimit"] * pop_estimate_size["k8ssensor_pod_count"] + \
+                  pop_estimate_size["ism_pod_count"] * self.ism["cpuLimit"]
 
             pop_estimate_size["memory"] = pop_estimate_size["http_pod_count"] * self.http["memLimit"] + pop_estimate_size["javascript_pod_count"] * self.javascript["memLimit"] + \
                      pop_estimate_size["browserscript_pod_count"] * self.browserscript["memLimit"] + pop_estimate_size["worker_nodes"] * self.agent["memLimit"] +  \
                      self.k8ssensor["memLimit"] * pop_estimate_size["k8ssensor_pod_count"] +  self.controller["memLimit"] * pop_estimate_size["controller_pod_count"] + \
-                     self.redis["memLimit"] * pop_estimate_size["redis_pod_count"]
+                     self.redis["memLimit"] * pop_estimate_size["redis_pod_count"] + pop_estimate_size["ism_pod_count"] * self.ism["memLimit"]
 
             pop_estimate_size["disk_size"] = pop_estimate_size["http_pod_count"] * self.http["imageSize"] + pop_estimate_size["javascript_pod_count"] * self.javascript["imageSize"] + \
                         pop_estimate_size["browserscript_pod_count"] * self.browserscript["imageSize"] + pop_estimate_size["controller_pod_count"] * self.controller["imageSize"] + \
                         pop_estimate_size["redis_pod_count"] * self.redis["imageSize"] + pop_estimate_size["worker_nodes"] * self.agent["imageSize"] + \
-                        pop_estimate_size["k8ssensor_pod_count"] * self.k8ssensor["imageSize"]
+                        pop_estimate_size["k8ssensor_pod_count"] * self.k8ssensor["imageSize"] + pop_estimate_size["ism_pod_count"] * self.ism["imageSize"]
 
             return pop_estimate_size
         except ValueError as e:
@@ -539,8 +571,9 @@ class PopConfiguration(Base):
         print("List price for 1 unit(part number) is $12/month and 1 part number entitles 1000 Resource Units (RU) per month.")
         print("The relationship between RU and test executions are:\n"
         "   ● 1 API Simple test executed = 0.025 RU \n"
+        "   ● 1 ISM        test executed = 0.025 RU \n"
         "   ● 1 API Script test executed = 0.042 RU \n"
-        "   ● 1 Browser    test executed = 1 RU")
+        "   ● 1 Browser    test executed = 1 RU \n")
         print("The minimum quantity per month is 30 part numbers, priced at $360.")
 
         print("\nPlease answer below questions for estimating the cost of Synthetic tests running on Instana hosted PoPs.\n")
@@ -588,8 +621,21 @@ class PopConfiguration(Base):
                             cost_estimate["browserscript_res"] = cost_estimate["browserscript_test_exec"] * self.factors["browserTest"]
                             break
 
+                    while True:
+                        cost_estimate["ssl_test"] = self.get_ssl_test()
+                        if cost_estimate["ssl_test"]["testCount"] == 0:
+                            cost_estimate["ssl_test_exec"] = 0
+                            cost_estimate["ssl_test_res"] = 0
+                            break
+                        elif cost_estimate["ssl_test"]["testCount"] < 0:
+                            print("Invalid input")
+                        else:
+                            cost_estimate["ssl_test_exec"] = self.test_exec_estimate(cost_estimate["ssl_test"]["testCount"], cost_estimate["ssl_test"]["frequency"], cost_estimate["locations"])
+                            cost_estimate["ssl_test_res"] = cost_estimate["ssl_test_exec"] * self.factors["SSLTest"]
+                            break
+
                     # Total resource units per month
-                    cost_estimate["total_resource"] = cost_estimate["api_simple_res"] + cost_estimate["api_script_res"] + cost_estimate["browserscript_res"]
+                    cost_estimate["total_resource"] = cost_estimate["api_simple_res"] + cost_estimate["api_script_res"] + cost_estimate["browserscript_res"] + cost_estimate["ssl_test_res"]
 
                     # Total parts per month
                     cost_estimate["total_parts"] = round(cost_estimate["total_resource"]/1000, 0)
@@ -622,6 +668,7 @@ class PopConfiguration(Base):
         print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
         print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
         print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
+        print(f'   ISM      Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["ssl"]["frequency"]}min' if pop_estimate_size["ssl"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length}}')
         agent_yes = "Yes" if pop_estimate_size["agent"] in ["y", "Y"] else "No"
         print(f'   Install Agent: {agent_yes:<{max_label_length}}       Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"].upper() == "Y" else f'   Install Agent: {agent_yes:<{max_label_length}}')
 
@@ -633,14 +680,16 @@ class PopConfiguration(Base):
         print("\nThe recommended engine pods:")
         print(f'   http           playback engines: {pop_estimate_size["http_pod_count"]} \n'
               f'   javascript     playback engines: {pop_estimate_size["javascript_pod_count"]} \n'
-              f'   browserscript  playback engines: {pop_estimate_size["browserscript_pod_count"]}')
+              f'   browserscript  playback engines: {pop_estimate_size["browserscript_pod_count"]} \n'
+              f'   ISM            playback engines: {pop_estimate_size["ism_pod_count"]}')
 
     def print_estimated_cost(self):
 
         cost_estimate = self.pop_cost_estimate()
         print(f'\nThe total executions per month:\n    API   Simple executions: {cost_estimate["api_simple_test_exec"]:,}')
         print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]:,}')
-        print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]:,}\n')
+        print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]:,}')
+        print(f'    ISM     Test executions: {cost_estimate["ssl_test_exec"]:,}\n')
 
         print(f'The total cost estimated:\n    Cost per month is: ${cost_estimate["total_cost"]:,}')
         print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]:,}')
