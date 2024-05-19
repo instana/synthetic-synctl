@@ -948,6 +948,7 @@ class SyntheticConfiguration(Base):
             # The unit of the testFrequency parameter is minute.
             # The default is every 15 minutes.
             # The range is from 1 minute to 120 minutes.
+            # For SSLCertificate test the range is 1 minute to 1440 minutes. Default is 1440 minutes.
             "testFrequency": "15",
 
             # An object which has two properties: syntheticType and the corresponding configuration object
@@ -4387,7 +4388,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--description', '-d', type=str, metavar="<string>", help="the description of Synthetic test")
         self.parser_create.add_argument(
-            '--frequency', type=int, default=15, metavar="<int>", help="the range is from 1 to 120 minute, default is 15")
+            '--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
         self.parser_create.add_argument(
             '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
 
@@ -5128,6 +5129,7 @@ def main():
                         payload.set_port(get_args.port)
                     if get_args.remaining_days is not None:
                         payload.set_remaining_days(get_args.remaining_days)
+                    payload.set_frequency(get_args.type, 1440)
 
                 # global operation, add label, location, description, frequency, etc.
                 if get_args.label is not None:
