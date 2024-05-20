@@ -257,7 +257,7 @@ synctl create test -t 4 \
 ```
 synctl create test -t 5 \
     --label "ssl-certificate-test" \
-    --host "httpbin.org \
+    --hostname "httpbin.org" \
     --port 443 --remaining-days 30 \
     --lo "$LOCATION"  
 ```
