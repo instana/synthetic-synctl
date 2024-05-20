@@ -1157,15 +1157,24 @@ class SyntheticConfiguration(Base):
         """timeout <number>(ms|s|m)"""
         self.syn_test_config["configuration"]["timeout"] = timeout
 
-    def set_frequency(self, type, frequency: int = 15) -> None:
-        """testFrequency"""
-        if frequency > 0:
-            if type == 5:
-                self.syn_test_config["testFrequency"] = frequency if frequency <= 1440 else 1440
-            else:
-                self.syn_test_config["testFrequency"] = frequency if frequency <= 120 else 15
+    def __get_ssl_frequency(self, frequency: int) -> int:
+        if frequency > 0 and frequency <= 1440:
+            return frequency
         else:
-            self.syn_test_config["testFrequency"] = 15 if type != 5 else 1440
+            return 1440
+
+    def __get_test_frequency(self, frequency: int) -> int:
+        if frequency > 0 and frequency <= 120:
+            return frequency
+        else:
+            return 15
+
+    def set_frequency(self, syn_type, frequency: int = 15) -> None:
+        """set test frequency"""
+        if syn_type == 5: # test ssl certificate
+            self.syn_test_config["testFrequency"] = self.__get_ssl_frequency(frequency)
+        else:
+            self.syn_test_config["testFrequency"] = self.__get_test_frequency(frequency)
 
     def set_ping_url(self, url: str) -> None:
         """url"""
