@@ -174,7 +174,7 @@ synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-sc
 synctl create test -t 4 --label "webpageaction-test" --url <url> --location <id> --frequency 5 --record-video true
 
 # create SSLCertificate test
-synctl create test -t 5 --label "ssl-test" --hostname <host> --port <port> --remaining-days 30 --location <id> 
+synctl create test -t 5 --label "ssl-test" --hostname <host> --port <port> --remaining-days-check 30 --location <id> 
 
 # create a credential
 synctl create cred --key MY_PASS --value password123
@@ -2250,6 +2250,7 @@ class SyntheticTest(Base):
 
     def print_result_details(self, result_details, result_list):
         for result in result_list:
+            print(result_details)
             formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
             status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
 
@@ -2259,7 +2260,10 @@ class SyntheticTest(Base):
                 print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
                 print(self.fill_space("Status", 30), status)
                 print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
-                print(self.fill_space("Response Size", 30), str(formatted_response_size))
+                if result_details["syntheticType"] == SSLCertificate_TYPE:
+                    print(self.fill_space("Response Size", 30), "N/A")
+                else:
+                    print(self.fill_space("Response Size", 30), str(formatted_response_size))
                 if "har" in result_details:
                     har_path = os.path.join(result_details["testid"], result_details["resultid"])
                     os.makedirs(har_path, exist_ok=True)
@@ -4451,7 +4455,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--port', type=int, help='set port')
         self.parser_create.add_argument(
-            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
 
         # full payload in json file
         self.parser_create.add_argument(
@@ -4606,7 +4610,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--port', type=int, help='set port')
         patch_exclusive_group.add_argument(
-            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -4674,7 +4678,7 @@ class ParseParameter:
         update_group.add_argument(
             '--port', type=int, help='set port')
         update_group.add_argument(
-            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
 
         # update alert
         update_group.add_argument(
@@ -5127,8 +5131,8 @@ def main():
                         payload.set_host(get_args.hostname)
                     if get_args.port is not None:
                         payload.set_port(get_args.port)
-                    if get_args.remaining_days is not None:
-                        payload.set_remaining_days(get_args.remaining_days)
+                    if get_args.remaining_days_check is not None:
+                        payload.set_remaining_days(get_args.remaining_days_check)
                     payload.set_frequency(get_args.type, 1440)
 
                 # global operation, add label, location, description, frequency, etc.
@@ -5214,8 +5218,8 @@ def main():
             patch_instance.patch_host(get_args.id, get_args.hostname)
         elif get_args.port is not None:
             patch_instance.patch_port(get_args.id, get_args.port)
-        elif get_args.remaining_days is not None:
-            patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days)
+        elif get_args.remaining_days_check is not None:
+            patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days_check)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
@@ -5273,8 +5277,8 @@ def main():
                     update_instance.update_host(get_args.hostname)
                 if get_args.port is not None:
                     update_instance.update_port(get_args.port)
-                if get_args.remaining_days is not None:
-                    update_instance.update_remaining_days(get_args.remaining_days)
+                if get_args.remaining_days_check is not None:
+                    update_instance.update_remaining_days(get_args.remaining_days_check)
                 updated_payload = update_instance.get_updated_test_config()
                 update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:

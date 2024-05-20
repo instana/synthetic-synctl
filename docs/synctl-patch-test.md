@@ -32,7 +32,7 @@ synctl patch test id [options]
     --custom-property <key>=<value>    set custom property, should be <key,value> pair
     --hostname <host>                  set hostname for ssl test
     --port <int>                       set port 
-    --remaining-days <int>             set days remaining before expiration of SSL certificate
+    --remaining-days-check <int>       set days remaining before expiration of SSL certificate
 
     --use-env, -e <name>               use a config hostname
     --host <host>                      set hostname
@@ -165,6 +165,6 @@ synctl patch test <synthetic-id> --port 443
 
 Set remaining days of a SSLCertificate test
 ```
-synctl patch test <synthetic-id> --remaining-days 30
+synctl patch test <synthetic-id> --remaining-days-check 30
 ```
 

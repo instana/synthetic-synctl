@@ -40,7 +40,7 @@ synctl create test [options]
     --from-json <json>                  full Synthetic test payload, support json file
     --hostname <host>                   set hostname for ssl test
     --port <int>                        set port, default is 443 
-    --remaining-days <int>              set remaining days before expiration of SSL certificate
+    --remaining-days-check <int>        set remaining days before expiration of SSL certificate
 
     --use-env <name>, -e <name>         use a specified configuration
     --host <host>                       set hostname
@@ -258,7 +258,7 @@ synctl create test -t 4 \
 synctl create test -t 5 \
     --label "ssl-certificate-test" \
     --hostname "httpbin.org" \
-    --port 443 --remaining-days 30 \
+    --port 443 --remaining-days-check 30 \
     --lo "$LOCATION"  
 ```
 
