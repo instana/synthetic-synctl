@@ -2076,7 +2076,7 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
-        summary_config = {"syntheticMetrics":["synthetic.metricsResponseTime","synthetic.metricsResponseSize", "status","synthetic.errors"],
+        summary_config = {"syntheticMetrics":["synthetic.metricsResponseTime","synthetic.metricsResponseSize", "status","synthetic.errors", "custom_metrics"],
                           "metrics": [{
                             "aggregation": "SUM",
                             "granularity": 600,
@@ -2241,27 +2241,35 @@ class SyntheticTest(Base):
             time = f"{time_ms}ms"
         return time
 
-    def change_time_format(self, time):
+    def change_time_format(self, time, return_date_only=False):
         """format time to YYYY-MM-DD, HH:MM:SS"""
         date_time = datetime.fromtimestamp(time/1000)
-        formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+        if return_date_only == False:
+            formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+        else:
+            formatted_date_time = date_time.strftime("%Y-%m-%d")
 
         return formatted_date_time
 
     def print_result_details(self, result_details, result_list):
         for result in result_list:
-            print(result_details)
             formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
             status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
 
             if result["testResultCommonProperties"]["id"] == result_details["resultid"]:
                 print(self.fill_space("Name".upper(), 30), "Value".upper())
                 print(self.fill_space("Result Id", 30), result_details["resultid"])
-                print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
+                print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0], False))
                 print(self.fill_space("Status", 30), status)
                 print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
                 if result_details["syntheticType"] == SSLCertificate_TYPE:
-                    print(self.fill_space("Response Size", 30), "N/A")
+                    if result["metrics"]["synthetic.customMetrics.valid"][0][1] == 1:
+                        print(self.fill_space("Certificate is Valid", 30), "Yes")
+                        print(self.fill_space("Days Remaining", 30), result["metrics"]["synthetic.customMetrics.daysRemaining"][0][1])
+                        print(self.fill_space("Date of Issue", 30), self.change_time_format(result["metrics"]["synthetic.customMetrics.validFrom"][0][1], True))
+                        print(self.fill_space("Date of Expiry", 30), self.change_time_format(result["metrics"]["synthetic.customMetrics.validTo"][0][1], True))
+                    else:
+                        print(self.fill_space("Certificate is Valid", 30), "No")
                 else:
                     print(self.fill_space("Response Size", 30), str(formatted_response_size))
                 if "har" in result_details:
@@ -2322,7 +2330,7 @@ class SyntheticTest(Base):
                             print(self.__fix_length("*", 80))
                             browserlogs = json.loads(result_details["logs"]["browser.json"])
                             for logs in browserlogs:
-                                print(logs["level"]+ "\n" + self.change_time_format(logs["timestamp"]) + "\n" +  logs["message"])
+                                    print(logs["level"]+ "\n" + self.change_time_format(logs["timestamp"], False) + "\n" +  logs["message"])
                             print("")
                             print(self.__fix_length("*", 80))
                         else:
@@ -2359,7 +2367,7 @@ class SyntheticTest(Base):
             status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
 
             print(self.fill_space(result["testResultCommonProperties"]["id"], id_length ),
-                  self.fill_space(str(self.change_time_format(result["metrics"]["response_time"][0][0])), start_time_length),
+                  self.fill_space(str(self.change_time_format(result["metrics"]["response_time"][0][0], False)), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
                   self.fill_space(status, status_length),
                   self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
