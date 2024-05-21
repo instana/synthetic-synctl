@@ -11,7 +11,7 @@ synctl update test <id> [options]
 
 ### Common options
 ```
-    -h, --help            show this help message and exit
+    -h, --help                         show this help message and exit
 
     --active <boolean>                 set active
     --frequency <int>                  set frequency
@@ -36,7 +36,7 @@ synctl update test <id> [options]
     --expect-status <int>              set expected HTTP status code
     --validation-string <string>       set validation-string
 ```
-### Options for API script test
+### Options for API Script test
 ```
     --file,-f <file-name>              json payload
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
