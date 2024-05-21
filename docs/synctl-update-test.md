@@ -8,10 +8,10 @@ synctl update test <id> [options]
 ```
 
 ## Options
+
+### Common options
 ```
     -h, --help            show this help message and exit
-
-    --file,-f <file-name> json payload
 
     --active <boolean>                 set active
     --frequency <int>                  set frequency
@@ -20,31 +20,48 @@ synctl update test <id> [options]
     --label <string>                   set label
     --retries <int>                    set retries, min is 0 and max is 2
     --retry-interval <int>             set retry-interval, min is 1, max is 10
+    --timeout <num>ms|s|m              set timeout, accept <number>(ms|s|m)
+    --custom-property <key>=<value>    set custom property, should be <key,value> pair
+    
+    --use-env, -e <name>               use a config hostname
+    --host <host>                      set hostname
+    --token <token>                    set token
+```
+### Options for API Simple tests
+```
     --operation <method>               HTTP request methods, GET, POST, HEAD, PUT, etc.
     --mark-synthetic-call <boolean>    set markSyntheticCall
-    --timeout <num>ms|s|m              set timeout, accept <number>(ms|s|m)
-    --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --url <url>                        HTTP URL
     --follow-redirect <boolean>        set follow-redirect
     --expect-status <int>              set expected HTTP status code
     --validation-string <string>       set validation-string
+```
+### Options for API script test
+```
+    --file,-f <file-name>              json payload
+    --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
     --entry-file <string>              entry file of a bundle test
-    --record-video <boolean>           enable/disable record video, false by default          
-    --custom-property <key>=<value>    set custom property, should be <key,value> pair
+```
+### Options for Browserscript test
+```
+    --file,-f <file-name>              json payload
+    --script-file <file-name>          specify a script file to update APIScript or BrowserScript
+    --bundle <bundle>                  set bundle content
+    --entry-file <string>              entry file of a bundle test
+    --record-video <boolean>           enable/disable record video, false by default
+```
+### Options for SSLCertificate test
+```             
     --hostname  <host>                 set hostname for ssl test
     --port <int>                       set port 
     --remaining-days-check <int>       set days remaining before expiration of SSL certificate
-
-    --use-env, -e <name>  use a config hostname
-    --host <host>         set hostname
-    --token <token>       set token
 ```
 
 ### Examples
-
-Update a Synthetic test with multiple options.
+### Common Examples for All Tests
 ```
+# Update a Synthetic test with multiple options.
 synctl update test <synthetic-id> \
     --frequency 5 \
     --label "simple-ping" \
@@ -56,14 +73,18 @@ synctl update test <synthetic-id> \
     --expect-status 200 \
     --custom-property "key1=value1,key2=value2"
 ```
-
-Update a test with json payload.
+### Examples for API Script tests
+```
+#  Update a test with json payload.
 1. Get synthetic configuration and save to test.json
-```
-synctl get test <synthetic-id> --show-json > test.json
-```
+    synctl get test <synthetic-id> --show-json > test.json
 
 2. edit json file and update test.
+    synctl update test <synthetic-id> --file/-f test.json
+
 ```
-synctl update test <synthetic-id> --file/-f test.json
+### Examples for SSLCertificate tests
 ```
+synctl update test <synthetic-id> \
+    --hostname www.ibm.com \
+    --remaining-days-check 120
