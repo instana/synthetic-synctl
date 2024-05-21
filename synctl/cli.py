@@ -2808,6 +2808,8 @@ class SyntheticTest(Base):
 
                     if syn_type in ["HTTPAction", "WebpageAction"]:
                         url = syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['url']
+                    elif syn_type == "SSLCertificate":
+                        url =  syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['hostname']
                     else:
                         url = "None"
 
