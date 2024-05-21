@@ -401,8 +401,8 @@ class PopConfiguration(Base):
         self.ism = {
             "testCount": 2000,
             "frequency": 1,
-            "cpuLimit": 1000,
-            "memLimit": 300,
+            "cpuLimit": 300,
+            "memLimit": 500,
             "imageSize": 350,
         }
 
