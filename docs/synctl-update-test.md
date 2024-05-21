@@ -6,7 +6,6 @@ Update Synthetic test properties.
 ```
 synctl update test <id> [options]
 ```
-
 ## Options
 
 ### Common options
@@ -57,9 +56,8 @@ synctl update test <id> [options]
     --port <int>                       set port 
     --remaining-days-check <int>       set days remaining before expiration of SSL certificate
 ```
-
-### Examples
-### Common Examples for All Tests
+## Examples
+### Common Example for All Tests
 ```
 # Update a Synthetic test with multiple options.
 synctl update test <synthetic-id> \
@@ -73,7 +71,7 @@ synctl update test <synthetic-id> \
     --expect-status 200 \
     --custom-property "key1=value1,key2=value2"
 ```
-### Examples for API Script tests
+### Example for API Script tests
 ```
 #  Update a test with json payload.
 1. Get synthetic configuration and save to test.json
@@ -83,7 +81,7 @@ synctl update test <synthetic-id> \
     synctl update test <synthetic-id> --file/-f test.json
 
 ```
-### Examples for SSLCertificate tests
+### Example for SSLCertificate tests
 ```
 synctl update test <synthetic-id> \
     --hostname www.ibm.com \
