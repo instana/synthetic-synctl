@@ -2652,7 +2652,8 @@ class SyntheticTest(Base):
                               self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(t["active"]), active_length),
                               self.fill_space(location_str),
-                              t['configuration']['url'] if 'url' in t['configuration'] else 'None')
+                              t['configuration']['url'] if 'url' in t['configuration'] else (
+                                  t['configuration']['hostname'] if 'hostname' in  t['configuration'] else None))
                         output_lists.append(t)
                 if t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]:
                     if len(t['locations']) > 0:
