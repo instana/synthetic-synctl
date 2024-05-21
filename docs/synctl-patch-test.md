@@ -49,7 +49,6 @@ synctl patch test id [options]
     --entry-file <string>              entry file of a bundle test
     --browser <string>                 browser type, support chrome and firefox
     --record-video <boolean>           enable/disable record video, false by default          
-
 ```
 ### Options for SSLCertificate test
 ```
