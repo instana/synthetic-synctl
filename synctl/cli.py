@@ -663,25 +663,42 @@ class PopConfiguration(Base):
         max_commas = max(str(test_count).count(',') for test_count in test_counts)
         max_label_length = max(len(str(pop_estimate_size["api_simple"]["testCount"])), len(str(pop_estimate_size["api_script"]["testCount"])),
                                len(str(pop_estimate_size["browser_script"]["testCount"])), len(pop_estimate_size["agent"])+2) + max_commas
-
+        fixed_spaces1=" "*3
+        fixed_spaces2=" "*7
         print("\nYour requirement is:")
-        print(f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["api_simple"]["frequency"]}min' if pop_estimate_size["api_simple"]["testCount"] > 0 else f'   API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
-        print(f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["api_script"]["frequency"]}min' if pop_estimate_size["api_script"]["testCount"] > 0 else f'   API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
-        print(f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["browser_script"]["frequency"]}min' if pop_estimate_size["browser_script"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
-        print(f'   ISM      Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length},}       Frequency: {pop_estimate_size["ssl"]["frequency"]}min' if pop_estimate_size["ssl"]["testCount"] > 0 else f'   Browser  Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length}}')
+        if pop_estimate_size["api_simple"]["testCount"] > 0:
+            print(f'{fixed_spaces1}API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["api_simple"]["frequency"]}min')
+        else:
+            print(f'{fixed_spaces1}API    Simple: {pop_estimate_size["api_simple"]["testCount"]:<{max_label_length}}')
+        if pop_estimate_size["api_script"]["testCount"] > 0:
+            print(f'{fixed_spaces1}API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["api_script"]["frequency"]}min')
+        else:
+            print(f'{fixed_spaces1}API    Script: {pop_estimate_size["api_script"]["testCount"]:<{max_label_length}}')
+        if pop_estimate_size["browser_script"]["testCount"] > 0:
+            print(f'{fixed_spaces1}Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["browser_script"]["frequency"]}min')
+        else:
+            print(f'{fixed_spaces1}Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
+        if pop_estimate_size["ssl"]["testCount"] > 0:
+            print(f'{fixed_spaces1}ISM      Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["ssl"]["frequency"]}min')
+        else:
+            print(f'{fixed_spaces1}ISM      Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length}}')
+
         agent_yes = "Yes" if pop_estimate_size["agent"] in ["y", "Y"] else "No"
-        print(f'   Install Agent: {agent_yes:<{max_label_length}}       Worker Nodes: {pop_estimate_size["worker_nodes"]}' if pop_estimate_size["agent"].upper() == "Y" else f'   Install Agent: {agent_yes:<{max_label_length}}')
+        if pop_estimate_size["agent"].upper() == "Y":
+            print(f'{fixed_spaces1}Install Agent: {agent_yes:<{max_label_length}}{fixed_spaces2}Worker Nodes: {pop_estimate_size["worker_nodes"]}')
+        else:
+            print(f'{fixed_spaces1}Install Agent: {agent_yes:<{max_label_length}}')
 
         print("\nThe estimated sizing is:")
-        print(f'   CPU:     {pop_estimate_size["cpu"]:,}m')
-        print(f'   Memory:  {pop_estimate_size["memory"]:,}Mi')
-        print(f'   Disk:    {pop_estimate_size["disk_size"]/1000:,}GB')
+        print(f'{fixed_spaces1}CPU:     {pop_estimate_size["cpu"]:,}m')
+        print(f'{fixed_spaces1}Memory:  {pop_estimate_size["memory"]:,}Mi')
+        print(f'{fixed_spaces1}Disk:    {pop_estimate_size["disk_size"]/1000:,}GB')
 
         print("\nThe recommended engine pods:")
-        print(f'   http           playback engines: {pop_estimate_size["http_pod_count"]} \n'
-              f'   javascript     playback engines: {pop_estimate_size["javascript_pod_count"]} \n'
-              f'   browserscript  playback engines: {pop_estimate_size["browserscript_pod_count"]} \n'
-              f'   ISM            playback engines: {pop_estimate_size["ism_pod_count"]}')
+        print(f'{fixed_spaces1}http           playback engines: {pop_estimate_size["http_pod_count"]}')
+        print(f'{fixed_spaces1}javascript     playback engines: {pop_estimate_size["javascript_pod_count"]}')
+        print(f'{fixed_spaces1}browserscript  playback engines: {pop_estimate_size["browserscript_pod_count"]}')
+        print(f'{fixed_spaces1}ISM            playback engines: {pop_estimate_size["ism_pod_count"]}')
 
     def print_estimated_cost(self):
 
@@ -2243,16 +2260,16 @@ class SyntheticTest(Base):
 
     def convert_milliseconds(self, time_ms):
         if time_ms > 60000:
-            time = f"{time_ms / 60000:.2f}min"
+            t = f"{time_ms / 60000:.2f}min"
         elif time_ms > 1000:
-            time = f"{time_ms / 1000:.2f}s"
+            t = f"{time_ms / 1000:.2f}s"
         else:
-            time = f"{time_ms}ms"
-        return time
+            t = f"{time_ms}ms"
+        return t
 
-    def change_time_format(self, time):
+    def change_time_format(self, t):
         """format time to YYYY-MM-DD, HH:MM:SS"""
-        date_time = datetime.fromtimestamp(time/1000)
+        date_time = datetime.fromtimestamp(t/1000)
         formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
 
         return formatted_date_time
