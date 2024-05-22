@@ -2278,6 +2278,7 @@ class SyntheticTest(Base):
         return formatted_date_time
 
     def print_result_details(self, result_details, result_list):
+        test = self.retrieve_a_synthetic_test(result_details["testid"])
         for result in result_list:
             formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
             status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
@@ -2287,80 +2288,82 @@ class SyntheticTest(Base):
                 print(self.fill_space("Result Id", 30), result_details["resultid"])
                 print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0], False))
                 print(self.fill_space("Status", 30), status)
+                print(self.fill_space("Retries", 30), test[0]["configuration"]["retries"])
                 print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
                 if result_details["syntheticType"] == SSLCertificate_TYPE:
-                    if result["metrics"]["synthetic.customMetrics.valid"][0][1] == 1:
-                        print(self.fill_space("Certificate is Valid", 30), "Yes")
-                        print(self.fill_space("Days Remaining", 30), result["metrics"]["synthetic.customMetrics.daysRemaining"][0][1])
-                        print(self.fill_space("Date of Issue", 30), self.change_time_format(result["metrics"]["synthetic.customMetrics.validFrom"][0][1], True))
-                        print(self.fill_space("Date of Expiry", 30), self.change_time_format(result["metrics"]["synthetic.customMetrics.validTo"][0][1], True))
-                    else:
-                        print(self.fill_space("Certificate is Valid", 30), "No")
+                    if status == "Successful":
+                        if result["metrics"]["synthetic.customMetrics.valid"][0][1] == 1:
+                            print(self.fill_space("Certificate is Valid", 30), "Yes")
+                            print(self.fill_space("Days Remaining", 30), result["metrics"]["synthetic.customMetrics.daysRemaining"][0][1])
+                            print(self.fill_space("Date of Issue", 30), self.change_time_format(result["metrics"]["synthetic.customMetrics.validFrom"][0][1], True))
+                            print(self.fill_space("Date of Expiry", 30), self.change_time_format(result["metrics"]["synthetic.customMetrics.validTo"][0][1], True))
+                        else:
+                            print(self.fill_space("Certificate is Valid", 30), "No")
                 else:
                     print(self.fill_space("Response Size", 30), str(formatted_response_size))
-                if "har" in result_details:
-                    har_path = os.path.join(result_details["testid"], result_details["resultid"])
-                    os.makedirs(har_path, exist_ok=True)
-                    file_path = os.path.join(har_path, "HAR.json")
-                    with open(file_path, 'w') as f:
-                        json.dump(result_details['har'], f)
-                    print(self.fill_space("HAR", 30), f"HAR has been saved to {file_path}")
-                else:
-                    print(self.fill_space("HAR", 30), "N/A")
-                if "image" in result_details:
-                    with open("images.tar", "wb") as f:
-                        f.write(result_details["image"])
-                    with tarfile.open("images.tar", "r") as tar:
-                        images_path = os.path.join(result_details["testid"], result_details["resultid"], "Screenshots")
-                        tar.extractall(path=images_path)
-                    print(self.fill_space("Screenshots", 30), f"Screenshots has been saved to {images_path}")
-                else:
-                    print(self.fill_space("Screenshots", 30), "N/A")
-                if "video" in result_details:
-                    with open("videos.tar", "wb") as f:
-                        f.write(result_details["video"])
-                    with tarfile.open("videos.tar", "r") as tar:
-                        videos_path = os.path.join(result_details["testid"], result_details["resultid"], "Recordings")
-                        tar.extractall(path=videos_path)
-                    print(self.fill_space("Recordings", 30), f"Recordings has been saved to {videos_path}")
-                else:
-                    print(self.fill_space("Recordings", 30), "N/A")
-                if "sub" in result_details:
-                    print("")
-                    print(self.__fix_length("*", 80))
-                    print("Subtransactions ")
-                    print(self.__fix_length("*", 80))
-                    for x in range(len(result_details["sub"])):
-                        for key, value in result_details["sub"][x]["properties"].items():
-                            if key == 'finishTime' or key == 'startTime':
-                                print(self.fill_space(key, 30), self.format_time(value))
-                            else:
-                                print(self.fill_space(key, 30), value)
-                        for key, value in result_details['sub'][x]["metrics"].items():
-                            print(self.fill_space(key, 30), value)
-                        print(self.__fix_length("*", 80))
-                else:
-                    print(self.fill_space("Subtransactions", 30), "N/A")
-                if "logs" in result_details:
-                    print("")
-                    print("\nConsole logs ")
-                    print(self.__fix_length("*", 80))
-                    if "console.log" in result_details["logs"]:
-                        print(result_details["logs"]["console.log"])
+                    if "har" in result_details:
+                        har_path = os.path.join(result_details["testid"], result_details["resultid"])
+                        os.makedirs(har_path, exist_ok=True)
+                        file_path = os.path.join(har_path, "HAR.json")
+                        with open(file_path, 'w') as f:
+                            json.dump(result_details['har'], f)
+                        print(self.fill_space("HAR", 30), f"HAR has been saved to {file_path}")
                     else:
-                        print(result_details["logs"])
-                    print(self.__fix_length("*", 80))
-                    if result_details["syntheticType"] != HTTPScript_TYPE:
-                        if "browser.json" in result_details["logs"]:
-                            print("Browser logs")
+                        print(self.fill_space("HAR", 30), "N/A")
+                    if "image" in result_details:
+                        with open("images.tar", "wb") as f:
+                            f.write(result_details["image"])
+                        with tarfile.open("images.tar", "r") as tar:
+                            images_path = os.path.join(result_details["testid"], result_details["resultid"], "Screenshots")
+                            tar.extractall(path=images_path)
+                        print(self.fill_space("Screenshots", 30), f"Screenshots has been saved to {images_path}")
+                    else:
+                        print(self.fill_space("Screenshots", 30), "N/A")
+                    if "video" in result_details:
+                        with open("videos.tar", "wb") as f:
+                            f.write(result_details["video"])
+                        with tarfile.open("videos.tar", "r") as tar:
+                            videos_path = os.path.join(result_details["testid"], result_details["resultid"], "Recordings")
+                            tar.extractall(path=videos_path)
+                        print(self.fill_space("Recordings", 30), f"Recordings has been saved to {videos_path}")
+                    else:
+                        print(self.fill_space("Recordings", 30), "N/A")
+                    if "sub" in result_details:
+                        print("")
+                        print(self.__fix_length("*", 80))
+                        print("Subtransactions ")
+                        print(self.__fix_length("*", 80))
+                        for x in range(len(result_details["sub"])):
+                            for key, value in result_details["sub"][x]["properties"].items():
+                                if key == 'finishTime' or key == 'startTime':
+                                    print(self.fill_space(key, 30), self.format_time(value))
+                                else:
+                                    print(self.fill_space(key, 30), value)
+                            for key, value in result_details['sub'][x]["metrics"].items():
+                                print(self.fill_space(key, 30), value)
                             print(self.__fix_length("*", 80))
-                            browserlogs = json.loads(result_details["logs"]["browser.json"])
-                            for logs in browserlogs:
-                                    print(logs["level"]+ "\n" + self.change_time_format(logs["timestamp"], False) + "\n" +  logs["message"])
-                            print("")
-                            print(self.__fix_length("*", 80))
+                    else:
+                        print(self.fill_space("Subtransactions", 30), "N/A")
+                    if "logs" in result_details:
+                        print("")
+                        print("\nConsole logs ")
+                        print(self.__fix_length("*", 80))
+                        if "console.log" in result_details["logs"]:
+                            print(result_details["logs"]["console.log"])
                         else:
-                            print(self.fill_space("Browser Logs", 30), "N/A")
+                            print(result_details["logs"])
+                        print(self.__fix_length("*", 80))
+                        if result_details["syntheticType"] != HTTPScript_TYPE:
+                            if "browser.json" in result_details["logs"]:
+                                print("Browser logs")
+                                print(self.__fix_length("*", 80))
+                                browserlogs = json.loads(result_details["logs"]["browser.json"])
+                                for logs in browserlogs:
+                                        print(logs["level"]+ "\n" + self.change_time_format(logs["timestamp"], False) + "\n" +  logs["message"])
+                                print("")
+                                print(self.__fix_length("*", 80))
+                            else:
+                                print(self.fill_space("Browser Logs", 30), "N/A")
                 if "errors" in result["testResultCommonProperties"]:
                     print("Error")
                     print(self.__fix_length("*", 80))
