@@ -26,7 +26,7 @@ synctl update test <id> [options]
     --host <host>                      set hostname
     --token <token>                    set token
 ```
-### Options for API Simple tests
+### Options for API Simple Tests
 ```
     --operation <method>               HTTP request methods, GET, POST, HEAD, PUT, etc.
     --mark-synthetic-call <boolean>    set markSyntheticCall
