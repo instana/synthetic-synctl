@@ -81,7 +81,7 @@ synctl update test <synthetic-id> \
     synctl update test <synthetic-id> --file/-f test.json
 
 ```
-### Example for SSLCertificate tests
+### Example for SSLCertificate Tests
 ```
 synctl update test <synthetic-id> \
     --hostname www.ibm.com \
