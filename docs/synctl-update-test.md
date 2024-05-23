@@ -42,7 +42,7 @@ synctl update test <id> [options]
     --bundle <bundle>                  set bundle content
     --entry-file <string>              entry file of a bundle test
 ```
-### Options for Browserscript test
+### Options for Browserscript Tests
 ```
     --file,-f <file-name>              json payload
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
