@@ -174,7 +174,7 @@ synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-sc
 synctl create test -t 4 --label "webpageaction-test" --url <url> --location <id> --frequency 5 --record-video true
 
 # create SSLCertificate test
-synctl create test -t 5 --label "ssl-test" --hostname <host> --port <port> --remaining-days 30 --location <id> 
+synctl create test -t 5 --label "ssl-test" --hostname <host> --port <port> --remaining-days-check 30 --location <id> 
 
 # create a credential
 synctl create cred --key MY_PASS --value password123
@@ -401,8 +401,8 @@ class PopConfiguration(Base):
         self.ism = {
             "testCount": 2000,
             "frequency": 1,
-            "cpuLimit": 1000,
-            "memLimit": 300,
+            "cpuLimit": 300,
+            "memLimit": 500,
             "imageSize": 350,
         }
 
@@ -2102,7 +2102,7 @@ class SyntheticTest(Base):
             'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
-        summary_config = {"syntheticMetrics":["synthetic.metricsResponseTime","synthetic.metricsResponseSize", "status","synthetic.errors"],
+        summary_config = {"syntheticMetrics":["synthetic.metricsResponseTime","synthetic.metricsResponseSize", "status","synthetic.errors", "custom_metrics"],
                           "metrics": [{
                             "aggregation": "SUM",
                             "granularity": 600,
@@ -2267,14 +2267,18 @@ class SyntheticTest(Base):
             t = f"{time_ms}ms"
         return t
 
-    def change_time_format(self, t):
+    def change_time_format(self, t, return_date_only=False):
         """format time to YYYY-MM-DD, HH:MM:SS"""
         date_time = datetime.fromtimestamp(t/1000)
-        formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+        if return_date_only == False:
+            formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+        else:
+            formatted_date_time = date_time.strftime("%Y-%m-%d")
 
         return formatted_date_time
 
     def print_result_details(self, result_details, result_list):
+        test = self.retrieve_a_synthetic_test(result_details["testid"])
         for result in result_list:
             formatted_response_size = "{:.2f} MiB".format(result["metrics"]["response_size"][0][1]/ (1024 * 1024))
             status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
@@ -2282,73 +2286,84 @@ class SyntheticTest(Base):
             if result["testResultCommonProperties"]["id"] == result_details["resultid"]:
                 print(self.fill_space("Name".upper(), 30), "Value".upper())
                 print(self.fill_space("Result Id", 30), result_details["resultid"])
-                print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0]))
+                print(self.fill_space("Start Time", 30), self.change_time_format(result["metrics"]["response_time"][0][0], False))
                 print(self.fill_space("Status", 30), status)
+                print(self.fill_space("Retries", 30), test[0]["configuration"]["retries"])
                 print(self.fill_space("Response Time", 30), str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])))
-                print(self.fill_space("Response Size", 30), str(formatted_response_size))
-                if "har" in result_details:
-                    har_path = os.path.join(result_details["testid"], result_details["resultid"])
-                    os.makedirs(har_path, exist_ok=True)
-                    file_path = os.path.join(har_path, "HAR.json")
-                    with open(file_path, 'w') as f:
-                        json.dump(result_details['har'], f)
-                    print(self.fill_space("HAR", 30), f"HAR has been saved to {file_path}")
-                else:
-                    print(self.fill_space("HAR", 30), "N/A")
-                if "image" in result_details:
-                    with open("images.tar", "wb") as f:
-                        f.write(result_details["image"])
-                    with tarfile.open("images.tar", "r") as tar:
-                        images_path = os.path.join(result_details["testid"], result_details["resultid"], "Screenshots")
-                        tar.extractall(path=images_path)
-                    print(self.fill_space("Screenshots", 30), f"Screenshots has been saved to {images_path}")
-                else:
-                    print(self.fill_space("Screenshots", 30), "N/A")
-                if "video" in result_details:
-                    with open("videos.tar", "wb") as f:
-                        f.write(result_details["video"])
-                    with tarfile.open("videos.tar", "r") as tar:
-                        videos_path = os.path.join(result_details["testid"], result_details["resultid"], "Recordings")
-                        tar.extractall(path=videos_path)
-                    print(self.fill_space("Recordings", 30), f"Recordings has been saved to {videos_path}")
-                else:
-                    print(self.fill_space("Recordings", 30), "N/A")
-                if "sub" in result_details:
-                    print("")
-                    print(self.__fix_length("*", 80))
-                    print("Subtransactions ")
-                    print(self.__fix_length("*", 80))
-                    for x in range(len(result_details["sub"])):
-                        for key, value in result_details["sub"][x]["properties"].items():
-                            if key == 'finishTime' or key == 'startTime':
-                                print(self.fill_space(key, 30), self.format_time(value))
-                            else:
-                                print(self.fill_space(key, 30), value)
-                        for key, value in result_details['sub'][x]["metrics"].items():
-                            print(self.fill_space(key, 30), value)
-                        print(self.__fix_length("*", 80))
-                else:
-                    print(self.fill_space("Subtransactions", 30), "N/A")
-                if "logs" in result_details:
-                    print("")
-                    print("\nConsole logs ")
-                    print(self.__fix_length("*", 80))
-                    if "console.log" in result_details["logs"]:
-                        print(result_details["logs"]["console.log"])
-                    else:
-                        print(result_details["logs"])
-                    print(self.__fix_length("*", 80))
-                    if result_details["syntheticType"] != HTTPScript_TYPE:
-                        if "browser.json" in result_details["logs"]:
-                            print("Browser logs")
-                            print(self.__fix_length("*", 80))
-                            browserlogs = json.loads(result_details["logs"]["browser.json"])
-                            for logs in browserlogs:
-                                print(logs["level"]+ "\n" + self.change_time_format(logs["timestamp"]) + "\n" +  logs["message"])
-                            print("")
-                            print(self.__fix_length("*", 80))
+                if result_details["syntheticType"] == SSLCertificate_TYPE:
+                    if status == "Successful":
+                        if result["metrics"]["synthetic.customMetrics.valid"][0][1] == 1:
+                            print(self.fill_space("Certificate is Valid", 30), "Yes")
+                            print(self.fill_space("Days Remaining", 30), result["metrics"]["synthetic.customMetrics.daysRemaining"][0][1])
+                            print(self.fill_space("Date of Issue", 30), self.change_time_format(result["metrics"]["synthetic.customMetrics.validFrom"][0][1], True))
+                            print(self.fill_space("Date of Expiry", 30), self.change_time_format(result["metrics"]["synthetic.customMetrics.validTo"][0][1], True))
                         else:
-                            print(self.fill_space("Browser Logs", 30), "N/A")
+                            print(self.fill_space("Certificate is Valid", 30), "No")
+                else:
+                    print(self.fill_space("Response Size", 30), str(formatted_response_size))
+                    if "har" in result_details:
+                        har_path = os.path.join(result_details["testid"], result_details["resultid"])
+                        os.makedirs(har_path, exist_ok=True)
+                        file_path = os.path.join(har_path, "HAR.json")
+                        with open(file_path, 'w') as f:
+                            json.dump(result_details['har'], f)
+                        print(self.fill_space("HAR", 30), f"HAR has been saved to {file_path}")
+                    else:
+                        print(self.fill_space("HAR", 30), "N/A")
+                    if "image" in result_details:
+                        with open("images.tar", "wb") as f:
+                            f.write(result_details["image"])
+                        with tarfile.open("images.tar", "r") as tar:
+                            images_path = os.path.join(result_details["testid"], result_details["resultid"], "Screenshots")
+                            tar.extractall(path=images_path)
+                        print(self.fill_space("Screenshots", 30), f"Screenshots has been saved to {images_path}")
+                    else:
+                        print(self.fill_space("Screenshots", 30), "N/A")
+                    if "video" in result_details:
+                        with open("videos.tar", "wb") as f:
+                            f.write(result_details["video"])
+                        with tarfile.open("videos.tar", "r") as tar:
+                            videos_path = os.path.join(result_details["testid"], result_details["resultid"], "Recordings")
+                            tar.extractall(path=videos_path)
+                        print(self.fill_space("Recordings", 30), f"Recordings has been saved to {videos_path}")
+                    else:
+                        print(self.fill_space("Recordings", 30), "N/A")
+                    if "sub" in result_details:
+                        print("")
+                        print(self.__fix_length("*", 80))
+                        print("Subtransactions ")
+                        print(self.__fix_length("*", 80))
+                        for x in range(len(result_details["sub"])):
+                            for key, value in result_details["sub"][x]["properties"].items():
+                                if key == 'finishTime' or key == 'startTime':
+                                    print(self.fill_space(key, 30), self.format_time(value))
+                                else:
+                                    print(self.fill_space(key, 30), value)
+                            for key, value in result_details['sub'][x]["metrics"].items():
+                                print(self.fill_space(key, 30), value)
+                            print(self.__fix_length("*", 80))
+                    else:
+                        print(self.fill_space("Subtransactions", 30), "N/A")
+                    if "logs" in result_details:
+                        print("")
+                        print("\nConsole logs ")
+                        print(self.__fix_length("*", 80))
+                        if "console.log" in result_details["logs"]:
+                            print(result_details["logs"]["console.log"])
+                        else:
+                            print(result_details["logs"])
+                        print(self.__fix_length("*", 80))
+                        if result_details["syntheticType"] != HTTPScript_TYPE:
+                            if "browser.json" in result_details["logs"]:
+                                print("Browser logs")
+                                print(self.__fix_length("*", 80))
+                                browserlogs = json.loads(result_details["logs"]["browser.json"])
+                                for logs in browserlogs:
+                                        print(logs["level"]+ "\n" + self.change_time_format(logs["timestamp"], False) + "\n" +  logs["message"])
+                                print("")
+                                print(self.__fix_length("*", 80))
+                            else:
+                                print(self.fill_space("Browser Logs", 30), "N/A")
                 if "errors" in result["testResultCommonProperties"]:
                     print("Error")
                     print(self.__fix_length("*", 80))
@@ -2381,7 +2396,7 @@ class SyntheticTest(Base):
             status = "Successful" if result["metrics"]["status"][0][1] == 1 else "Failed"
 
             print(self.fill_space(result["testResultCommonProperties"]["id"], id_length ),
-                  self.fill_space(str(self.change_time_format(result["metrics"]["response_time"][0][0])), start_time_length),
+                  self.fill_space(str(self.change_time_format(result["metrics"]["response_time"][0][0], False)), start_time_length),
                   self.fill_space(result["testResultCommonProperties"]["locationDisplayLabel"], loc_length),
                   self.fill_space(status, status_length),
                   self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
@@ -2666,7 +2681,8 @@ class SyntheticTest(Base):
                               self.fill_space(self.format_frequency(t["testFrequency"]), test_frequency_length),
                               self.fill_space(str(t["active"]), active_length),
                               self.fill_space(location_str),
-                              t['configuration']['url'] if 'url' in t['configuration'] else 'None')
+                              t['configuration']['url'] if 'url' in t['configuration'] else (
+                                  t['configuration']['hostname'] if 'hostname' in  t['configuration'] else None))
                         output_lists.append(t)
                 if t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]:
                     if len(t['locations']) > 0:
@@ -2795,6 +2811,8 @@ class SyntheticTest(Base):
 
                     if syn_type in ["HTTPAction", "WebpageAction"]:
                         url = syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['url']
+                    elif syn_type == "SSLCertificate":
+                        url =  syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['hostname']
                     else:
                         url = "None"
 
@@ -4477,7 +4495,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--port', type=int, help='set port')
         self.parser_create.add_argument(
-            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
 
         # full payload in json file
         self.parser_create.add_argument(
@@ -4632,7 +4650,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--port', type=int, help='set port')
         patch_exclusive_group.add_argument(
-            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -4700,7 +4718,7 @@ class ParseParameter:
         update_group.add_argument(
             '--port', type=int, help='set port')
         update_group.add_argument(
-            '--remaining-days', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
 
         # update alert
         update_group.add_argument(
@@ -5153,8 +5171,8 @@ def main():
                         payload.set_host(get_args.hostname)
                     if get_args.port is not None:
                         payload.set_port(get_args.port)
-                    if get_args.remaining_days is not None:
-                        payload.set_remaining_days(get_args.remaining_days)
+                    if get_args.remaining_days_check is not None:
+                        payload.set_remaining_days(get_args.remaining_days_check)
                     payload.set_frequency(get_args.type, 1440)
 
                 # global operation, add label, location, description, frequency, etc.
@@ -5240,8 +5258,8 @@ def main():
             patch_instance.patch_host(get_args.id, get_args.hostname)
         elif get_args.port is not None:
             patch_instance.patch_port(get_args.id, get_args.port)
-        elif get_args.remaining_days is not None:
-            patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days)
+        elif get_args.remaining_days_check is not None:
+            patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days_check)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
@@ -5299,8 +5317,8 @@ def main():
                     update_instance.update_host(get_args.hostname)
                 if get_args.port is not None:
                     update_instance.update_port(get_args.port)
-                if get_args.remaining_days is not None:
-                    update_instance.update_remaining_days(get_args.remaining_days)
+                if get_args.remaining_days_check is not None:
+                    update_instance.update_remaining_days(get_args.remaining_days_check)
                 updated_payload = update_instance.get_updated_test_config()
                 update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:

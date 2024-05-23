@@ -121,6 +121,8 @@ Synthetic test management:
 - [synctl delete test](docs/synctl-delete-test.md) - Delete Synthetic tests.
 - [synctl patch test](docs/synctl-patch-test.md) - Patch Synthetic test.
 - [synctl update test](docs/synctl-update-test.md) - Update properties of Synthetic test.
+
+Synthetic result management:
 - [synctl get result](docs/synctl-get-result.md) - Display Synthetic test result.
 
 Synthetic location management:
