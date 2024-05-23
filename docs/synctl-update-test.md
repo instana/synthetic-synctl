@@ -71,7 +71,7 @@ synctl update test <synthetic-id> \
     --expect-status 200 \
     --custom-property "key1=value1,key2=value2"
 ```
-### Example for API Script tests
+### Example for API Script Tests
 ```
 #  Update a test with json payload.
 1. Get synthetic configuration and save to test.json
