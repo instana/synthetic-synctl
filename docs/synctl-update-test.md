@@ -35,7 +35,7 @@ synctl update test <id> [options]
     --expect-status <int>              set expected HTTP status code
     --validation-string <string>       set validation-string
 ```
-### Options for API Script test
+### Options for API Script Tests
 ```
     --file,-f <file-name>              json payload
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
