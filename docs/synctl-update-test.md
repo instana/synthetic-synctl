@@ -42,13 +42,28 @@ synctl update test <id> [options]
     --bundle <bundle>                  set bundle content
     --entry-file <string>              entry file of a bundle test
 ```
-### Options for Browserscript Tests
+### Options for Browser Script Tests
 ```
     --file,-f <file-name>              json payload
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
     --entry-file <string>              entry file of a bundle test
     --record-video <boolean>           enable/disable record video, false by default
+    --browser <string>                 browser type, support chrome and firefox
+```
+### Options for Webpage Simple Tests
+```
+    --url <url>                        HTTP URL
+    --mark-synthetic-call <boolean>    set markSyntheticCall
+    --record-video <boolean>           enable/disable record video, false by default
+    --browser <string>                 browser type, support chrome and firefox
+```
+### Options for Webpage Script Tests
+```
+    --file,-f <file-name>              json payload
+    --mark-synthetic-call <boolean>    set markSyntheticCall
+    --record-video <boolean>           enable/disable record video, false by default
+    --browser <string>                 browser type, support chrome and firefox
 ```
 ### Options for SSLCertificate Tests
 ```             
@@ -65,11 +80,16 @@ synctl update test <synthetic-id> \
     --label "simple-ping" \
     --location <id1> <id2> ... \
     --retry-interval 3 \
-    --url https://www.ibm.com \
     --follow-redirect true \
     --validation-string "a synthetic test" \
     --expect-status 200 \
     --custom-property "key1=value1,key2=value2"
+```
+### Example for API Simple Tests
+```
+synctl update test <synthetic-id> \
+    --url https://www.ibm.com \
+    --expect-status 200
 ```
 ### Example for API Script Tests
 ```
@@ -80,6 +100,24 @@ synctl update test <synthetic-id> \
 2. edit json file and update test.
     synctl update test <synthetic-id> --file/-f test.json
 
+```
+### Example for Browser Script Tests
+```
+synctl update test <synthetic-id> \
+    --mark-synthetic-call false \
+    --entry-file script.json
+```
+### Example for Webpage Simple Tests
+```
+synctl update test <synthetic-id> \
+    --url https://www.ibm.com \
+    --record-video true
+```
+### Example for Webpage Script Tests
+```
+synctl update test <synthetic-id> \
+    --mark-synthetic-call false \
+    --browser firefox
 ```
 ### Example for SSLCertificate Tests
 ```
