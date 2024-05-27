@@ -42,7 +42,7 @@ synctl patch test id [options]
     --bundle <bundle>                  set bundle content
     --entry-file <string>              entry file of a bundle test
 ```
-### Options for Browserscript test
+### Options for Browser Script test
 ```
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
@@ -50,7 +50,21 @@ synctl patch test id [options]
     --browser <string>                 browser type, support chrome and firefox
     --record-video <boolean>           enable/disable record video, false by default          
 ```
-### Options for SSLCertificate test
+### Options for Webpage Simple Tests
+```
+    --url <url>                        HTTP URL
+    --mark-synthetic-call <boolean>    set markSyntheticCall
+    --record-video <boolean>           enable/disable record video, false by default
+    --browser <string>                 browser type, support chrome and firefox
+```
+### Options for Webpage Script Tests
+```
+    --file,-f <file-name>              json payload
+    --mark-synthetic-call <boolean>    set markSyntheticCall
+    --record-video <boolean>           enable/disable record video, false by default
+    --browser <string>                 browser type, support chrome and firefox
+```
+### Options for SSLCertificate Tests
 ```
     --hostname <host>                  set hostname for ssl test
     --port <int>                       set port 
@@ -61,9 +75,6 @@ synctl patch test id [options]
 ```
 # Patch test label to simple-ping.
 synctl patch test <synthetic-id> --label simple-ping
-
-# Set URL of API Simple to `https://www.ibm.com`
-synctl patch test <synthetic-id> --url https://www.ibm.com
 
 # Set test frequency to 5 min
 synctl patch test <synthetic-id> --frequency 5
@@ -95,6 +106,9 @@ synctl patch test <synthetic-id> --custom-property "key1=value1,key2=value2,key3
 
 ### Examples for API Simple tests
 ```
+# Set URL of API Simple to `https://www.ibm.com`
+synctl patch test <synthetic-id> --url https://www.ibm.com
+
 # Set mark synthetic call to `True`.
 synctl patch test <synthetic-id> --mark-synthetic-call True
 
@@ -125,12 +139,9 @@ synctl patch test <synthetic-id> --bundle "${PATCH_BASE64_STR}"
 
 # Set entry file of bundle test
 synctl patch test <synthetic-id> --entry-file bundle-test/index.js
-
-# Set record video true
-synctl patch test <synthetic-id> --record-video true
 ```
 
-### Examples for Browserscript tests
+### Examples for Browser Script tests
 ```
 # Set browser to firefox
 synctl patch test <synthetic-id> --browser firefox
@@ -138,7 +149,25 @@ synctl patch test <synthetic-id> --browser firefox
 # Set multiple custom properties of a test
 synctl patch test <synthetic-id> --custom-property "key1=value1,key2=value2,key3=value3"
 ```
+### Examples for Webpage Simple Tests
+```
+# Set URL of Webpage Simple to `https://www.ibm.com`
+synctl patch test <synthetic-id> --url https://www.ibm.com
 
+# Set browser to firefox
+synctl patch test <synthetic-id> --browser firefox
+```
+### Examples for Webpage Script Tests
+```
+# Update synthetic test with new script
+synctl patch test <synthetic-id> --script-file new-api-script.js
+
+# Set record video true
+synctl patch test <synthetic-id> --record-video true
+
+# Set browser to firefox
+synctl patch test <synthetic-id> --browser firefox
+```
 ### Examples for SSLCertificate tests
 ```
 # Set hostname of a SSLCertificate test
