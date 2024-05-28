@@ -7,7 +7,6 @@ Delete Synthetic location.
 synctl delete location <location-id>
 ```
 
-
 ## Examples
 
 Delete a Synthetic location

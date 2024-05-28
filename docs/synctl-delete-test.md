@@ -22,22 +22,22 @@ synctl delete test [id...] [options]
 
 ## Examples
 
-Delete Synthetic with id:
+Delete Synthetic with id
 ```
 synctl delete test <synthetic-id>
 ```
 
-Delete several Synthetic tests:
+Delete several Synthetic tests
 ```
 synctl delete test <id-1> <-id-2> <id-3> ...
 ```
 
-Delete test whose label match regex, refer [regular expression operations](https://docs.python.org/3/library/re.html). Delete all tests which label match regex `^ping-test-*`:
+Delete test whose label match regex, refer [regular expression operations](https://docs.python.org/3/library/re.html). Delete all tests which label match regex `^ping-test-*`
 ```
 synctl delete test --match-regex "^ping-test-*"
 ```
 
-Delete all tests:
+Delete all tests
 ```
 synctl delete test --match-regex ".*"
 ```

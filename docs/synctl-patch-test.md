@@ -25,9 +25,9 @@ synctl patch test id [options]
     --use-env, -e <name>               use a config hostname
     --host <host>                      set hostname
     --token <token>                    set token
-    
 ```
-### Options for API Simple tests
+
+### Options for API Simple test
 ```
     --url <url>                        HTTP URL
     --follow-redirect <boolean>        set follow-redirect
@@ -36,12 +36,14 @@ synctl patch test id [options]
     --operation <method>               HTTP request methods, GET, POST, HEAD, PUT, etc.
     --validation-string <string>       set validation-string
 ```
+
 ### Options for API script test
 ```
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
     --entry-file <string>              entry file of a bundle test
 ```
+
 ### Options for Browser Script test
 ```
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
@@ -50,28 +52,33 @@ synctl patch test id [options]
     --browser <string>                 browser type, support chrome and firefox
     --record-video <boolean>           enable/disable record video, false by default          
 ```
-### Options for Webpage Simple Tests
+
+### Options for Webpage Simple test
 ```
     --url <url>                        HTTP URL
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
 ```
-### Options for Webpage Script Tests
+
+### Options for Webpage Script test
 ```
     --file,-f <file-name>              json payload
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
 ```
-### Options for SSLCertificate Tests
+
+### Options for SSLCertificate test
 ```
     --hostname <host>                  set hostname for ssl test
     --port <int>                       set port 
     --remaining-days-check <int>       set days remaining before expiration of SSL certificate
 ```
+
 ## Examples
-### Common Examples for All Tests
+### Common Examples for All tests
+
 ```
 # Patch test label to simple-ping.
 synctl patch test <synthetic-id> --label simple-ping
@@ -149,7 +156,8 @@ synctl patch test <synthetic-id> --browser firefox
 # Set multiple custom properties of a test
 synctl patch test <synthetic-id> --custom-property "key1=value1,key2=value2,key3=value3"
 ```
-### Examples for Webpage Simple Tests
+
+### Examples for Webpage Simple tests
 ```
 # Set URL of Webpage Simple to `https://www.ibm.com`
 synctl patch test <synthetic-id> --url https://www.ibm.com
@@ -157,7 +165,8 @@ synctl patch test <synthetic-id> --url https://www.ibm.com
 # Set browser to firefox
 synctl patch test <synthetic-id> --browser firefox
 ```
-### Examples for Webpage Script Tests
+
+### Examples for Webpage Script tests
 ```
 # Update synthetic test with new script
 synctl patch test <synthetic-id> --script-file new-api-script.js
@@ -168,6 +177,7 @@ synctl patch test <synthetic-id> --record-video true
 # Set browser to firefox
 synctl patch test <synthetic-id> --browser firefox
 ```
+
 ### Examples for SSLCertificate tests
 ```
 # Set hostname of a SSLCertificate test

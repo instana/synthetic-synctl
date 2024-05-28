@@ -46,7 +46,7 @@ synctl get alert <alert-id> --show-json > alert.json
 synctl update alert <alert-id> --file/-f alert.json
 ```
 
-Update a smart alert with tagfilter option
+Update a smart alert with `--tag-filter-expression` option
 ```
 synctl update alert <alert-id> --tag-filter-expression '{"type": "EXPRESSION", "logicalOperator": "AND", "elements": []}'
 ```

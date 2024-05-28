@@ -29,7 +29,7 @@ Show result details, note that time window need to be same with result list
 synctl get result <id> --test <test-id> --window-size 6h
 ```
 
-Save HAR to local
+Save HAR file to local
 ```
 synctl get result <id> --test <test-id> --har
 ```

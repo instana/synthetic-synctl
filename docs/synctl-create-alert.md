@@ -22,7 +22,7 @@ synctl create alert [options]
 
 ## Examples
 
-Create Smart Alert for Synthetic test.
+Create Smart Alert for Synthetic test
 ```
 synctl create alert --name "Smart-alert" \
        --alert-channel "$ALERT_CHANNEL" \

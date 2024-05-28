@@ -58,7 +58,7 @@ synctl config remove --name pink
 ```
 **Note:** By default, configuration file is under `~/.synthetic/config.json`.
 
-### Run command with options --host <host> and --token <token>
+### Run command with options --host \<host\> and --token \<token\>
 
 Get all tests with options
 ```

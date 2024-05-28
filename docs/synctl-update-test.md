@@ -6,6 +6,7 @@ Update Synthetic test properties.
 ```
 synctl update test <id> [options]
 ```
+
 ## Options
 
 ### Common options
@@ -26,7 +27,8 @@ synctl update test <id> [options]
     --host <host>                      set hostname
     --token <token>                    set token
 ```
-### Options for API Simple Tests
+
+### Options for API Simple test
 ```
     --operation <method>               HTTP request methods, GET, POST, HEAD, PUT, etc.
     --mark-synthetic-call <boolean>    set markSyntheticCall
@@ -35,14 +37,16 @@ synctl update test <id> [options]
     --expect-status <int>              set expected HTTP status code
     --validation-string <string>       set validation-string
 ```
-### Options for API Script Tests
+
+### Options for API Script test
 ```
     --file,-f <file-name>              json payload
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
     --entry-file <string>              entry file of a bundle test
 ```
-### Options for Browser Script Tests
+
+### Options for Browser Script test
 ```
     --file,-f <file-name>              json payload
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
@@ -51,28 +55,32 @@ synctl update test <id> [options]
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
 ```
-### Options for Webpage Simple Tests
+
+### Options for Webpage Simple test
 ```
     --url <url>                        HTTP URL
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
 ```
-### Options for Webpage Script Tests
+
+### Options for Webpage Script test
 ```
     --file,-f <file-name>              json payload
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
 ```
-### Options for SSLCertificate Tests
+
+### Options for SSLCertificate test
 ```             
     --hostname  <host>                 set hostname for ssl test
     --port <int>                       set port 
     --remaining-days-check <int>       set days remaining before expiration of SSL certificate
 ```
+
 ## Examples
-### Common Example for All Tests
+### Common Example for All tests
 ```
 # Update a Synthetic test with multiple options.
 synctl update test <synthetic-id> \
@@ -85,13 +93,15 @@ synctl update test <synthetic-id> \
     --expect-status 200 \
     --custom-property "key1=value1,key2=value2"
 ```
-### Example for API Simple Tests
+
+### Example for API Simple test
 ```
 synctl update test <synthetic-id> \
     --url https://www.ibm.com \
     --expect-status 200
 ```
-### Example for API Script Tests
+
+### Example for API Script test
 ```
 #  Update a test with json payload.
 1. Get synthetic configuration and save to test.json
@@ -101,26 +111,31 @@ synctl update test <synthetic-id> \
     synctl update test <synthetic-id> --file/-f test.json
 
 ```
-### Example for Browser Script Tests
+
+### Example for Browser Script test
 ```
 synctl update test <synthetic-id> \
     --mark-synthetic-call false \
     --entry-file script.json
 ```
-### Example for Webpage Simple Tests
+
+### Example for Webpage Simple test
 ```
 synctl update test <synthetic-id> \
     --url https://www.ibm.com \
     --record-video true
 ```
-### Example for Webpage Script Tests
+
+### Example for Webpage Script test
 ```
 synctl update test <synthetic-id> \
     --mark-synthetic-call false \
     --browser firefox
 ```
-### Example for SSLCertificate Tests
+
+### Example for SSLCertificate test
 ```
 synctl update test <synthetic-id> \
     --hostname www.ibm.com \
     --remaining-days-check 120
+```
