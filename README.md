@@ -136,7 +136,7 @@ Synthetic smart alert management:
 - [synctl delete alert](docs/synctl-delete-alert.md) - Delete smart alert.
 
 Synthetic credentials management:
-- [synctl create/update/delete cred](docs/synctl-credential.md) - Manage credentials.
+- [synctl get/create/update/delete cred](docs/synctl-credential.md) - Manage credentials.
 
 Others:
 - [synctl get application](docs/synctl-get-app.md) - Display Instana application.

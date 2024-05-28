@@ -169,7 +169,7 @@ synctl patch test <synthetic-id> --browser firefox
 ### Examples for Webpage Script tests
 ```
 # Update synthetic test with new script
-synctl patch test <synthetic-id> --script-file new-api-script.js
+synctl patch test <synthetic-id> --script-file seleniumide-script.side
 
 # Set record video true
 synctl patch test <synthetic-id> --record-video true
