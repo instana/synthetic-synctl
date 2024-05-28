@@ -4,7 +4,7 @@ List Instana Application, application can be used to create Synthetic test.
 
 ## Syntax
 ```
-synctl get test [id] [options]
+synctl get app [id] [options]
 ```
 
 ## Options

@@ -3350,6 +3350,12 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.exit_synctl(ERROR_CODE, "record video should not be None")
 
+    def update_browser(self, browser):
+        if browser is not None and browser.upper() in ("CHROME", "FIREFOX"):
+            self.update_config["configuration"]["browser"] = browser
+        else:
+            self.exit_synctl(ERROR_CODE, "browser should not be none")
+
     def update_active(self, active):
         """active"""
         if active is not None and active.upper() in ("TRUE", "FALSE"):
@@ -4495,7 +4501,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--port', type=int, help='set port')
         self.parser_create.add_argument(
-            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
 
         # full payload in json file
         self.parser_create.add_argument(
@@ -4650,7 +4656,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--port', type=int, help='set port')
         patch_exclusive_group.add_argument(
-            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -4691,6 +4697,8 @@ class ParseParameter:
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
         update_group.add_argument(
             '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        update_group.add_argument(
+            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
         update_group.add_argument(
             '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
         update_group.add_argument(
@@ -5292,6 +5300,8 @@ def main():
                     update_instance.update_description(get_args.description)
                 if get_args.record_video is not None:
                     update_instance.update_record_video(get_args.record_video)
+                if get_args.browser is not None:
+                    update_instance.update_browser(get_args.browser)
                 if get_args.location is not None:
                     update_instance.update_locations(get_args.location)
                 if get_args.mark_synthetic_call:

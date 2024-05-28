@@ -9,7 +9,6 @@ synctl get pop-size|size
 
 ## Examples
 
-Estimate size of Self-hosted PoP
 ```
 synctl get pop-size
 ```

@@ -25,12 +25,12 @@ Get Smart Alert
 synctl get alert
 ```
 
-Show smart alert details.
+Show smart alert details
 ```
 synctl get alert <id> --show-details
 ```
 
-Show smart alert payload in json format.
+Show smart alert payload in json format
 ```
 synctl get alert <id> --show-json
 ```

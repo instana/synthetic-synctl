@@ -8,6 +8,7 @@ synctl create test [options]
 ```
 
 ## Options
+### Common options
 ```
     -h, --help                          show this help message and exit
 
@@ -17,41 +18,65 @@ synctl create test [options]
     --description, -d <string>          the description of Synthetic test
     --frequency <int>                   the range is from 1 to 120 minute, default is 15
     --app-id, --application-id <id>     application id
+    --retries <int>                     retry times, value is from [0, 2]
+    --retry-interval <int>              retry interval, range is [1, 10]
+    --timeout <num>ms|s|m               set timeout, accept <number>(ms|s|m)
+    --custom-properties <string>        An object with name/value pairs to provide additional information of the Synthetic test
+    
+    --use-env <name>, -e <name>         use a specified configuration
+    --host <host>                       set hostname
+    --token <token>                     set token
+```
+### Options for API Simple test
+```
     --url <url>                         HTTP request URL
     --operation <method>                HTTP request methods, GET, POST, HEAD, PUT, etc
     --headers <json>                    HTTP headers
     --body <string>                     HTTP body
-    -f, --from-file <file>              Synthetic script, support js file, e.g, script.js
-    --bundle <bundle>                   Synthetic bundle test script, support zip file, zip file encoded with base64
-    --script-file <file-name>           Synthetic bundle test entry file, e.g, myscript.js
-    --retries <int>                     retry times, value is from [0, 2]
-    --retry-interval <int>              retry interval, range is [1, 10]
     --follow-redirect <boolean>         to allow redirect, true by default
-    --timeout <num>ms|s|m               set timeout, accept <number>(ms|s|m)
     --expect-status <int>               expected status code, Synthetic test will fail if response status is not equal to it, default 200
     --expect-json <string>              An optional object to be used to check against the test response object
     --expect-match <string>             An optional regular expression string to be used to check the test response
     --expect-exists <string>            An optional list of property labels used to check if they are present in the test response object
     --expect-not-empty <string>         An optional list of property labels used to check if they are present in the test response object with a non-empty value
     --allow-insecure <boolean>          if set to true then allow insecure certificates
-    --custom-properties <string>        An object with name/value pairs to provide additional information of the Synthetic test
+```
+### Options for API Script test
+```  
+    -f, --from-file <file>              Synthetic script, support js file, e.g, script.js
+    --bundle <bundle>                   Synthetic bundle test script, support zip file, zip file encoded with base64
+    --script-file <file-name>           Synthetic bundle test entry file, e.g, myscript.js
+```
+### Options for Browser Script test
+```    
     --browser <string>                  browser type, support chrome and firefox
     --record-video <boolean>            set true to record video
     --from-json <json>                  full Synthetic test payload, support json file
+```
+### Options for Webpage Script test
+```
+    -f, --from-file <file>              Synthetic script, support js file, e.g, script.js
+    --record-video <boolean>           enable/disable record video, false by default
+    --browser <string>                 browser type, support chrome and firefox
+```
+### Options for Webpage Simple test
+```
+    --url <url>                        HTTP URL
+    --record-video <boolean>           enable/disable record video, false by default
+    --browser <string>                 browser type, support chrome and firefox
+```
+### Options for SSLCertificate test
+```
     --hostname <host>                   set hostname for ssl test
     --port <int>                        set port, default is 443 
     --remaining-days-check <int>        set remaining days before expiration of SSL certificate
-
-    --use-env <name>, -e <name>         use a specified configuration
-    --host <host>                       set hostname
-    --token <token>                     set token
 ```
 
 ## Examples  
 
-### Create API Simple test  
+### Create API Simple test example
 
-Create API Simple test, test frequency is 5min. Use command `synctl get lo` to get location id.
+Create API Simple test, test frequency is 5min. Use command `synctl get lo` to get location id
 ```
 synctl create test -t 0 \
     --label "simple-ping" \
@@ -60,14 +85,15 @@ synctl create test -t 0 \
     --frequency 5
 ```
 
-Create API Simple test and specify multiple location id.
+Create API Simple test and specify multiple location id
 ```
 synctl create test -t 0 \
     --label "simple-ping" \
     --url "https://httpbin.org/get" \
     --location "$LOCATION1" "$LOCATION2" "$LOCATION3" ...
 ```
-Create API Simple test and specify application id, retry, headers, and timeout.
+
+Create API Simple test and specify application id, retry, headers, and timeout
 ```
 synctl create test -t 0 \
     --label "API-simple-test" \
@@ -85,7 +111,7 @@ synctl create test -t 0 \
     --allow-insecure true
 ```
 
-Expect Status example.
+Expect status example
 ```
 synctl create test -t 0 \
     --label "ping-expect-status-200" \
@@ -94,7 +120,7 @@ synctl create test -t 0 \
     --expect-status 200
 ```
 
-Expect Json example.
+Expect json example
 ```
 synctl create test -t 0 \
     --label "ping-expect-json" \
@@ -123,7 +149,7 @@ synctl create test -t 0 \
     }'
 ```
 
-Expect Match example
+Expect match example
 ```
 synctl create test -t 0 \
     --label expect-match-test \
@@ -133,7 +159,7 @@ synctl create test -t 0 \
 ```
 
 
-Expect esists example
+Expect exists example
 ```
 synctl create test -t 0 \
     --label expect-exists-test \
@@ -149,12 +175,11 @@ synctl create test -t 0 \
     --url https://httpbin.org/json \
     --location "$LOCATION1" \
     --expect-not-empty '["slideshow"]'
-
 ```
 
-### Create API Script test Examples
+### Create API Script test example
 
-Create a simple API script from file.
+Create a simple API script from file
 ```
 synctl create test -t 1 \
     --label "simple-api-script" \
@@ -201,7 +226,7 @@ synctl create test -t 1 --label "syn-bundle-test" \
     --frequency 5
 ```
 
-### Create Browser Script test examples
+### Create Browser Script test example
 
 create a browser script test
 ```
@@ -233,7 +258,7 @@ synctl create test -t 2 \
     --bundle "UEsDBAoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABwAbGliL1VUCQADlRcDY2izBGN1eAsAAQToAwAABOgDAABQSwMEFAAIAAgA1FkYVQAAAAAAAAAAVAMAAA8AHABsaWIvbXlzY3JpcHQuanNVVAkAA6CXBWOglwVjdXgLAAEE6AMAAAToAwAAlVPBbuIwEL3zFSOLQ5C65t5qVwIpB9RuVbW5R8YMidVgp56hWYT67zsOoUuLkFifEue9N2/eTGzwxLAHQ4SR4QN+QsS3rYuYKVsbpyZ3I0M7b2G99ZZd8MBIPHe+yiawH41AznQK3ry7yjACB+i6Ti8FoG3Y9N+tFAkN6iZUmfp1ftQNqJm1SASJB62pMBVOXNMZxzBextCJQ10hZ6pmbm+n09M6CX700mJch7gBQhNtDaa3/R9GEpwgrAeBC07GmdK0LFOl8u0C5lCasokm9Kt73FGmJEyukZ1VJ7fjVXTvQpAXnT8W+fNED11kJ40NQ0rxADtuEJY7kESK9CzjMK3roQ0eQP29TPQ8w4ExmO5ltYzdNCf+4Ae8HAK4+ac2UK4J8unT5i18kzg2xOYVgWxE9FQHvlq6EN7LJ+1C+PwFdGx2vGXXaOfJVTWTTED2qVg8lcXzYp6Xj7Pfefkwm+cPqQyFDXItG9Zv18fdaBNWW7GGf9oQmSTZfa95/CMSRM5fUEsHCJkl42ODAQAAVAMAAFBLAwQUAAgACAB5bRZVAAAAAAAAAAARAQAACQAcAG15dGVzdC5qc1VUCQADlRcDYxC7BGN1eAsAAQToAwAABOgDAABdjzEOwjAMRfeewooYgoTSHcTCFdjY2mAVozQOiRkK4u6kVEjgzXp+/0u/CSjwBMEiB4oDvGAPGW93ymiNawP17TgVnymJuxaz3jWN51g4oAs8WJM4bc0GVmWKckEh7yqp1p90xqWBOCr556NDQiM+OKJKzPhUsdZD12MoSl6gVo/SZQHhz+p50ne9rfcbUEsHCA5zkg+OAAAAEQEAAFBLAQIeAwoAAAAAAHltFlUAAAAAAAAAAAAAAAAEABgAAAAAAAAAEAD/QQAAAABsaWIvVVQFAAOVFwNjdXgLAAEE6AMAAAToAwAAUEsBAh4DFAAIAAgA1FkYVZkl42ODAQAAVAMAAA8AGAAAAAAAAQAAAP+BPgAAAGxpYi9teXNjcmlwdC5qc1VUBQADoJcFY3V4CwABBOgDAAAE6AMAAFBLAQIeAxQACAAIAHltFlUOc5IPjgAAABEBAAAJABgAAAAAAAEAAAD/gRoCAABteXRlc3QuanNVVAUAA5UXA2N1eAsAAQToAwAABOgDAABQSwUGAAAAAAMAAwDuAAAA+wIAAAAA" 
 ```
 
-#### Create Webpage Script test
+### Create Webpage Script test example
 
 ```
 synctl create test -t 3 \
@@ -243,27 +268,27 @@ synctl create test -t 3 \
     --browser chrome
 ```
 
-#### Create Webpage Action test
+### Create Webpage Simple test example
 ```
 synctl create test -t 4 \
-    --label "browser-test-webpageaction" \
+    --label "browser-test-webpage-action" \
     --url "https://httpbin.org/get" \
     --location "$LOCATION" --frequency 5 \
     --record-video true \
     --browser chrome
 ```
 
-#### Create SSLCertificate test
+### Create SSLCertificate test example
 ```
 synctl create test -t 5 \
     --label "ssl-certificate-test" \
-    --hostname "httpbin.org" \
+    --hostname "www.ibm.com" \
     --port 443 \
     --remaining-days-check 30 \
-    --lo "$LOCATION"  
+    --lo "$LOCATION"
 ```
 
-#### Create Synthetic test with json payload  
+### Create Synthetic test with json payload example
 
 ```
 synctl create test -t <type> --from-json payload/api-script.json
