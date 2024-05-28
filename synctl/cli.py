@@ -4501,7 +4501,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--port', type=int, help='set port')
         self.parser_create.add_argument(
-            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
 
         # full payload in json file
         self.parser_create.add_argument(
@@ -4656,7 +4656,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--port', type=int, help='set port')
         patch_exclusive_group.add_argument(
-            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
+            '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
