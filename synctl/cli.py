@@ -3840,6 +3840,24 @@ class PatchSyntheticTest(SyntheticTest):
             print(f"{method} is not allowed")
             return
 
+    def patch_headers(self, headers):
+        """headers"""
+        payload = {"headers": ""}
+        if headers is None:
+            print("no headers")
+        else:
+            payload["headers"] = headers
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
+    def patch_body(self, body):
+        """body"""
+        payload = {"body": ""}
+        if body is None:
+            print("no body")
+        else:
+            payload["body"] = body
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
     def patch_mark_synthetic_call(self, markSyntheticCall):
         """mark Synthetic call"""
         markSyntheticCall_options = ["true", "false"]
@@ -3919,6 +3937,51 @@ class PatchSyntheticTest(SyntheticTest):
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
             print("expectStatus should not be none")
+
+    def patch_allow_insecure(self, allow_insecure):
+        """update allow insecure"""
+        payload = {"configuration": {"allowInsecure": ""}}
+        if allow_insecure is not None:
+            payload["configuration"]["allowInsecure"] = allow_insecure
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("allowInsecure should not be none")
+
+    def patch_expect_json(self, expect_json):
+        """update expect json"""
+        payload = {"configuration": {"expectJson": ""}}
+        if expect_json is not None:
+            payload["configuration"]["expectJson"] = expect_json
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expectJson should not be none")
+
+    def patch_expect_not_empty(self, expect_not_empty):
+        """update expect not empty"""
+        payload = {"configuration": {"expectNotEmpty": ""}}
+        if expect_not_empty is not None:
+            payload["configuration"]["expectNotEmpty"] = expect_not_empty
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expectNotEmpty should not be none")
+
+    def patch_expect_exists(self, expect_exists):
+        """update expect status"""
+        payload = {"configuration": {"expectExists": ""}}
+        if expect_exists is not None:
+            payload["configuration"]["expectExists"] = expect_exists
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expectExists should not be none")
+
+    def patch_expect_match(self, expect_match):
+        """update expect status"""
+        payload = {"configuration": {"expectMatch": ""}}
+        if expect_match is not None:
+            payload["configuration"]["expectMatch"] = expect_match
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expectMatch should not be none")
 
     def patch_validation_string(self, validation_string):
         """update validation string"""
@@ -4624,6 +4687,10 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
         patch_exclusive_group.add_argument(
+            '--body', type=str, metavar="<string>", help='HTTP body')
+        patch_exclusive_group.add_argument(
+            '--headers', type=str, metavar="<json>", help="HTTP headers")
+        patch_exclusive_group.add_argument(
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
         patch_exclusive_group.add_argument(
             '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
@@ -4640,8 +4707,6 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--follow-redirect', type=str, metavar="<boolean>", help='set follow-redirect')
         patch_exclusive_group.add_argument(
-            '--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
-        patch_exclusive_group.add_argument(
             '--validation-string', type=str, metavar="<string>", help='set validation-string')
         patch_exclusive_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
@@ -4649,6 +4714,18 @@ class ParseParameter:
             '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
         patch_exclusive_group.add_argument(
             '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
+        patch_exclusive_group.add_argument(
+            '--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
+        patch_exclusive_group.add_argument(
+            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
+        patch_exclusive_group.add_argument(
+            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
+        patch_exclusive_group.add_argument(
+            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
+        patch_exclusive_group.add_argument(
+            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
+        patch_exclusive_group.add_argument(
+            '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
 
         # SSL Certificate
         patch_exclusive_group.add_argument(
@@ -5232,6 +5309,10 @@ def main():
             patch_instance.patch_retry_interval(get_args.retry_interval)
         elif get_args.operation is not None:
             patch_instance.patch_ping_operation(get_args.operation)
+        elif get_args.body is not None:
+            patch_instance.patch_body(get_args.body)
+        elif get_args.headers is not none:
+            patch_instance.patch_headers(get_args.headers)
         elif get_args.script_file is not None:
             patch_instance.patch_config_script_file(get_args.script_file)
         elif get_args.description is not None:
@@ -5247,14 +5328,24 @@ def main():
         elif get_args.mark_synthetic_call:
             patch_instance.patch_mark_synthetic_call(
                 get_args.mark_synthetic_call)
+        elif get_args.allow_insecure is not None:
+            patch_instance.patch_allow_insecure(get_args.allow_insecure)
+        elif get_args.expect_json is not None:
+            patch_instance.patch_expect_json(get_args.expect_json)
+        elif get_args.expect_not_empty is not None:
+            patch_instance.patch_expect_not_empty(get_args.expect_not_empty)
+        elif get_args.expect_exists is not None:
+            patch_instance.patch_expect_exists(get_args.expect_exists)
+        elif get_args.expect_match is not None:
+            patch_instance.patch_expect_match(get_args.expect_match)
+        elif get_args.expect_status is not None:
+            patch_instance.patch_expect_status(get_args.expect_status)
         elif get_args.entry_file is not None:
             patch_instance.patch_script_file(get_args.entry_file, get_args.id)
         elif get_args.url is not None:
             patch_instance.patch_url(get_args.url)
         elif get_args.follow_redirect is not None:
             patch_instance.patch_follow_redirect(get_args.follow_redirect)
-        elif get_args.expect_status is not None:
-            patch_instance.patch_expect_status(get_args.expect_status)
         elif get_args.validation_string is not None:
             patch_instance.patch_validation_string(get_args.validation_string)
         elif get_args.bundle is not None:
