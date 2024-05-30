@@ -35,6 +35,12 @@ synctl patch test id [options]
     --expect-status <int>              set expected HTTP status code
     --operation <method>               HTTP request methods, GET, POST, HEAD, PUT, etc.
     --validation-string <string>       set validation-string
+    --expect-status <int>              expected status code, Synthetic test will fail if response status is not equal to it, default 200
+    --expect-json <string>             An optional object to be used to check against the test response object
+    --expect-match <string>            An optional regular expression string to be used to check the test response
+    --expect-exists <string>           An optional list of property labels used to check if they are present in the test response object
+    --expect-not-empty <string>        An optional list of property labels used to check if they are present in the test response object with a non-empty value
+    --allow-insecure <boolean>         if set to true then allow insecure certificates
 ```
 
 ### Options for API script test
@@ -42,6 +48,7 @@ synctl patch test id [options]
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
     --entry-file <string>              entry file of a bundle test
+    --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for Browser Script test
@@ -50,7 +57,8 @@ synctl patch test id [options]
     --bundle <bundle>                  set bundle content
     --entry-file <string>              entry file of a bundle test
     --browser <string>                 browser type, support chrome and firefox
-    --record-video <boolean>           enable/disable record video, false by default          
+    --record-video <boolean>           enable/disable record video, false by default
+    --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for Webpage Simple test
@@ -59,6 +67,7 @@ synctl patch test id [options]
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
+    --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for Webpage Script test
@@ -67,6 +76,7 @@ synctl patch test id [options]
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
+    --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for SSLCertificate test

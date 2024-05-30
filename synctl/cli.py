@@ -3496,6 +3496,24 @@ class UpdateSyntheticTest(SyntheticTest):
                 self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
             self.update_config["customProperties"][key] = value
 
+    def update_body(self, body):
+        """update body"""
+        if body is None or body == "":
+            self.exit_synctl(ERROR_CODE, "no body")
+        else:
+            self.update_config["configuration"]["body"] = body
+
+    def update_headers(self, headers):
+        """update headers"""
+        if any(s == '' or s.isspace() for s in headers):
+            self.exit_synctl(ERROR_CODE, "Headers should be <header>=<value>")
+
+        for item in headers:
+            key, value = item.split('=')
+            if key == '' or value == '':
+                self.exit_synctl(ERROR_CODE, "Headers should be <header>=<value>")
+            self.update_config["configuration"]["headers"][key] = value
+
     def update_host(self, host):
         """update host for SSL test"""
         if host is not None:
@@ -3840,24 +3858,6 @@ class PatchSyntheticTest(SyntheticTest):
             print(f"{method} is not allowed")
             return
 
-    def patch_headers(self, headers):
-        """headers"""
-        payload = {"headers": ""}
-        if headers is None:
-            print("no headers")
-        else:
-            payload["headers"] = headers
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-
-    def patch_body(self, body):
-        """body"""
-        payload = {"body": ""}
-        if body is None:
-            print("no body")
-        else:
-            payload["body"] = body
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-
     def patch_mark_synthetic_call(self, markSyntheticCall):
         """mark Synthetic call"""
         markSyntheticCall_options = ["true", "false"]
@@ -3951,7 +3951,7 @@ class PatchSyntheticTest(SyntheticTest):
         """update expect json"""
         payload = {"configuration": {"expectJson": ""}}
         if expect_json is not None:
-            payload["configuration"]["expectJson"] = expect_json
+            payload["configuration"]["expectJson"] = json.loads(expect_json)
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
             print("expectJson should not be none")
@@ -3960,7 +3960,7 @@ class PatchSyntheticTest(SyntheticTest):
         """update expect not empty"""
         payload = {"configuration": {"expectNotEmpty": ""}}
         if expect_not_empty is not None:
-            payload["configuration"]["expectNotEmpty"] = expect_not_empty
+            payload["configuration"]["expectNotEmpty"] = json.loads(expect_not_empty)
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
             print("expectNotEmpty should not be none")
@@ -3969,7 +3969,7 @@ class PatchSyntheticTest(SyntheticTest):
         """update expect status"""
         payload = {"configuration": {"expectExists": ""}}
         if expect_exists is not None:
-            payload["configuration"]["expectExists"] = expect_exists
+            payload["configuration"]["expectExists"] = json.loads(expect_exists)
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
             print("expectExists should not be none")
@@ -4687,10 +4687,6 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
         patch_exclusive_group.add_argument(
-            '--body', type=str, metavar="<string>", help='HTTP body')
-        patch_exclusive_group.add_argument(
-            '--headers', type=str, metavar="<json>", help="HTTP headers")
-        patch_exclusive_group.add_argument(
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
         patch_exclusive_group.add_argument(
             '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
@@ -4725,7 +4721,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
         patch_exclusive_group.add_argument(
-            '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+            '--allow-insecure', type=str, choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
 
         # SSL Certificate
         patch_exclusive_group.add_argument(
@@ -4764,6 +4760,10 @@ class ParseParameter:
             '--description', type=str, metavar="<string>", help="set description")
         update_group.add_argument(
             '--label', type=str, metavar="<string>", help='set label')
+        update_group.add_argument(
+            '--headers', type=str, metavar="<json>", help="HTTP headers")
+        update_group.add_argument(
+            '--body', type=str, metavar="<string>", help='HTTP body')
         update_group.add_argument(
             '--retries', type=int, metavar="<int>", help="set retries, min is 0 and max is 2")
         update_group.add_argument(
@@ -5309,10 +5309,6 @@ def main():
             patch_instance.patch_retry_interval(get_args.retry_interval)
         elif get_args.operation is not None:
             patch_instance.patch_ping_operation(get_args.operation)
-        elif get_args.body is not None:
-            patch_instance.patch_body(get_args.body)
-        elif get_args.headers is not none:
-            patch_instance.patch_headers(get_args.headers)
         elif get_args.script_file is not None:
             patch_instance.patch_config_script_file(get_args.script_file)
         elif get_args.description is not None:
@@ -5414,6 +5410,11 @@ def main():
                 if get_args.custom_property is not None:
                     split_string = get_args.custom_property.split(',')
                     update_instance.update_custom_properties(split_string)
+                if get_args.body is not None:
+                    update_instance.update_body(get_args.body)
+                if get_args.headers is not None:
+                    split_string = get_args.headers.split(',')
+                    update_instance.update_headers(split_string)
                 if get_args.hostname is not None:
                     update_instance.update_host(get_args.hostname)
                 if get_args.port is not None:
