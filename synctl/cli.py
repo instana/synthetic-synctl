@@ -3467,6 +3467,42 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.exit_synctl(ERROR_CODE, "expectStatus should not be none")
 
+    def update_expect_json(self, expect_json):
+        """update expect json"""
+        if expect_json is not None:
+            self.update_config["configuration"]["expectJson"] = json.loads(expect_json)
+        else:
+            self.exit_synctl(ERROR_CODE, "expectJson should not be none")
+
+    def update_expect_not_empty(self, expect_not_empty):
+        """update expect not empty"""
+        if expect_not_empty is not None:
+            self.update_config["configuration"]["expectNotEmpty"] = json.loads(expect_not_empty)
+        else:
+            self.exit_synctl(ERROR_CODE, "expectNotEmpty should not be none")
+
+    def update_expect_exists(self, expect_exists):
+        """update expect exists"""
+        if expect_exists is not None:
+            self.update_config["configuration"]["expectExists"] = json.loads(expect_exists)
+        else:
+            self.exit_synctl(ERROR_CODE, "expectExists should not be none")
+
+    def update_allow_insecure(self, allow_insecure):
+        """update allowInsecure"""
+        allow_insecure_opions = ["true", "false"]
+        if allow_insecure is not None and allow_insecure.lower() in allow_insecure_opions:
+            self.update_config["configuration"]["allowInsecure"] = allow_insecure
+        else:
+            self.exit_synctl(ERROR_CODE, "allowInsecure should not be none")
+
+    def update_expect_match(self, expect_match):
+        """update expectMatch"""
+        if expect_match is not None:
+            self.update_config["configuration"]["expectMatch"] = expect_match
+        else:
+            self.exit_synctl(ERROR_CODE, "expectMatch should not be none")
+
     def update_validation_string(self, validation_string):
         """update validation string"""
         if validation_string is None or validation_string == "":
@@ -3940,12 +3976,13 @@ class PatchSyntheticTest(SyntheticTest):
 
     def patch_allow_insecure(self, allow_insecure):
         """update allow insecure"""
+        allow_insecure_opions = ["true", "false"]
         payload = {"configuration": {"allowInsecure": ""}}
-        if allow_insecure is not None:
+        if allow_insecure is not None and allow_insecure.lower() in allow_insecure_opions:
             payload["configuration"]["allowInsecure"] = allow_insecure
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
-            print("allowInsecure should not be none")
+            print("allowInsecure should be true/false")
 
     def patch_expect_json(self, expect_json):
         """update expect json"""
@@ -4670,6 +4707,7 @@ class ParseParameter:
         # parser_update.add_argument(
         #     '--from-json', type=str, help='new json payload')
         patch_exclusive_group = self.parser_patch.add_mutually_exclusive_group()
+        # common options
         patch_exclusive_group.add_argument(
             '--active', type=str, choices=["false", "true"], metavar="<boolean>", help='set active')
         patch_exclusive_group.add_argument(
@@ -4684,32 +4722,23 @@ class ParseParameter:
             '--retries', type=int, metavar="<int>", help="set retries, min is 0 and max is 2")
         patch_exclusive_group.add_argument(
             '--retry-interval', type=int, metavar="<int>", help="set retry-interval, min is 1, max is 10")
-        patch_exclusive_group.add_argument(
-            '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
-        patch_exclusive_group.add_argument(
-            '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
-        patch_exclusive_group.add_argument(
-            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
-        patch_exclusive_group.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
-
         # timeout Expected <number>(ms|s|m)
         patch_exclusive_group.add_argument(
             '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
         patch_exclusive_group.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help="specify a script file to update APIScript or BrowserScript")
+            '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
+
+        # API Simple
+        patch_exclusive_group.add_argument(
+            '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
+        patch_exclusive_group.add_argument(
+            '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
         patch_exclusive_group.add_argument(
             '--url', type=str, metavar="<url>", help="HTTP URL")
         patch_exclusive_group.add_argument(
             '--follow-redirect', type=str, metavar="<boolean>", help='set follow-redirect')
         patch_exclusive_group.add_argument(
             '--validation-string', type=str, metavar="<string>", help='set validation-string')
-        patch_exclusive_group.add_argument(
-            '--bundle', type=str, metavar="<bundle>", help='set bundle')
-        patch_exclusive_group.add_argument(
-            '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
-        patch_exclusive_group.add_argument(
-            '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
         patch_exclusive_group.add_argument(
             '--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
         patch_exclusive_group.add_argument(
@@ -4722,6 +4751,18 @@ class ParseParameter:
             '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
         patch_exclusive_group.add_argument(
             '--allow-insecure', type=str, choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+
+        # API Script / Browser test
+        patch_exclusive_group.add_argument(
+            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        patch_exclusive_group.add_argument(
+            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
+        patch_exclusive_group.add_argument(
+            '--script-file', type=str, metavar="<file-name>", help="specify a script file to update APIScript or BrowserScript")
+        patch_exclusive_group.add_argument(
+            '--bundle', type=str, metavar="<bundle>", help='set bundle')
+        patch_exclusive_group.add_argument(
+            '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
 
         # SSL Certificate
         patch_exclusive_group.add_argument(
@@ -4750,6 +4791,7 @@ class ParseParameter:
 
         update_exclusive_group = self.parser_update.add_mutually_exclusive_group()
         update_group = self.parser_update.add_argument_group()
+        # common options
         update_group.add_argument(
             '--active', type=str, metavar="<boolean>", help='set active')
         update_group.add_argument(
@@ -4761,27 +4803,27 @@ class ParseParameter:
         update_group.add_argument(
             '--label', type=str, metavar="<string>", help='set label')
         update_group.add_argument(
-            '--headers', type=str, metavar="<json>", help="HTTP headers")
-        update_group.add_argument(
-            '--body', type=str, metavar="<string>", help='HTTP body')
-        update_group.add_argument(
             '--retries', type=int, metavar="<int>", help="set retries, min is 0 and max is 2")
         update_group.add_argument(
             '--retry-interval', type=int, metavar="<int>", help="set retry-interval, min is 1, max is 10")
+        update_group.add_argument(
+            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+        update_group.add_argument(
+            '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
+        update_group.add_argument(
+            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+
+        # API Simple
+        update_group.add_argument(
+            '--headers', type=str, metavar="<json>", help="HTTP headers")
+        update_group.add_argument(
+            '--body', type=str, metavar="<string>", help='HTTP body')
         update_group.add_argument(
             '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
         update_group.add_argument(
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
         update_group.add_argument(
-            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
-        update_group.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
-        update_group.add_argument(
-            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
-        update_group.add_argument(
-            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
-        update_group.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help="specify a script file to update APIScript or BrowserScript")
+            '--validation-string', type=str, metavar="<string>", help='set validation-string')
         update_group.add_argument(
             '--url', type=str, metavar="<url>", help="HTTP URL")
         update_group.add_argument(
@@ -4789,13 +4831,27 @@ class ParseParameter:
         update_group.add_argument(
             '--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
         update_group.add_argument(
-            '--validation-string', type=str, metavar="<string>", help='set validation-string')
+            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
+        update_group.add_argument(
+            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
+        update_group.add_argument(
+            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
+        update_group.add_argument(
+            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
+        update_group.add_argument(
+            '--allow-insecure', type=str, choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+
+        # API Script / Browser test
+        update_group.add_argument(
+            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        update_group.add_argument(
+            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
+        update_group.add_argument(
+            '--script-file', type=str, metavar="<file-name>", help="specify a script file to update APIScript or BrowserScript")
         update_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         update_group.add_argument(
             '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
-        update_group.add_argument(
-            '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
 
         # SSL Certificate
         update_group.add_argument(
@@ -5403,6 +5459,16 @@ def main():
                     update_instance.update_application_id(get_args.app_id)
                 if get_args.expect_status is not None:
                     update_instance.update_expect_status(get_args.expect_status)
+                if get_args.allow_insecure is not None:
+                    update_instance.update_allow_insecure(get_args.allow_insecure)
+                if get_args.expect_json is not None:
+                    update_instance.update_expect_json(get_args.expect_json)
+                if get_args.expect_not_empty is not None:
+                    update_instance.update_expect_not_empty(get_args.expect_not_empty)
+                if get_args.expect_exists is not None:
+                    update_instance.update_expect_exists(get_args.expect_exists)
+                if get_args.expect_match is not None:
+                    update_instance.update_expect_match(get_args.expect_match)
                 if get_args.validation_string is not None:
                     update_instance.update_validation_string(get_args.validation_string)
                 if get_args.bundle is not None:
