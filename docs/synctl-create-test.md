@@ -34,6 +34,7 @@ synctl create test [options]
     --headers <json>                    HTTP headers
     --body <string>                     HTTP body
     --follow-redirect <boolean>         to allow redirect, true by default
+    --validation-string <string>        set validation-string
     --expect-status <int>               expected status code, Synthetic test will fail if response status is not equal to it, default 200
     --expect-json <string>              An optional object to be used to check against the test response object
     --expect-match <string>             An optional regular expression string to be used to check the test response
@@ -43,27 +44,27 @@ synctl create test [options]
 ```
 ### Options for API Script test
 ```  
-    -f, --from-file <file>              Synthetic script, support js file, e.g, script.js
+    -f, --from-file <file>              Synthetic script/payload, support json, js and side file, e.g, script.js
     --bundle <bundle>                   Synthetic bundle test script, support zip file, zip file encoded with base64
     --script-file <file-name>           Synthetic bundle test entry file, e.g, myscript.js
 ```
 ### Options for Browser Script test
 ```    
+    -f, --from-file <file>              Synthetic script/payload, support json, js and side file, e.g, script.js
     --browser <string>                  browser type, support chrome and firefox
     --record-video <boolean>            set true to record video
-    --from-json <json>                  full Synthetic test payload, support json file
 ```
 ### Options for Webpage Script test
 ```
-    -f, --from-file <file>              Synthetic script, support js file, e.g, script.js
-    --record-video <boolean>           enable/disable record video, false by default
-    --browser <string>                 browser type, support chrome and firefox
+    -f, --from-file <file>              Synthetic script/payload, support json, js and side file, e.g, script.js
+    --record-video <boolean>            enable/disable record video, false by default
+    --browser <string>                  browser type, support chrome and firefox
 ```
 ### Options for Webpage Simple test
 ```
-    --url <url>                        HTTP URL
-    --record-video <boolean>           enable/disable record video, false by default
-    --browser <string>                 browser type, support chrome and firefox
+    --url <url>                         HTTP URL
+    --record-video <boolean>            enable/disable record video, false by default
+    --browser <string>                  browser type, support chrome and firefox
 ```
 ### Options for SSLCertificate test
 ```

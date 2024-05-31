@@ -4541,12 +4541,22 @@ class ParseParameter:
             '--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
         self.parser_create.add_argument(
             '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+        # [0, 2]
+        self.parser_create.add_argument(
+            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
+        self.parser_create.add_argument(
+            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
+        self.parser_create.add_argument(
+            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
 
         # options for ping, url
         self.parser_create.add_argument(
             '--url', type=str, metavar="<url>", help='HTTP request URL')
         self.parser_create.add_argument(
             '--operation', type=str, metavar="<method>", help='HTTP request methods, GET, POST, HEAD, PUT, etc')
+        self.parser_create.add_argument(
+            '--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
+
         self.parser_create.add_argument(
             '--headers', type=str, metavar="<json>", help="HTTP headers")
 
@@ -4555,22 +4565,13 @@ class ParseParameter:
 
         # options for api script
         self.parser_create.add_argument(
-            '-f', '--from-file', type=str, metavar="<file>", help='Synthetic script, support js file, e.g, script.js')
+            '-f', '--from-file', type=str, metavar="<file>", help='Synthetic script, support js, json, side file, e.g, script.js')
 
         # options for bundle script
         self.parser_create.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
         self.parser_create.add_argument(
             '--script-file', type=str, metavar="<file-name>", help='Synthetic bundle test entry file, e.g, myscript.js')
-        # [0, 2]
-        self.parser_create.add_argument(
-            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
-        self.parser_create.add_argument(
-            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
-        self.parser_create.add_argument(
-            '--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
-        self.parser_create.add_argument(
-            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
@@ -4602,10 +4603,6 @@ class ParseParameter:
             '--port', type=int, help='set port')
         self.parser_create.add_argument(
             '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
-
-        # full payload in json file
-        self.parser_create.add_argument(
-            '--from-json', type=str, metavar="<json>", help='full Synthetic test payload, support json file')
 
         self.parser_create.add_argument(
             '--key', type=str, metavar="<key>", help='set credential name')
@@ -5201,12 +5198,12 @@ def main():
                 syn_type_t = synthetic_type[get_args.type]
                 payload = SyntheticConfiguration(syn_type_t)
 
-                # --from-json options
+                # --from-file, -f  options
                 # create from a json file
                 # if use a json file, all options should config in json
                 # not support provide other options from command-line
-                if get_args.from_json is not None:
-                    json_file = get_args.from_json
+                if get_args.from_file is not None and get_args.from_file.endswith('.json') :
+                    json_file = get_args.from_file
                     payload.loads_from_json_file(json_file_name=json_file)
                     syn_instance.set_synthetic_payload(
                         payload=payload.get_json())
