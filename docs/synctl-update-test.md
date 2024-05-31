@@ -52,7 +52,7 @@ synctl update test <id> [options]
     --file,-f <file-name>              json payload
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
-    --entry-file <string>              entry file of a bundle test
+    --bundle-entry-file <string>       entry file of a bundle test
     --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
@@ -62,7 +62,7 @@ synctl update test <id> [options]
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
-    --entry-file <string>              entry file of a bundle test
+    --bundle-entry-file <string>       entry file of a bundle test
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
 ```

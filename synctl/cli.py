@@ -4573,7 +4573,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
         self.parser_create.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help='Synthetic bundle test entry file, e.g, myscript.js')
+            '--bundle-entry-file', type=str, metavar="<file-name>", help='Synthetic bundle test entry file, e.g, myscript.js')
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
@@ -4759,7 +4759,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         patch_exclusive_group.add_argument(
-            '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
+            '--bundle-entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
 
         # SSL Certificate
         patch_exclusive_group.add_argument(
@@ -4848,7 +4848,7 @@ class ParseParameter:
         update_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         update_group.add_argument(
-            '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
+            '--bundle-entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
 
         # SSL Certificate
         update_group.add_argument(
@@ -5284,9 +5284,9 @@ def main():
                     else:
                         bundle_base64_str = get_args.bundle
                     # entry file
-                    if get_args.script_file is not None:
+                    if get_args.bundle_entry_file is not None:
                         payload.set_api_bundle_script(
-                            bundle_base64_str, script_file=get_args.script_file)
+                            bundle_base64_str, script_file=get_args.bundle_entry_file)
                     else:
                         # script file use index.js
                         payload.set_api_bundle_script(bundle_base64_str)
@@ -5389,8 +5389,8 @@ def main():
             patch_instance.patch_expect_match(get_args.expect_match)
         elif get_args.expect_status is not None:
             patch_instance.patch_expect_status(get_args.expect_status)
-        elif get_args.entry_file is not None:
-            patch_instance.patch_script_file(get_args.entry_file, get_args.id)
+        elif get_args.bundle_entry_file is not None:
+            patch_instance.patch_script_file(get_args.bundle_entry_file, get_args.id)
         elif get_args.url is not None:
             patch_instance.patch_url(get_args.url)
         elif get_args.follow_redirect is not None:
@@ -5446,8 +5446,8 @@ def main():
                     update_instance.update_locations(get_args.location)
                 if get_args.mark_synthetic_call:
                     update_instance.update_mark_synthetic_call(get_args.mark_synthetic_call)
-                if get_args.entry_file is not None:
-                    update_instance.update_script_file(get_args.entry_file)
+                if get_args.bundle_entry_file is not None:
+                    update_instance.update_script_file(get_args.bundle_entry_file)
                 if get_args.url is not None:
                     update_instance.update_url(get_args.url)
                 if get_args.follow_redirect is not None:

@@ -47,7 +47,7 @@ synctl patch test id [options]
 ```
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
-    --entry-file <string>              entry file of a bundle test
+    --bundle-entry-file <string>       entry file of a bundle test
     --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
@@ -55,7 +55,7 @@ synctl patch test id [options]
 ```
     --script-file <file-name>          specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
-    --entry-file <string>              entry file of a bundle test
+    --bundle-entry-file <string>              entry file of a bundle test
     --browser <string>                 browser type, support chrome and firefox
     --record-video <boolean>           enable/disable record video, false by default
     --mark-synthetic-call <boolean>    set markSyntheticCall
@@ -155,7 +155,7 @@ PATCH_BASE64_STR=`cat bundle.zip|base64`
 synctl patch test <synthetic-id> --bundle "${PATCH_BASE64_STR}"
 
 # Set entry file of bundle test
-synctl patch test <synthetic-id> --entry-file bundle-test/index.js
+synctl patch test <synthetic-id> --bundle-entry-file bundle-test/index.js
 ```
 
 ### Examples for Browser Script tests
