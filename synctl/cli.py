@@ -4548,6 +4548,8 @@ class ParseParameter:
             '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
         self.parser_create.add_argument(
             '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+        self.parser_create.add_argument(
+            '--custom-property', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
 
         # options for ping, url
         self.parser_create.add_argument(
@@ -4586,8 +4588,6 @@ class ParseParameter:
             '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
         self.parser_create.add_argument(
             '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
-        self.parser_create.add_argument(
-            '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
 
         # browser type
         self.parser_create.add_argument(
@@ -5327,9 +5327,9 @@ def main():
                 if get_args.timeout is not None:
                     payload.set_timeout(get_args.timeout)
 
-                if get_args.custom_properties is not None:
+                if get_args.custom_property is not None:
                     payload.set_custom_properties(
-                        json.loads(get_args.custom_properties))
+                        json.loads(get_args.custom_property))
 
                 # configuration
                 # retries [0, 2]
