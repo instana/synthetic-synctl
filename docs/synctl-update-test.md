@@ -21,7 +21,7 @@ synctl update test <id> [options]
     --retries <int>                    set retries, min is 0 and max is 2
     --retry-interval <int>             set retry-interval, min is 1, max is 10
     --timeout <num>ms|s|m              set timeout, accept <number>(ms|s|m)
-    --custom-property <key>=<value>    set custom property, should be <key,value> pair
+    --custom-properties <key>=<value>  set custom property, should be <key,value> pair
     --app-id, --application-id <id>    set application id
     
     --use-env, -e <name>               use a config hostname
@@ -102,7 +102,7 @@ synctl update test <synthetic-id> \
     --follow-redirect true \
     --validation-string "a synthetic test" \
     --expect-status 200 \
-    --custom-property "key1=value1,key2=value2"
+    --custom-properties "key1=value1,key2=value2"
 ```
 
 ### Example for API Simple test

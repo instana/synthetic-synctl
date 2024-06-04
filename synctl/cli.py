@@ -236,7 +236,7 @@ synctl update test <test-id> --label "simple-ping" \\
     --timeout 1m \\
     --frequency 5 \\
     --app-id "$APP_ID" \\
-    --custom-property "key1=value1,key2=value2"
+    --custom-properties "key1=value1,key2=value2"
 
 # update alert with multiple options
 synctl update alert <alert-id> --name "Smart-alert" \\
@@ -4548,7 +4548,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
         self.parser_create.add_argument(
-            '--custom-property', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
+            '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
 
         # options for ping, url
         self.parser_create.add_argument(
@@ -4720,7 +4720,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
         patch_exclusive_group.add_argument(
-            '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
+            '--custom-properties', type=str, metavar="<string>", help="set custom property of a test")
 
         # API Simple
         patch_exclusive_group.add_argument(
@@ -4800,7 +4800,7 @@ class ParseParameter:
         update_group.add_argument(
             '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
         update_group.add_argument(
-            '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
+            '--custom-properties', type=str, metavar="<string>", help="set custom property of a test")
         update_group.add_argument(
             '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
 
@@ -5321,9 +5321,12 @@ def main():
                 if get_args.timeout is not None:
                     payload.set_timeout(get_args.timeout)
 
-                if get_args.custom_property is not None:
-                    payload.set_custom_properties(
-                        json.loads(get_args.custom_property))
+                if get_args.custom_properties is not None:
+                    try:
+                        payload.set_custom_properties(
+                            json.loads(get_args.custom_properties))
+                    except json.JSONDecodeError:
+                        print(payload.exit_synctl("Ensure that the JSON string is properly formatted"))
 
                 # configuration
                 # retries [0, 2]
@@ -5393,8 +5396,8 @@ def main():
             patch_instance.patch_follow_redirect(get_args.follow_redirect)
         elif get_args.validation_string is not None:
             patch_instance.patch_validation_string(get_args.validation_string)
-        elif get_args.custom_property is not None:
-            split_string = get_args.custom_property.split(',')
+        elif get_args.custom_properties is not None:
+            split_string = get_args.custom_properties.split(',')
             patch_instance.patch_custom_properties(get_args.id, split_string)
         elif get_args.hostname is not None:
             patch_instance.patch_host(get_args.id, get_args.hostname)
@@ -5465,8 +5468,8 @@ def main():
                     update_instance.update_expect_match(get_args.expect_match)
                 if get_args.validation_string is not None:
                     update_instance.update_validation_string(get_args.validation_string)
-                if get_args.custom_property is not None:
-                    split_string = get_args.custom_property.split(',')
+                if get_args.custom_properties is not None:
+                    split_string = get_args.custom_properties.split(',')
                     update_instance.update_custom_properties(split_string)
                 if get_args.body is not None:
                     update_instance.update_body(get_args.body)
@@ -5485,7 +5488,7 @@ def main():
             get_args.id = get_args.id.lstrip() if get_args.id.startswith(' ') else get_args.id
             invalid_options = ["label", "active", "frequency", "timeout", "retry_interval", "retries", "operation", "script_file",
                                "location", "record_video", "mark_synthetic_call", "entry_file", "url", "follow_redirect",
-                               "expect_status", "validation_string", "bundle", "custom_property"]
+                               "expect_status", "validation_string", "bundle", "custom_properties"]
             update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
             payload = alert_instance.retrieve_a_smart_alert(get_args.id)
             update_alert.set_updated_payload(payload)

@@ -20,7 +20,7 @@ synctl patch test id [options]
     --retries <int>                    set retries, min is 0 and max is 2
     --retry-interval <int>             set retry-interval, min is 1, max is 10
     --timeout <num>ms|s|m              set timeout, accept <number>(ms|s|m)
-    --custom-property <key>=<value>    set custom property, should be <key,value> pair
+    --custom-properties <key>=<value>  set custom property, should be <key,value> pair
     
     --use-env, -e <name>               use a config hostname
     --host <host>                      set hostname
@@ -115,10 +115,10 @@ synctl patch test <synthetic-id> --timeout 120s
 synctl patch test <synthetic-id> --active false
 
 # Set custom properties of a test
-synctl patch test <synthetic-id> --custom-property key=value
+synctl patch test <synthetic-id> --custom-properties key=value
 
 # Set multiple custom properties of a test
-synctl patch test <synthetic-id> --custom-property "key1=value1,key2=value2,key3=value3"
+synctl patch test <synthetic-id> --custom-properties "key1=value1,key2=value2,key3=value3"
 ```
 
 ### Examples for API Simple tests
@@ -164,7 +164,7 @@ synctl patch test <synthetic-id> --bundle-entry-file bundle-test/index.js
 synctl patch test <synthetic-id> --browser firefox
 
 # Set multiple custom properties of a test
-synctl patch test <synthetic-id> --custom-property "key1=value1,key2=value2,key3=value3"
+synctl patch test <synthetic-id> --custom-properties "key1=value1,key2=value2,key3=value3"
 ```
 
 ### Examples for Webpage Simple tests
