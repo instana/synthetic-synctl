@@ -49,8 +49,8 @@ synctl update test <id> [options]
 
 ### Options for API Script test
 ```
-    --file,-f <file-name>              json payload
-    --script-file <file-name>          specify a script file to update APIScript or BrowserScript
+    --file <file-name>                 json payload
+    -f, --from-file <file-name>        specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
     --bundle-entry-file <string>       entry file of a bundle test
     --mark-synthetic-call <boolean>    set markSyntheticCall
@@ -58,9 +58,9 @@ synctl update test <id> [options]
 
 ### Options for Browser Script test
 ```
-    --file,-f <file-name>              json payload
+    --file <file-name>                 json payload
     --mark-synthetic-call <boolean>    set markSyntheticCall
-    --script-file <file-name>          specify a script file to update APIScript or BrowserScript
+    -f, --from-file <file-name>        specify a script file to update APIScript or BrowserScript
     --bundle <bundle>                  set bundle content
     --bundle-entry-file <string>       entry file of a bundle test
     --record-video <boolean>           enable/disable record video, false by default
@@ -77,7 +77,7 @@ synctl update test <id> [options]
 
 ### Options for Webpage Script test
 ```
-    --file,-f <file-name>              json payload
+    --file <file-name>                 json payload
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
@@ -161,7 +161,7 @@ synctl update test <synthetic-id> \
 ```
 synctl update test <synthetic-id> \
     --mark-synthetic-call false \
-    --entry-file script.json
+    --from-file script.json
 ```
 
 ### Example for Webpage Simple test

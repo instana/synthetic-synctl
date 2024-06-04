@@ -157,15 +157,15 @@ synctl create test -t 0 --label simple-ping-test --url <url> --location <id> --f
 synctl create test -t 1 --label script-test --from-file script-name.js --location <id>
 
 # create an API Script bundle
-synctl create test -t 1 --label script-bundle-test --bundle file.zip --script-file index.js --location <id>
-synctl create test -t 1 --label script-bundle-test --bundle <base64> --script-file index.js --location <id>
+synctl create test -t 1 --label script-bundle-test --bundle file.zip --bundle-entry-file index.js --location <id>
+synctl create test -t 1 --label script-bundle-test --bundle <base64> --bundle-entry-file index.js --location <id>
 
 # create browserscript
 synctl create test -t 2 --label browserscript-test --from-file browserscripts/api-sample.js --browser firefox --location <id>
 
 # create browserscript bundle
-synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --script-file mytest.js --browser chrome --location <id>
-synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --script-file mytest.js --browser chrome --location <id>
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --bundle-entry-file mytest.js --browser chrome --location <id>
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --bundle-entry-file mytest.js --browser chrome --location <id>
 
 # create webpagescript
 synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-script.side --browser chrome --location <id>
@@ -221,9 +221,9 @@ UPDATE_USAGE = """synctl update {test,alert} <id> [options]
 
 examples:
 # update synthetic test/smart alert using file
-synctl get test/alert <id>  --show-json > <file-name>.json
-edit <file-name>.json
-synctl update test/alert <id> --file/-f <file-name>.json
+synctl get test/alert <id>  --show-json > <filename>.json
+edit <filename>.json
+synctl update test/alert <id> --file/-f <filename>.json
 
 # update test with multiple options
 synctl update test <test-id> --label "simple-ping" \\
@@ -3419,11 +3419,11 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.exit_synctl(ERROR_CODE, "markSyntheticCall should be true or false")
 
-    def update_config_script_file(self, script_name):
-        """--script-file update script using script name"""
+    def update_config_script_file(self, script_file_name):
+        """-f, --from-file update script from a file"""
         try:
-            with open(script_name, "r", encoding="utf-8") as script_file:
-                script = script_file.read()
+            with open(script_file_name, "r", encoding="utf-8") as file1:
+                script = file1.read()
                 if script is not None:
                     self.update_config["configuration"]["script"] = script
                 else:
@@ -3431,12 +3431,11 @@ class UpdateSyntheticTest(SyntheticTest):
         except FileNotFoundError as not_found_e:
             self.exit_synctl(ERROR_CODE, not_found_e)
 
-    def update_script_file(self, script_file):
-        """--entry-file update scriptFile """
-        if script_file == "" or script_file is None:
+    def update_bundle_entry_file(self, entry_file_name):
+        if entry_file_name == "" or entry_file_name is None:
             self.exit_synctl(ERROR_CODE, "script file should not be None")
         else:
-            self.update_config["configuration"]["scripts"]["scriptFile"] = script_file
+            self.update_config["configuration"]["scripts"]["scriptFile"] = entry_file_name
 
     def update_url(self, url):
         """update url"""
@@ -3904,7 +3903,7 @@ class PatchSyntheticTest(SyntheticTest):
         else:
             print("markSyntheticCall should be true or false")
 
-    def patch_config_script(self, script):
+    def __patch_script(self, script):
         """update script content"""
         payload = {"configuration": {"script": ""}}
         if script is not None:
@@ -3914,17 +3913,43 @@ class PatchSyntheticTest(SyntheticTest):
             print("script cannot be none")
             return
 
-    def patch_config_script_file(self, script_name):
-        """--script-file update script using script name"""
+    def patch_script_from_file(self, script_file_name):
+        """Patch API/Browser Script from a file"""
         try:
-            with open(script_name, "r", encoding="utf-8") as script_file:
-                script_str = script_file.read()
-                self.patch_config_script(script_str)
+            with open(script_file_name, "r", encoding="utf-8") as file1:
+                script_str = file1.read()
+                self.__patch_script(script_str)
         except FileNotFoundError as not_found_e:
             print(ERROR_CODE, not_found_e)
 
-    def patch_script_file(self, script_file, test_id):
-        """--entry-file update scriptFile """
+    def patch_bundle(self, test_id, bundle):
+        """update bundle"""
+        test_result = self.retrieve_a_synthetic_test(test_id)
+        try:
+            bundle_entry_file = test_result[0]["configuration"]["scripts"]["scriptFile"]
+            payload = {
+                "configuration":
+                    {
+                        "syntheticType": "HTTPScript",
+                        "scripts": {
+                            "bundle": "",  # required
+                            "scriptFile": bundle_entry_file  # required
+                        }
+                    }
+            }
+            if bundle.endswith('.zip'):
+                with open(bundle, 'rb') as file1:
+                    zip_content_byte = file1.read()
+                    zip_content_byte_base64 = b64encode(zip_content_byte)
+                    payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode(
+                        'utf-8')
+            else:
+                payload["configuration"]["scripts"]["bundle"] = bundle
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        except Exception as e:
+            print(f"Error: Test {test_id} not found, exception {e}")
+
+    def patch_bundle_entry_file(self, script_file, test_id):
         test_result = self.retrieve_a_synthetic_test(test_id)
         try:
             test_bundle = test_result[0]["configuration"]["scripts"]["bundle"]
@@ -4029,32 +4054,6 @@ class PatchSyntheticTest(SyntheticTest):
             payload["configuration"]["validationString"] = validation_string
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
-    def patch_bundle(self, test_id, bundle):
-        """update bundle"""
-        test_result = self.retrieve_a_synthetic_test(test_id)
-        try:
-            script_file = test_result[0]["configuration"]["scripts"]["scriptFile"]
-            payload = {
-                "configuration":
-                    {
-                        "syntheticType": "HTTPScript",
-                        "scripts": {
-                            "bundle": "",  # required
-                            "scriptFile": script_file  # required
-                        }
-                    }
-            }
-            if bundle.endswith('.zip'):
-                with open(bundle, 'rb') as file1:
-                    zip_content_byte = file1.read()
-                    zip_content_byte_base64 = b64encode(zip_content_byte)
-                    payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode(
-                        'utf-8')
-            else:
-                payload["configuration"]["scripts"]["bundle"] = bundle
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-        except Exception as e:
-            print(f"Error: Test {test_id} not found, exception {e}")
 
     def patch_custom_properties(self, test_id, custom_property):
         """update custom properties"""
@@ -4525,8 +4524,8 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5], required=False, metavar="<int>", help="Synthetic type:"
-                                                                                                     + "HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4], SSLCertificate[5]")
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5], required=False, metavar="<int>", 
+            help="Synthetic type: HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4], SSLCertificate[5]")
 
         # support multiple locations
         # --location location_id_1 location_id_2 location_id_3
@@ -4573,7 +4572,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
         self.parser_create.add_argument(
-            '--bundle-entry-file', type=str, metavar="<file-name>", help='Synthetic bundle test entry file, e.g, myscript.js')
+            '--bundle-entry-file', type=str, metavar="<filename>", help='Synthetic bundle test entry file, e.g, myscript.js')
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
@@ -4701,8 +4700,6 @@ class ParseParameter:
         self.parser_patch.add_argument(
             'id', type=str, help="Synthetic test id")
 
-        # parser_update.add_argument(
-        #     '--from-json', type=str, help='new json payload')
         patch_exclusive_group = self.parser_patch.add_mutually_exclusive_group()
         # common options
         patch_exclusive_group.add_argument(
@@ -4755,7 +4752,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
         patch_exclusive_group.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help="specify a script file to update APIScript or BrowserScript")
+            '-f', '--from-file', type=str, metavar="<filename>", help="specify a script file to update APIScript or BrowserScript")
         patch_exclusive_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         patch_exclusive_group.add_argument(
@@ -4784,7 +4781,7 @@ class ParseParameter:
             'id', type=str, help="Synthetic test id")
 
         self.parser_update.add_argument(
-            '--file', '-f', type=str, metavar="<file-name>", help='json payload')
+            '--file', type=str, metavar="<filename>", help='json payload')
 
         update_exclusive_group = self.parser_update.add_mutually_exclusive_group()
         update_group = self.parser_update.add_argument_group()
@@ -4844,7 +4841,7 @@ class ParseParameter:
         update_group.add_argument(
             '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
         update_group.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help="specify a script file to update APIScript or BrowserScript")
+            '-f', '--from-file', type=str, metavar="<filename>", help="specify a script file to update APIScript or BrowserScript")
         update_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         update_group.add_argument(
@@ -5362,8 +5359,8 @@ def main():
             patch_instance.patch_retry_interval(get_args.retry_interval)
         elif get_args.operation is not None:
             patch_instance.patch_ping_operation(get_args.operation)
-        elif get_args.script_file is not None:
-            patch_instance.patch_config_script_file(get_args.script_file)
+        elif get_args.from_file is not None:
+            patch_instance.patch_script_from_file(get_args.from_file)
         elif get_args.description is not None:
             patch_instance.patch_description(get_args.description)
         elif get_args.record_video is not None:
@@ -5389,16 +5386,16 @@ def main():
             patch_instance.patch_expect_match(get_args.expect_match)
         elif get_args.expect_status is not None:
             patch_instance.patch_expect_status(get_args.expect_status)
+        elif get_args.bundle is not None:
+            patch_instance.patch_bundle(get_args.id, get_args.bundle)
         elif get_args.bundle_entry_file is not None:
-            patch_instance.patch_script_file(get_args.bundle_entry_file, get_args.id)
+            patch_instance.patch_bundle_entry_file(get_args.bundle_entry_file, get_args.id)
         elif get_args.url is not None:
             patch_instance.patch_url(get_args.url)
         elif get_args.follow_redirect is not None:
             patch_instance.patch_follow_redirect(get_args.follow_redirect)
         elif get_args.validation_string is not None:
             patch_instance.patch_validation_string(get_args.validation_string)
-        elif get_args.bundle is not None:
-            patch_instance.patch_bundle(get_args.id, get_args.bundle)
         elif get_args.custom_property is not None:
             split_string = get_args.custom_property.split(',')
             patch_instance.patch_custom_properties(get_args.id, split_string)
@@ -5416,6 +5413,7 @@ def main():
                 update_instance.exit_synctl(ERROR_CODE, "option: --enable/--disable not supported by synthetic tests")
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
             update_instance.set_updated_payload(payload)
+            # accept a full json payload
             if get_args.file is not None:
                 new_payload = update_instance.update_using_file(get_args.file)
                 update_instance.update_a_synthetic_test(get_args.id, new_payload)
@@ -5434,8 +5432,8 @@ def main():
                     update_instance.update_retry_interval(get_args.retry_interval)
                 if get_args.operation is not None:
                     update_instance.update_ping_operation(get_args.operation)
-                if get_args.script_file is not None:
-                    update_instance.update_config_script_file(get_args.script_file)
+                if get_args.from_file is not None:
+                    update_instance.update_config_script_file(get_args.from_file)
                 if get_args.description is not None:
                     update_instance.update_description(get_args.description)
                 if get_args.record_video is not None:
@@ -5446,8 +5444,10 @@ def main():
                     update_instance.update_locations(get_args.location)
                 if get_args.mark_synthetic_call:
                     update_instance.update_mark_synthetic_call(get_args.mark_synthetic_call)
+                if get_args.bundle is not None:
+                    update_instance.update_bundle(get_args.bundle)
                 if get_args.bundle_entry_file is not None:
-                    update_instance.update_script_file(get_args.bundle_entry_file)
+                    update_instance.update_bundle_entry_file(get_args.bundle_entry_file)
                 if get_args.url is not None:
                     update_instance.update_url(get_args.url)
                 if get_args.follow_redirect is not None:
@@ -5468,8 +5468,6 @@ def main():
                     update_instance.update_expect_match(get_args.expect_match)
                 if get_args.validation_string is not None:
                     update_instance.update_validation_string(get_args.validation_string)
-                if get_args.bundle is not None:
-                    update_instance.update_bundle(get_args.bundle)
                 if get_args.custom_property is not None:
                     split_string = get_args.custom_property.split(',')
                     update_instance.update_custom_properties(split_string)
