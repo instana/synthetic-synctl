@@ -292,7 +292,7 @@ synctl create test -t 5 \
 ### Create Synthetic test with json payload example
 
 ```
-synctl create test -t <type> --from-json payload/api-script.json
+synctl create test -t <type> -f payload/api-script.json
 ```
 
 
