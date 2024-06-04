@@ -3325,8 +3325,8 @@ class UpdateSyntheticTest(SyntheticTest):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def update_using_file(self, file):
-        with open(file, 'rb') as json_file:
+    def update_using_file(self, file_name):
+        with open(file_name, 'rb') as json_file:
             payload = json_file.read()
             return payload
 
@@ -4780,9 +4780,6 @@ class ParseParameter:
         self.parser_update.add_argument(
             'id', type=str, help="Synthetic test id")
 
-        self.parser_update.add_argument(
-            '--file', type=str, metavar="<filename>", help='json payload')
-
         update_exclusive_group = self.parser_update.add_mutually_exclusive_group()
         update_group = self.parser_update.add_argument_group()
         # common options
@@ -4841,7 +4838,7 @@ class ParseParameter:
         update_group.add_argument(
             '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
         update_group.add_argument(
-            '-f', '--from-file', type=str, metavar="<filename>", help="specify a script file to update APIScript or BrowserScript")
+            '-f', '--from-file', type=str, metavar="<filename>", help="specify API/Browser script file or json payload, supported file suffix are .js/.side/.json")
         update_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         update_group.add_argument(
@@ -5414,8 +5411,8 @@ def main():
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
             update_instance.set_updated_payload(payload)
             # accept a full json payload
-            if get_args.file is not None:
-                new_payload = update_instance.update_using_file(get_args.file)
+            if get_args.from_file is not None and get_args.from_file.endswith('.json') :
+                new_payload = update_instance.update_using_file(get_args.from_file)
                 update_instance.update_a_synthetic_test(get_args.id, new_payload)
             else:
                 if get_args.label is not None:
@@ -5492,8 +5489,8 @@ def main():
             update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
             payload = alert_instance.retrieve_a_smart_alert(get_args.id)
             update_alert.set_updated_payload(payload)
-            if get_args.file is not None:
-                new_payload = update_alert.update_using_file(get_args.file)
+            if get_args.from_file is not None and get_args.from_file.endswith('.json'):
+                new_payload = update_alert.update_using_file(get_args.from_file)
                 update_alert.update_a_smart_alert(get_args.id, new_payload)
             elif get_args.enable is True or get_args.disable is True:
                 operation = "enable" if get_args.enable else "disable"
