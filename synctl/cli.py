@@ -2408,52 +2408,21 @@ class SyntheticTest(Base):
         self.check_host_and_token(host, token)
 
         if isinstance(tag_filter[0], str) and tag_filter[0].lower() == "locationid":
-            summary_config = {
-                "syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"], 
-                "metrics": [{
-                "aggregation": "SUM",
-                "granularity": 600,
-                "metric": "synthetic.metricsStatus"
-            }], "timeFrame": {
-                "to": 0,
-                "windowSize": window_size
-            }, "pagination": {
-                "page": page,
-                "pageSize": page_size
-            }, "tagFilters": [{
-                "stringValue": tag_filter[1],
-                "name": "synthetic.locationId",
-                "operator": "EQUALS"
-            }]}
+            filter = "locationId"
         elif isinstance(tag_filter[0], str) and tag_filter[0].lower() == "applicationid":
-            summary_config = {"syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"], "metrics": [{
-                "aggregation": "SUM",
-                "granularity": 600,
-                "metric": "synthetic.metricsStatus"
-            }], "timeFrame": {
-                "to": 0,
-                "windowSize": window_size
-            }, "pagination": {
-                "page": page,
-                "pageSize": page_size
-            }, "tagFilters": [{
-                "stringValue": tag_filter[1],
-                "name": "synthetic.applicationId",
-                "operator": "EQUALS"
-            }]}
+            filter = "applicationId"
         else:
             self.exit_synctl(ERROR_CODE, f"Invalid filter : {tag_filter[0]}")
 
-        test_summary_list_url = f"{host}/api/synthetics/results/testsummarylist"
+        test_list_url = f"{host}/api/synthetics/settings/tests?{filter}={tag_filter[1]}"
 
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
         try:
-            retrieve_res = requests.post(test_summary_list_url,
+            retrieve_res = requests.get(test_list_url,
                                          headers=headers,
-                                         data=json.dumps(summary_config),
                                          timeout=60,
                                          verify=self.insecure)
 
@@ -2461,7 +2430,7 @@ class SyntheticTest(Base):
                 data = retrieve_res.json()
                 return data
             else:
-                print('retrieve test summary list failed, status code:',
+                print('retrieve test failed, status code:',
                       retrieve_res.status_code)
                 return None
         except requests.ConnectTimeout as timeout_error:
@@ -2469,27 +2438,6 @@ class SyntheticTest(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def get_all_tests_by_filter(self, tag_filter, page=1):
-        total_hits = 0
-        summary_result = self.retrieve_synthetic_test_by_filter(tag_filter)
-
-        if summary_result is not None:
-            page = summary_result["page"] if page in summary_result else 1
-            page_size = summary_result["pageSize"] if "pageSize" in summary_result else 200
-            if "totalHits" in summary_result:
-                total_hits = summary_result["totalHits"]
-
-            if page_size >= total_hits:
-                yield summary_result
-            else:
-                total_pages = total_hits/page_size
-                if (total_pages - round(total_pages)) > 0:
-                    total_pages += 1
-                for x in range(0, round(total_pages)):
-                    summary_result = self.retrieve_synthetic_test_by_filter(tag_filter, page=x+1)
-                    yield summary_result
-        else:
-            return None
 
     def delete_a_synthetic_test(self, test_id=""):
         """delete a Synthetic by id"""
@@ -2765,84 +2713,6 @@ class SyntheticTest(Base):
                               "N/A")  # None URL => N/A
                         output_lists.append(t)
         print('total:', len(output_lists))
-
-
-
-    def print_tests_by_filter(self, tag_filter):
-        test_result = self.retrieve_all_synthetic_tests()
-        filtered_payload = self.get_all_tests_by_filter(tag_filter)
-
-        id_length = 25
-        max_label_length = self.__get_max_label_length(test_result)
-        loc_length = 30
-        syn_type_length = 15
-        app_id_length = 15
-        test_frequency_length = 10
-        active_length = 6
-        success_rate_length = 12
-        response_time_length = 12
-
-        syn_dict = {}
-        for _, test in enumerate(test_result):
-            syn_dict[test['id']] = test
-
-        if filtered_payload is not None:
-            print(self.fill_space("ID".upper(), id_length),
-                  self.fill_space("Label".upper(), max_label_length),
-                  self.fill_space("syntheticType".upper(), syn_type_length),
-                  self.fill_space("Frequency".upper(), test_frequency_length),
-                  self.fill_space("SuccessRate".upper(), success_rate_length),
-                  self.fill_space("Latency".upper(), response_time_length),
-                  self.fill_space("Active".upper(), active_length),
-                  self.fill_space("Locations".upper(), loc_length),
-                  self.fill_space("Application".upper(), app_id_length),
-                  "URL".upper()
-                  )
-            for test in filtered_payload:
-                total_hits = test["totalHits"]
-                for i in test["items"]:
-                    if len(i["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
-                        location_str = ','.join(i["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
-
-                    else:
-                        location_str = NOT_APPLICABLE
-
-                    syn_type = i["testResultCommonProperties"]["testCommonProperties"]["type"]
-
-                    if syn_type in ["HTTPAction", "WebpageAction"]:
-                        url = syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['url']
-                    elif syn_type == "SSLCertificate":
-                        url =  syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['hostname']
-                    else:
-                        url = "None"
-
-                    if not i["metrics"]:
-                        success_rate = "No Data"
-                        response_time = "No Data"
-                    else:
-                        success_rate = f'{i["metrics"]["successful_test_runs"][0][1]}/{i["metrics"]["total_test_runs"][0][1]}'
-                        response_time = round(i["metrics"]["response_time"][0][1], 2)
-
-                    if "applicationLabel" in i["testResultCommonProperties"]["testCommonProperties"]:
-                        application_id = i["testResultCommonProperties"]["testCommonProperties"]["applicationLabel"]
-                    else:
-                        application_id = "N/A"
-
-                    print(self.fill_space(i["testResultCommonProperties"]["testId"], id_length),
-                          self.fill_space((i["testResultCommonProperties"]["testName"]), max_label_length),
-                          self.fill_space(syn_type, syn_type_length),
-                          self.fill_space(self.format_frequency(i["testResultCommonProperties"]["testCommonProperties"]["frequency"]),
-                                          test_frequency_length),
-                          self.fill_space(str(success_rate),
-                                          success_rate_length),
-                          self.fill_space(str(response_time),
-                                          response_time_length),
-                          self.fill_space(str(i["testResultCommonProperties"]["testCommonProperties"]["active"]), active_length),
-                          self.fill_space(location_str, loc_length),
-                          self.fill_space(application_id, app_id_length),
-                          url)
-        print('Total:', total_hits)
-
 
     def save_api_script_to_local(self, test):
         # save api script to local file
@@ -5059,7 +4929,8 @@ def main():
             if get_args.id is None:
                 if get_args.filter is not None:
                     split_string = get_args.filter.split('=')
-                    syn_instance.print_tests_by_filter(split_string)
+                    filtered_payload = syn_instance.retrieve_synthetic_test_by_filter(split_string)
+                    syn_instance.print_synthetic_test(out_list=filtered_payload)
                     sys.exit(ERROR_CODE)
 
                 out_list = syn_instance.retrieve_all_synthetic_tests(
