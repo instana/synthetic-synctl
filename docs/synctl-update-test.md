@@ -137,12 +137,20 @@ synctl update <synthetic-id> \
       }
     }'
 ```
-Update test with expect-match, expect-exists and expect-not-empty
+Update test with expect-match
 
 ```
 synctl update test <synthetic-id> \
-    --expect-match ibm \
-    --expect-exists '["slideshow"]' \
+    --expect-match ibm
+```
+Update test with expect-exists
+```
+synctl update test <synthetic-id> \
+    --expect-exists '["slideshow"]'
+```
+Update test with expect-not-empty
+```
+synctl update test <synthetic-id> \
     --expect-not-empty '["slideshow"]'
 ```
 
