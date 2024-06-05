@@ -223,7 +223,7 @@ examples:
 # update synthetic test/smart alert using file
 synctl get test/alert <id>  --show-json > <filename>.json
 edit <filename>.json
-synctl update test/alert <id> --file/-f <filename>.json
+synctl update test/alert <id> -f <filename>.json
 
 # update test with multiple options
 synctl update test <test-id> --label "simple-ping" \\
