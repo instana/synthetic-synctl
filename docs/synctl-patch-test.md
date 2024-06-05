@@ -45,7 +45,7 @@ synctl patch test id [options]
 
 ### Options for API script test
 ```
-    --from-file <file-name>            specify a script file to update APIScript or BrowserScript
+    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
     --bundle <bundle>                  set bundle content
     --bundle-entry-file <string>       entry file of a bundle test
     --mark-synthetic-call <boolean>    set markSyntheticCall
@@ -53,7 +53,7 @@ synctl patch test id [options]
 
 ### Options for Browser Script test
 ```
-    --from-file <file-name>            specify a script file to update APIScript or BrowserScript
+    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
     --bundle <bundle>                  set bundle content
     --bundle-entry-file <string>       entry file of a bundle test
     --browser <string>                 browser type, support chrome and firefox
@@ -72,7 +72,7 @@ synctl patch test id [options]
 
 ### Options for Webpage Script test
 ```
-    --file <file-name>                 json payload
+    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
