@@ -157,15 +157,15 @@ synctl create test -t 0 --label simple-ping-test --url <url> --location <id> --f
 synctl create test -t 1 --label script-test --from-file script-name.js --location <id>
 
 # create an API Script bundle
-synctl create test -t 1 --label script-bundle-test --bundle file.zip --script-file index.js --location <id>
-synctl create test -t 1 --label script-bundle-test --bundle <base64> --script-file index.js --location <id>
+synctl create test -t 1 --label script-bundle-test --bundle file.zip --bundle-entry-file index.js --location <id>
+synctl create test -t 1 --label script-bundle-test --bundle <base64> --bundle-entry-file index.js --location <id>
 
 # create browserscript
 synctl create test -t 2 --label browserscript-test --from-file browserscripts/api-sample.js --browser firefox --location <id>
 
 # create browserscript bundle
-synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --script-file mytest.js --browser chrome --location <id>
-synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --script-file mytest.js --browser chrome --location <id>
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --bundle-entry-file mytest.js --browser chrome --location <id>
+synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --bundle-entry-file mytest.js --browser chrome --location <id>
 
 # create webpagescript
 synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-script.side --browser chrome --location <id>
@@ -221,9 +221,9 @@ UPDATE_USAGE = """synctl update {test,alert} <id> [options]
 
 examples:
 # update synthetic test/smart alert using file
-synctl get test/alert <id>  --show-json > <file-name>.json
-edit <file-name>.json
-synctl update test/alert <id> --file/-f <file-name>.json
+synctl get test/alert <id>  --show-json > <filename>.json
+edit <filename>.json
+synctl update test/alert <id> -f <filename>.json
 
 # update test with multiple options
 synctl update test <test-id> --label "simple-ping" \\
@@ -236,7 +236,7 @@ synctl update test <test-id> --label "simple-ping" \\
     --timeout 1m \\
     --frequency 5 \\
     --app-id "$APP_ID" \\
-    --custom-property "key1=value1,key2=value2"
+    --custom-properties "key1=value1,key2=value2"
 
 # update alert with multiple options
 synctl update alert <alert-id> --name "Smart-alert" \\
@@ -2408,52 +2408,21 @@ class SyntheticTest(Base):
         self.check_host_and_token(host, token)
 
         if isinstance(tag_filter[0], str) and tag_filter[0].lower() == "locationid":
-            summary_config = {
-                "syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"], 
-                "metrics": [{
-                "aggregation": "SUM",
-                "granularity": 600,
-                "metric": "synthetic.metricsStatus"
-            }], "timeFrame": {
-                "to": 0,
-                "windowSize": window_size
-            }, "pagination": {
-                "page": page,
-                "pageSize": page_size
-            }, "tagFilters": [{
-                "stringValue": tag_filter[1],
-                "name": "synthetic.locationId",
-                "operator": "EQUALS"
-            }]}
+            filter = "locationId"
         elif isinstance(tag_filter[0], str) and tag_filter[0].lower() == "applicationid":
-            summary_config = {"syntheticMetrics": ["synthetic.metricsStatus", "synthetic.metricsResponseTime"], "metrics": [{
-                "aggregation": "SUM",
-                "granularity": 600,
-                "metric": "synthetic.metricsStatus"
-            }], "timeFrame": {
-                "to": 0,
-                "windowSize": window_size
-            }, "pagination": {
-                "page": page,
-                "pageSize": page_size
-            }, "tagFilters": [{
-                "stringValue": tag_filter[1],
-                "name": "synthetic.applicationId",
-                "operator": "EQUALS"
-            }]}
+            filter = "applicationId"
         else:
             self.exit_synctl(ERROR_CODE, f"Invalid filter : {tag_filter[0]}")
 
-        test_summary_list_url = f"{host}/api/synthetics/results/testsummarylist"
+        test_list_url = f"{host}/api/synthetics/settings/tests?{filter}={tag_filter[1]}"
 
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
         }
         try:
-            retrieve_res = requests.post(test_summary_list_url,
+            retrieve_res = requests.get(test_list_url,
                                          headers=headers,
-                                         data=json.dumps(summary_config),
                                          timeout=60,
                                          verify=self.insecure)
 
@@ -2461,7 +2430,7 @@ class SyntheticTest(Base):
                 data = retrieve_res.json()
                 return data
             else:
-                print('retrieve test summary list failed, status code:',
+                print('retrieve test failed, status code:',
                       retrieve_res.status_code)
                 return None
         except requests.ConnectTimeout as timeout_error:
@@ -2469,27 +2438,6 @@ class SyntheticTest(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def get_all_tests_by_filter(self, tag_filter, page=1):
-        total_hits = 0
-        summary_result = self.retrieve_synthetic_test_by_filter(tag_filter)
-
-        if summary_result is not None:
-            page = summary_result["page"] if page in summary_result else 1
-            page_size = summary_result["pageSize"] if "pageSize" in summary_result else 200
-            if "totalHits" in summary_result:
-                total_hits = summary_result["totalHits"]
-
-            if page_size >= total_hits:
-                yield summary_result
-            else:
-                total_pages = total_hits/page_size
-                if (total_pages - round(total_pages)) > 0:
-                    total_pages += 1
-                for x in range(0, round(total_pages)):
-                    summary_result = self.retrieve_synthetic_test_by_filter(tag_filter, page=x+1)
-                    yield summary_result
-        else:
-            return None
 
     def delete_a_synthetic_test(self, test_id=""):
         """delete a Synthetic by id"""
@@ -2765,84 +2713,6 @@ class SyntheticTest(Base):
                               "N/A")  # None URL => N/A
                         output_lists.append(t)
         print('total:', len(output_lists))
-
-
-
-    def print_tests_by_filter(self, tag_filter):
-        test_result = self.retrieve_all_synthetic_tests()
-        filtered_payload = self.get_all_tests_by_filter(tag_filter)
-
-        id_length = 25
-        max_label_length = self.__get_max_label_length(test_result)
-        loc_length = 30
-        syn_type_length = 15
-        app_id_length = 15
-        test_frequency_length = 10
-        active_length = 6
-        success_rate_length = 12
-        response_time_length = 12
-
-        syn_dict = {}
-        for _, test in enumerate(test_result):
-            syn_dict[test['id']] = test
-
-        if filtered_payload is not None:
-            print(self.fill_space("ID".upper(), id_length),
-                  self.fill_space("Label".upper(), max_label_length),
-                  self.fill_space("syntheticType".upper(), syn_type_length),
-                  self.fill_space("Frequency".upper(), test_frequency_length),
-                  self.fill_space("SuccessRate".upper(), success_rate_length),
-                  self.fill_space("Latency".upper(), response_time_length),
-                  self.fill_space("Active".upper(), active_length),
-                  self.fill_space("Locations".upper(), loc_length),
-                  self.fill_space("Application".upper(), app_id_length),
-                  "URL".upper()
-                  )
-            for test in filtered_payload:
-                total_hits = test["totalHits"]
-                for i in test["items"]:
-                    if len(i["testResultCommonProperties"]["testCommonProperties"]["locationIds"]) > 0:
-                        location_str = ','.join(i["testResultCommonProperties"]["testCommonProperties"]["locationLabels"])
-
-                    else:
-                        location_str = NOT_APPLICABLE
-
-                    syn_type = i["testResultCommonProperties"]["testCommonProperties"]["type"]
-
-                    if syn_type in ["HTTPAction", "WebpageAction"]:
-                        url = syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['url']
-                    elif syn_type == "SSLCertificate":
-                        url =  syn_dict[i["testResultCommonProperties"]["testId"]]['configuration']['hostname']
-                    else:
-                        url = "None"
-
-                    if not i["metrics"]:
-                        success_rate = "No Data"
-                        response_time = "No Data"
-                    else:
-                        success_rate = f'{i["metrics"]["successful_test_runs"][0][1]}/{i["metrics"]["total_test_runs"][0][1]}'
-                        response_time = round(i["metrics"]["response_time"][0][1], 2)
-
-                    if "applicationLabel" in i["testResultCommonProperties"]["testCommonProperties"]:
-                        application_id = i["testResultCommonProperties"]["testCommonProperties"]["applicationLabel"]
-                    else:
-                        application_id = "N/A"
-
-                    print(self.fill_space(i["testResultCommonProperties"]["testId"], id_length),
-                          self.fill_space((i["testResultCommonProperties"]["testName"]), max_label_length),
-                          self.fill_space(syn_type, syn_type_length),
-                          self.fill_space(self.format_frequency(i["testResultCommonProperties"]["testCommonProperties"]["frequency"]),
-                                          test_frequency_length),
-                          self.fill_space(str(success_rate),
-                                          success_rate_length),
-                          self.fill_space(str(response_time),
-                                          response_time_length),
-                          self.fill_space(str(i["testResultCommonProperties"]["testCommonProperties"]["active"]), active_length),
-                          self.fill_space(location_str, loc_length),
-                          self.fill_space(application_id, app_id_length),
-                          url)
-        print('Total:', total_hits)
-
 
     def save_api_script_to_local(self, test):
         # save api script to local file
@@ -3325,8 +3195,8 @@ class UpdateSyntheticTest(SyntheticTest):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def update_using_file(self, file):
-        with open(file, 'rb') as json_file:
+    def update_using_file(self, file_name):
+        with open(file_name, 'rb') as json_file:
             payload = json_file.read()
             return payload
 
@@ -3419,11 +3289,11 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.exit_synctl(ERROR_CODE, "markSyntheticCall should be true or false")
 
-    def update_config_script_file(self, script_name):
-        """--script-file update script using script name"""
+    def update_config_script_file(self, script_file_name):
+        """-f, --from-file update script from a file"""
         try:
-            with open(script_name, "r", encoding="utf-8") as script_file:
-                script = script_file.read()
+            with open(script_file_name, "r", encoding="utf-8") as file1:
+                script = file1.read()
                 if script is not None:
                     self.update_config["configuration"]["script"] = script
                 else:
@@ -3431,12 +3301,11 @@ class UpdateSyntheticTest(SyntheticTest):
         except FileNotFoundError as not_found_e:
             self.exit_synctl(ERROR_CODE, not_found_e)
 
-    def update_script_file(self, script_file):
-        """--entry-file update scriptFile """
-        if script_file == "" or script_file is None:
+    def update_bundle_entry_file(self, entry_file_name):
+        if entry_file_name == "" or entry_file_name is None:
             self.exit_synctl(ERROR_CODE, "script file should not be None")
         else:
-            self.update_config["configuration"]["scripts"]["scriptFile"] = script_file
+            self.update_config["configuration"]["scripts"]["scriptFile"] = entry_file_name
 
     def update_url(self, url):
         """update url"""
@@ -3467,6 +3336,42 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.exit_synctl(ERROR_CODE, "expectStatus should not be none")
 
+    def update_expect_json(self, expect_json):
+        """update expect json"""
+        if expect_json is not None:
+            self.update_config["configuration"]["expectJson"] = json.loads(expect_json)
+        else:
+            self.exit_synctl(ERROR_CODE, "expectJson should not be none")
+
+    def update_expect_not_empty(self, expect_not_empty):
+        """update expect not empty"""
+        if expect_not_empty is not None:
+            self.update_config["configuration"]["expectNotEmpty"] = json.loads(expect_not_empty)
+        else:
+            self.exit_synctl(ERROR_CODE, "expectNotEmpty should not be none")
+
+    def update_expect_exists(self, expect_exists):
+        """update expect exists"""
+        if expect_exists is not None:
+            self.update_config["configuration"]["expectExists"] = json.loads(expect_exists)
+        else:
+            self.exit_synctl(ERROR_CODE, "expectExists should not be none")
+
+    def update_allow_insecure(self, allow_insecure):
+        """update allowInsecure"""
+        allow_insecure_opions = ["true", "false"]
+        if allow_insecure is not None and allow_insecure.lower() in allow_insecure_opions:
+            self.update_config["configuration"]["allowInsecure"] = allow_insecure
+        else:
+            self.exit_synctl(ERROR_CODE, "allowInsecure should not be none")
+
+    def update_expect_match(self, expect_match):
+        """update expectMatch"""
+        if expect_match is not None:
+            self.update_config["configuration"]["expectMatch"] = expect_match
+        else:
+            self.exit_synctl(ERROR_CODE, "expectMatch should not be none")
+
     def update_validation_string(self, validation_string):
         """update validation string"""
         if validation_string is None or validation_string == "":
@@ -3495,6 +3400,24 @@ class UpdateSyntheticTest(SyntheticTest):
             if key == '' or value == '':
                 self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
             self.update_config["customProperties"][key] = value
+
+    def update_body(self, body):
+        """update body"""
+        if body is None or body == "":
+            self.exit_synctl(ERROR_CODE, "no body")
+        else:
+            self.update_config["configuration"]["body"] = body
+
+    def update_headers(self, headers):
+        """update headers"""
+        if any(s == '' or s.isspace() for s in headers):
+            self.exit_synctl(ERROR_CODE, "Headers should be <header>=<value>")
+
+        for item in headers:
+            key, value = item.split('=')
+            if key == '' or value == '':
+                self.exit_synctl(ERROR_CODE, "Headers should be <header>=<value>")
+            self.update_config["configuration"]["headers"][key] = value
 
     def update_host(self, host):
         """update host for SSL test"""
@@ -3850,7 +3773,7 @@ class PatchSyntheticTest(SyntheticTest):
         else:
             print("markSyntheticCall should be true or false")
 
-    def patch_config_script(self, script):
+    def __patch_script(self, script):
         """update script content"""
         payload = {"configuration": {"script": ""}}
         if script is not None:
@@ -3860,17 +3783,43 @@ class PatchSyntheticTest(SyntheticTest):
             print("script cannot be none")
             return
 
-    def patch_config_script_file(self, script_name):
-        """--script-file update script using script name"""
+    def patch_script_from_file(self, script_file_name):
+        """Patch API/Browser Script from a file"""
         try:
-            with open(script_name, "r", encoding="utf-8") as script_file:
-                script_str = script_file.read()
-                self.patch_config_script(script_str)
+            with open(script_file_name, "r", encoding="utf-8") as file1:
+                script_str = file1.read()
+                self.__patch_script(script_str)
         except FileNotFoundError as not_found_e:
             print(ERROR_CODE, not_found_e)
 
-    def patch_script_file(self, script_file, test_id):
-        """--entry-file update scriptFile """
+    def patch_bundle(self, test_id, bundle):
+        """update bundle"""
+        test_result = self.retrieve_a_synthetic_test(test_id)
+        try:
+            bundle_entry_file = test_result[0]["configuration"]["scripts"]["scriptFile"]
+            payload = {
+                "configuration":
+                    {
+                        "syntheticType": "HTTPScript",
+                        "scripts": {
+                            "bundle": "",  # required
+                            "scriptFile": bundle_entry_file  # required
+                        }
+                    }
+            }
+            if bundle.endswith('.zip'):
+                with open(bundle, 'rb') as file1:
+                    zip_content_byte = file1.read()
+                    zip_content_byte_base64 = b64encode(zip_content_byte)
+                    payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode(
+                        'utf-8')
+            else:
+                payload["configuration"]["scripts"]["bundle"] = bundle
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        except Exception as e:
+            print(f"Error: Test {test_id} not found, exception {e}")
+
+    def patch_bundle_entry_file(self, script_file, test_id):
         test_result = self.retrieve_a_synthetic_test(test_id)
         try:
             test_bundle = test_result[0]["configuration"]["scripts"]["bundle"]
@@ -3920,6 +3869,52 @@ class PatchSyntheticTest(SyntheticTest):
         else:
             print("expectStatus should not be none")
 
+    def patch_allow_insecure(self, allow_insecure):
+        """update allow insecure"""
+        allow_insecure_opions = ["true", "false"]
+        payload = {"configuration": {"allowInsecure": ""}}
+        if allow_insecure is not None and allow_insecure.lower() in allow_insecure_opions:
+            payload["configuration"]["allowInsecure"] = allow_insecure
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("allowInsecure should be true/false")
+
+    def patch_expect_json(self, expect_json):
+        """update expect json"""
+        payload = {"configuration": {"expectJson": ""}}
+        if expect_json is not None:
+            payload["configuration"]["expectJson"] = json.loads(expect_json)
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expectJson should not be none")
+
+    def patch_expect_not_empty(self, expect_not_empty):
+        """update expect not empty"""
+        payload = {"configuration": {"expectNotEmpty": ""}}
+        if expect_not_empty is not None:
+            payload["configuration"]["expectNotEmpty"] = json.loads(expect_not_empty)
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expectNotEmpty should not be none")
+
+    def patch_expect_exists(self, expect_exists):
+        """update expect status"""
+        payload = {"configuration": {"expectExists": ""}}
+        if expect_exists is not None:
+            payload["configuration"]["expectExists"] = json.loads(expect_exists)
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expectExists should not be none")
+
+    def patch_expect_match(self, expect_match):
+        """update expect status"""
+        payload = {"configuration": {"expectMatch": ""}}
+        if expect_match is not None:
+            payload["configuration"]["expectMatch"] = expect_match
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("expectMatch should not be none")
+
     def patch_validation_string(self, validation_string):
         """update validation string"""
         payload = {"configuration": {"validationString": ""}}
@@ -3929,32 +3924,6 @@ class PatchSyntheticTest(SyntheticTest):
             payload["configuration"]["validationString"] = validation_string
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
-    def patch_bundle(self, test_id, bundle):
-        """update bundle"""
-        test_result = self.retrieve_a_synthetic_test(test_id)
-        try:
-            script_file = test_result[0]["configuration"]["scripts"]["scriptFile"]
-            payload = {
-                "configuration":
-                    {
-                        "syntheticType": "HTTPScript",
-                        "scripts": {
-                            "bundle": "",  # required
-                            "scriptFile": script_file  # required
-                        }
-                    }
-            }
-            if bundle.endswith('.zip'):
-                with open(bundle, 'rb') as file1:
-                    zip_content_byte = file1.read()
-                    zip_content_byte_base64 = b64encode(zip_content_byte)
-                    payload["configuration"]["scripts"]["bundle"] = zip_content_byte_base64.decode(
-                        'utf-8')
-            else:
-                payload["configuration"]["scripts"]["bundle"] = bundle
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-        except Exception as e:
-            print(f"Error: Test {test_id} not found, exception {e}")
 
     def patch_custom_properties(self, test_id, custom_property):
         """update custom properties"""
@@ -4425,8 +4394,8 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5], required=False, metavar="<int>", help="Synthetic type:"
-                                                                                                     + "HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4], SSLCertificate[5]")
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5], required=False, metavar="<int>", 
+            help="Synthetic type: HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4], SSLCertificate[5]")
 
         # support multiple locations
         # --location location_id_1 location_id_2 location_id_3
@@ -4441,12 +4410,24 @@ class ParseParameter:
             '--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
         self.parser_create.add_argument(
             '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+        # [0, 2]
+        self.parser_create.add_argument(
+            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
+        self.parser_create.add_argument(
+            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
+        self.parser_create.add_argument(
+            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+        self.parser_create.add_argument(
+            '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
 
         # options for ping, url
         self.parser_create.add_argument(
             '--url', type=str, metavar="<url>", help='HTTP request URL')
         self.parser_create.add_argument(
             '--operation', type=str, metavar="<method>", help='HTTP request methods, GET, POST, HEAD, PUT, etc')
+        self.parser_create.add_argument(
+            '--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
+
         self.parser_create.add_argument(
             '--headers', type=str, metavar="<json>", help="HTTP headers")
 
@@ -4455,22 +4436,13 @@ class ParseParameter:
 
         # options for api script
         self.parser_create.add_argument(
-            '-f', '--from-file', type=str, metavar="<file>", help='Synthetic script, support js file, e.g, script.js')
+            '-f', '--from-file', type=str, metavar="<file>", help='Synthetic script, support js, json, side file, e.g, script.js')
 
         # options for bundle script
         self.parser_create.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
         self.parser_create.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help='Synthetic bundle test entry file, e.g, myscript.js')
-        # [0, 2]
-        self.parser_create.add_argument(
-            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
-        self.parser_create.add_argument(
-            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
-        self.parser_create.add_argument(
-            '--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
-        self.parser_create.add_argument(
-            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+            '--bundle-entry-file', type=str, metavar="<filename>", help='Synthetic bundle test entry file, e.g, myscript.js')
 
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
         self.parser_create.add_argument(
@@ -4485,8 +4457,6 @@ class ParseParameter:
             '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
         self.parser_create.add_argument(
             '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
-        self.parser_create.add_argument(
-            '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
 
         # browser type
         self.parser_create.add_argument(
@@ -4502,10 +4472,6 @@ class ParseParameter:
             '--port', type=int, help='set port')
         self.parser_create.add_argument(
             '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
-
-        # full payload in json file
-        self.parser_create.add_argument(
-            '--from-json', type=str, metavar="<json>", help='full Synthetic test payload, support json file')
 
         self.parser_create.add_argument(
             '--key', type=str, metavar="<key>", help='set credential name')
@@ -4604,9 +4570,8 @@ class ParseParameter:
         self.parser_patch.add_argument(
             'id', type=str, help="Synthetic test id")
 
-        # parser_update.add_argument(
-        #     '--from-json', type=str, help='new json payload')
         patch_exclusive_group = self.parser_patch.add_mutually_exclusive_group()
+        # common options
         patch_exclusive_group.add_argument(
             '--active', type=str, choices=["false", "true"], metavar="<boolean>", help='set active')
         patch_exclusive_group.add_argument(
@@ -4621,34 +4586,47 @@ class ParseParameter:
             '--retries', type=int, metavar="<int>", help="set retries, min is 0 and max is 2")
         patch_exclusive_group.add_argument(
             '--retry-interval', type=int, metavar="<int>", help="set retry-interval, min is 1, max is 10")
+        # timeout Expected <number>(ms|s|m)
+        patch_exclusive_group.add_argument(
+            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+        patch_exclusive_group.add_argument(
+            '--custom-properties', type=str, metavar="<string>", help="set custom property of a test")
+
+        # API Simple
         patch_exclusive_group.add_argument(
             '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
         patch_exclusive_group.add_argument(
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
         patch_exclusive_group.add_argument(
-            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
-        patch_exclusive_group.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
-
-        # timeout Expected <number>(ms|s|m)
-        patch_exclusive_group.add_argument(
-            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
-        patch_exclusive_group.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help="specify a script file to update APIScript or BrowserScript")
-        patch_exclusive_group.add_argument(
             '--url', type=str, metavar="<url>", help="HTTP URL")
         patch_exclusive_group.add_argument(
             '--follow-redirect', type=str, metavar="<boolean>", help='set follow-redirect')
         patch_exclusive_group.add_argument(
+            '--validation-string', type=str, metavar="<string>", help='set validation-string')
+        patch_exclusive_group.add_argument(
             '--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
         patch_exclusive_group.add_argument(
-            '--validation-string', type=str, metavar="<string>", help='set validation-string')
+            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
+        patch_exclusive_group.add_argument(
+            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
+        patch_exclusive_group.add_argument(
+            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
+        patch_exclusive_group.add_argument(
+            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
+        patch_exclusive_group.add_argument(
+            '--allow-insecure', type=str, choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+
+        # API Script / Browser test
+        patch_exclusive_group.add_argument(
+            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        patch_exclusive_group.add_argument(
+            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
+        patch_exclusive_group.add_argument(
+            '-f', '--from-file', type=str, metavar="<filename>", help="specify a script file to update APIScript or BrowserScript")
         patch_exclusive_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         patch_exclusive_group.add_argument(
-            '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
-        patch_exclusive_group.add_argument(
-            '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
+            '--bundle-entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
 
         # SSL Certificate
         patch_exclusive_group.add_argument(
@@ -4672,11 +4650,9 @@ class ParseParameter:
         self.parser_update.add_argument(
             'id', type=str, help="Synthetic test id")
 
-        self.parser_update.add_argument(
-            '--file', '-f', type=str, metavar="<file-name>", help='json payload')
-
         update_exclusive_group = self.parser_update.add_mutually_exclusive_group()
         update_group = self.parser_update.add_argument_group()
+        # common options
         update_group.add_argument(
             '--active', type=str, metavar="<boolean>", help='set active')
         update_group.add_argument(
@@ -4692,19 +4668,23 @@ class ParseParameter:
         update_group.add_argument(
             '--retry-interval', type=int, metavar="<int>", help="set retry-interval, min is 1, max is 10")
         update_group.add_argument(
+            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+        update_group.add_argument(
+            '--custom-properties', type=str, metavar="<string>", help="set custom property of a test")
+        update_group.add_argument(
+            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+
+        # API Simple
+        update_group.add_argument(
+            '--headers', type=str, metavar="<json>", help="HTTP headers")
+        update_group.add_argument(
+            '--body', type=str, metavar="<string>", help='HTTP body')
+        update_group.add_argument(
             '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
         update_group.add_argument(
             '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
         update_group.add_argument(
-            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
-        update_group.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
-        update_group.add_argument(
-            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
-        update_group.add_argument(
-            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
-        update_group.add_argument(
-            '--script-file', type=str, metavar="<file-name>", help="specify a script file to update APIScript or BrowserScript")
+            '--validation-string', type=str, metavar="<string>", help='set validation-string')
         update_group.add_argument(
             '--url', type=str, metavar="<url>", help="HTTP URL")
         update_group.add_argument(
@@ -4712,13 +4692,27 @@ class ParseParameter:
         update_group.add_argument(
             '--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
         update_group.add_argument(
-            '--validation-string', type=str, metavar="<string>", help='set validation-string')
+            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
+        update_group.add_argument(
+            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
+        update_group.add_argument(
+            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
+        update_group.add_argument(
+            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
+        update_group.add_argument(
+            '--allow-insecure', type=str, choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+
+        # API Script / Browser test
+        update_group.add_argument(
+            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        update_group.add_argument(
+            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
+        update_group.add_argument(
+            '-f', '--from-file', type=str, metavar="<filename>", help="specify API/Browser script file or json payload, supported file suffix are .js/.side/.json")
         update_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         update_group.add_argument(
-            '--entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
-        update_group.add_argument(
-            '--custom-property', type=str, metavar="<string>", help="set custom property of a test")
+            '--bundle-entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
 
         # SSL Certificate
         update_group.add_argument(
@@ -4935,7 +4929,8 @@ def main():
             if get_args.id is None:
                 if get_args.filter is not None:
                     split_string = get_args.filter.split('=')
-                    syn_instance.print_tests_by_filter(split_string)
+                    filtered_payload = syn_instance.retrieve_synthetic_test_by_filter(split_string)
+                    syn_instance.print_synthetic_test(out_list=filtered_payload)
                     sys.exit(ERROR_CODE)
 
                 out_list = syn_instance.retrieve_all_synthetic_tests(
@@ -5068,12 +5063,12 @@ def main():
                 syn_type_t = synthetic_type[get_args.type]
                 payload = SyntheticConfiguration(syn_type_t)
 
-                # --from-json options
+                # --from-file, -f  options
                 # create from a json file
                 # if use a json file, all options should config in json
                 # not support provide other options from command-line
-                if get_args.from_json is not None:
-                    json_file = get_args.from_json
+                if get_args.from_file is not None and get_args.from_file.endswith('.json') :
+                    json_file = get_args.from_file
                     payload.loads_from_json_file(json_file_name=json_file)
                     syn_instance.set_synthetic_payload(
                         payload=payload.get_json())
@@ -5154,9 +5149,9 @@ def main():
                     else:
                         bundle_base64_str = get_args.bundle
                     # entry file
-                    if get_args.script_file is not None:
+                    if get_args.bundle_entry_file is not None:
                         payload.set_api_bundle_script(
-                            bundle_base64_str, script_file=get_args.script_file)
+                            bundle_base64_str, script_file=get_args.bundle_entry_file)
                     else:
                         # script file use index.js
                         payload.set_api_bundle_script(bundle_base64_str)
@@ -5198,8 +5193,11 @@ def main():
                     payload.set_timeout(get_args.timeout)
 
                 if get_args.custom_properties is not None:
-                    payload.set_custom_properties(
-                        json.loads(get_args.custom_properties))
+                    try:
+                        payload.set_custom_properties(
+                            json.loads(get_args.custom_properties))
+                    except json.JSONDecodeError:
+                        print(payload.exit_synctl("Ensure that the JSON string is properly formatted"))
 
                 # configuration
                 # retries [0, 2]
@@ -5232,8 +5230,8 @@ def main():
             patch_instance.patch_retry_interval(get_args.retry_interval)
         elif get_args.operation is not None:
             patch_instance.patch_ping_operation(get_args.operation)
-        elif get_args.script_file is not None:
-            patch_instance.patch_config_script_file(get_args.script_file)
+        elif get_args.from_file is not None:
+            patch_instance.patch_script_from_file(get_args.from_file)
         elif get_args.description is not None:
             patch_instance.patch_description(get_args.description)
         elif get_args.record_video is not None:
@@ -5247,20 +5245,30 @@ def main():
         elif get_args.mark_synthetic_call:
             patch_instance.patch_mark_synthetic_call(
                 get_args.mark_synthetic_call)
-        elif get_args.entry_file is not None:
-            patch_instance.patch_script_file(get_args.entry_file, get_args.id)
+        elif get_args.allow_insecure is not None:
+            patch_instance.patch_allow_insecure(get_args.allow_insecure)
+        elif get_args.expect_json is not None:
+            patch_instance.patch_expect_json(get_args.expect_json)
+        elif get_args.expect_not_empty is not None:
+            patch_instance.patch_expect_not_empty(get_args.expect_not_empty)
+        elif get_args.expect_exists is not None:
+            patch_instance.patch_expect_exists(get_args.expect_exists)
+        elif get_args.expect_match is not None:
+            patch_instance.patch_expect_match(get_args.expect_match)
+        elif get_args.expect_status is not None:
+            patch_instance.patch_expect_status(get_args.expect_status)
+        elif get_args.bundle is not None:
+            patch_instance.patch_bundle(get_args.id, get_args.bundle)
+        elif get_args.bundle_entry_file is not None:
+            patch_instance.patch_bundle_entry_file(get_args.bundle_entry_file, get_args.id)
         elif get_args.url is not None:
             patch_instance.patch_url(get_args.url)
         elif get_args.follow_redirect is not None:
             patch_instance.patch_follow_redirect(get_args.follow_redirect)
-        elif get_args.expect_status is not None:
-            patch_instance.patch_expect_status(get_args.expect_status)
         elif get_args.validation_string is not None:
             patch_instance.patch_validation_string(get_args.validation_string)
-        elif get_args.bundle is not None:
-            patch_instance.patch_bundle(get_args.id, get_args.bundle)
-        elif get_args.custom_property is not None:
-            split_string = get_args.custom_property.split(',')
+        elif get_args.custom_properties is not None:
+            split_string = get_args.custom_properties.split(',')
             patch_instance.patch_custom_properties(get_args.id, split_string)
         elif get_args.hostname is not None:
             patch_instance.patch_host(get_args.id, get_args.hostname)
@@ -5276,8 +5284,9 @@ def main():
                 update_instance.exit_synctl(ERROR_CODE, "option: --enable/--disable not supported by synthetic tests")
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
             update_instance.set_updated_payload(payload)
-            if get_args.file is not None:
-                new_payload = update_instance.update_using_file(get_args.file)
+            # accept a full json payload
+            if get_args.from_file is not None and get_args.from_file.endswith('.json') :
+                new_payload = update_instance.update_using_file(get_args.from_file)
                 update_instance.update_a_synthetic_test(get_args.id, new_payload)
             else:
                 if get_args.label is not None:
@@ -5294,8 +5303,8 @@ def main():
                     update_instance.update_retry_interval(get_args.retry_interval)
                 if get_args.operation is not None:
                     update_instance.update_ping_operation(get_args.operation)
-                if get_args.script_file is not None:
-                    update_instance.update_config_script_file(get_args.script_file)
+                if get_args.from_file is not None:
+                    update_instance.update_config_script_file(get_args.from_file)
                 if get_args.description is not None:
                     update_instance.update_description(get_args.description)
                 if get_args.record_video is not None:
@@ -5306,8 +5315,10 @@ def main():
                     update_instance.update_locations(get_args.location)
                 if get_args.mark_synthetic_call:
                     update_instance.update_mark_synthetic_call(get_args.mark_synthetic_call)
-                if get_args.entry_file is not None:
-                    update_instance.update_script_file(get_args.entry_file)
+                if get_args.bundle is not None:
+                    update_instance.update_bundle(get_args.bundle)
+                if get_args.bundle_entry_file is not None:
+                    update_instance.update_bundle_entry_file(get_args.bundle_entry_file)
                 if get_args.url is not None:
                     update_instance.update_url(get_args.url)
                 if get_args.follow_redirect is not None:
@@ -5316,13 +5327,26 @@ def main():
                     update_instance.update_application_id(get_args.app_id)
                 if get_args.expect_status is not None:
                     update_instance.update_expect_status(get_args.expect_status)
+                if get_args.allow_insecure is not None:
+                    update_instance.update_allow_insecure(get_args.allow_insecure)
+                if get_args.expect_json is not None:
+                    update_instance.update_expect_json(get_args.expect_json)
+                if get_args.expect_not_empty is not None:
+                    update_instance.update_expect_not_empty(get_args.expect_not_empty)
+                if get_args.expect_exists is not None:
+                    update_instance.update_expect_exists(get_args.expect_exists)
+                if get_args.expect_match is not None:
+                    update_instance.update_expect_match(get_args.expect_match)
                 if get_args.validation_string is not None:
                     update_instance.update_validation_string(get_args.validation_string)
-                if get_args.bundle is not None:
-                    update_instance.update_bundle(get_args.bundle)
-                if get_args.custom_property is not None:
-                    split_string = get_args.custom_property.split(',')
+                if get_args.custom_properties is not None:
+                    split_string = get_args.custom_properties.split(',')
                     update_instance.update_custom_properties(split_string)
+                if get_args.body is not None:
+                    update_instance.update_body(get_args.body)
+                if get_args.headers is not None:
+                    split_string = get_args.headers.split(',')
+                    update_instance.update_headers(split_string)
                 if get_args.hostname is not None:
                     update_instance.update_host(get_args.hostname)
                 if get_args.port is not None:
@@ -5335,12 +5359,12 @@ def main():
             get_args.id = get_args.id.lstrip() if get_args.id.startswith(' ') else get_args.id
             invalid_options = ["label", "active", "frequency", "timeout", "retry_interval", "retries", "operation", "script_file",
                                "location", "record_video", "mark_synthetic_call", "entry_file", "url", "follow_redirect",
-                               "expect_status", "validation_string", "bundle", "custom_property"]
+                               "expect_status", "validation_string", "bundle", "custom_properties"]
             update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
             payload = alert_instance.retrieve_a_smart_alert(get_args.id)
             update_alert.set_updated_payload(payload)
-            if get_args.file is not None:
-                new_payload = update_alert.update_using_file(get_args.file)
+            if get_args.from_file is not None and get_args.from_file.endswith('.json'):
+                new_payload = update_alert.update_using_file(get_args.from_file)
                 update_alert.update_a_smart_alert(get_args.id, new_payload)
             elif get_args.enable is True or get_args.disable is True:
                 operation = "enable" if get_args.enable else "disable"

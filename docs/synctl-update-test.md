@@ -21,7 +21,8 @@ synctl update test <id> [options]
     --retries <int>                    set retries, min is 0 and max is 2
     --retry-interval <int>             set retry-interval, min is 1, max is 10
     --timeout <num>ms|s|m              set timeout, accept <number>(ms|s|m)
-    --custom-property <key>=<value>    set custom property, should be <key,value> pair
+    --custom-properties <key>=<value>  set custom property, should be <key,value> pair
+    --app-id, --application-id <id>    set application id
     
     --use-env, -e <name>               use a config hostname
     --host <host>                      set hostname
@@ -33,25 +34,33 @@ synctl update test <id> [options]
     --operation <method>               HTTP request methods, GET, POST, HEAD, PUT, etc.
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --url <url>                        HTTP URL
+    --headers <json>                   HTTP headers
+    --body <string>                    HTTP body
     --follow-redirect <boolean>        set follow-redirect
     --expect-status <int>              set expected HTTP status code
     --validation-string <string>       set validation-string
+    --expect-status <int>              expected status code, Synthetic test will fail if response status is not equal to it, default 200
+    --expect-json <string>             An optional object to be used to check against the test response object
+    --expect-match <string>            An optional regular expression string to be used to check the test response
+    --expect-exists <string>           An optional list of property labels used to check if they are present in the test response object
+    --expect-not-empty <string>        An optional list of property labels used to check if they are present in the test response object with a non-empty value
+    --allow-insecure <boolean>         if set to true then allow insecure certificates
 ```
 
 ### Options for API Script test
 ```
-    --file,-f <file-name>              json payload
-    --script-file <file-name>          specify a script file to update APIScript or BrowserScript
+    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
     --bundle <bundle>                  set bundle content
-    --entry-file <string>              entry file of a bundle test
+    --bundle-entry-file <string>       entry file of a bundle test
+    --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for Browser Script test
 ```
-    --file,-f <file-name>              json payload
-    --script-file <file-name>          specify a script file to update APIScript or BrowserScript
+    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
+    --mark-synthetic-call <boolean>    set markSyntheticCall
     --bundle <bundle>                  set bundle content
-    --entry-file <string>              entry file of a bundle test
+    --bundle-entry-file <string>       entry file of a bundle test
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
 ```
@@ -66,7 +75,7 @@ synctl update test <id> [options]
 
 ### Options for Webpage Script test
 ```
-    --file,-f <file-name>              json payload
+    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
@@ -91,7 +100,7 @@ synctl update test <synthetic-id> \
     --follow-redirect true \
     --validation-string "a synthetic test" \
     --expect-status 200 \
-    --custom-property "key1=value1,key2=value2"
+    --custom-properties "key1=value1,key2=value2"
 ```
 
 ### Example for API Simple test
@@ -101,6 +110,48 @@ synctl update test <synthetic-id> \
     --expect-status 200
 ```
 
+Expect json example
+```
+synctl update <synthetic-id> \
+    --expect-json '{
+      "slideshow": {
+        "author": "Yours Truly",
+        "date": "date of publication",
+        "slides": [
+          {
+            "title": "Wake up to WonderWidgets!",
+            "type": "all"
+          },
+          {
+            "items": [
+              "Why <em>WonderWidgets</em> are great",
+              "Who <em>buys</em> WonderWidgets"
+            ],
+            "title": "Overview",
+            "type": "all"
+          }
+        ],
+        "title": "Sample Slide Show"
+      }
+    }'
+```
+Update test with expect-match
+
+```
+synctl update test <synthetic-id> \
+    --expect-match ibm
+```
+Update test with expect-exists
+```
+synctl update test <synthetic-id> \
+    --expect-exists '["slideshow"]'
+```
+Update test with expect-not-empty
+```
+synctl update test <synthetic-id> \
+    --expect-not-empty '["slideshow"]'
+```
+
 ### Example for API Script test
 ```
 #  Update a test with json payload.
@@ -108,7 +159,7 @@ synctl update test <synthetic-id> \
     synctl get test <synthetic-id> --show-json > test.json
 
 2. edit json file and update test.
-    synctl update test <synthetic-id> --file/-f test.json
+    synctl update test <synthetic-id> --from-file/-f test.json
 
 ```
 
@@ -116,7 +167,7 @@ synctl update test <synthetic-id> \
 ```
 synctl update test <synthetic-id> \
     --mark-synthetic-call false \
-    --entry-file script.json
+    --from-file script.json
 ```
 
 ### Example for Webpage Simple test

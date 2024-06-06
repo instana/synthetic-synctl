@@ -9,7 +9,7 @@ synctl update alert <id> [options]
 ```
     -h, --help                          show this help message and exit
 
-    --file,-f <file-name>               json payload
+    --from-file,-f <file-name>          json payload
     --test id [id ...]                  synthetic-test id, support multiple synthetic tests id
     --name <string>                     friendly name of the Smart Alerts
     --description, -d <string>          the description of Smart Alerts
@@ -43,7 +43,7 @@ Update a smart alert with json file.
 synctl get alert <alert-id> --show-json > alert.json
 
 # edit json file and update
-synctl update alert <alert-id> --file/-f alert.json
+synctl update alert <alert-id> --from-file/-f alert.json
 ```
 
 Update a smart alert with `--tag-filter-expression` option

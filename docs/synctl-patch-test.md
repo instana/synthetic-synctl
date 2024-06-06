@@ -20,7 +20,7 @@ synctl patch test id [options]
     --retries <int>                    set retries, min is 0 and max is 2
     --retry-interval <int>             set retry-interval, min is 1, max is 10
     --timeout <num>ms|s|m              set timeout, accept <number>(ms|s|m)
-    --custom-property <key>=<value>    set custom property, should be <key,value> pair
+    --custom-properties <key>=<value>  set custom property, should be <key,value> pair
     
     --use-env, -e <name>               use a config hostname
     --host <host>                      set hostname
@@ -35,22 +35,30 @@ synctl patch test id [options]
     --expect-status <int>              set expected HTTP status code
     --operation <method>               HTTP request methods, GET, POST, HEAD, PUT, etc.
     --validation-string <string>       set validation-string
+    --expect-status <int>              expected status code, Synthetic test will fail if response status is not equal to it, default 200
+    --expect-json <string>             An optional object to be used to check against the test response object
+    --expect-match <string>            An optional regular expression string to be used to check the test response
+    --expect-exists <string>           An optional list of property labels used to check if they are present in the test response object
+    --expect-not-empty <string>        An optional list of property labels used to check if they are present in the test response object with a non-empty value
+    --allow-insecure <boolean>         if set to true then allow insecure certificates
 ```
 
 ### Options for API script test
 ```
-    --script-file <file-name>          specify a script file to update APIScript or BrowserScript
+    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
     --bundle <bundle>                  set bundle content
-    --entry-file <string>              entry file of a bundle test
+    --bundle-entry-file <string>       entry file of a bundle test
+    --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for Browser Script test
 ```
-    --script-file <file-name>          specify a script file to update APIScript or BrowserScript
+    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
     --bundle <bundle>                  set bundle content
-    --entry-file <string>              entry file of a bundle test
+    --bundle-entry-file <string>       entry file of a bundle test
     --browser <string>                 browser type, support chrome and firefox
-    --record-video <boolean>           enable/disable record video, false by default          
+    --record-video <boolean>           enable/disable record video, false by default
+    --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for Webpage Simple test
@@ -59,14 +67,16 @@ synctl patch test id [options]
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
+    --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for Webpage Script test
 ```
-    --file,-f <file-name>              json payload
+    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
+    --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for SSLCertificate test
@@ -105,10 +115,10 @@ synctl patch test <synthetic-id> --timeout 120s
 synctl patch test <synthetic-id> --active false
 
 # Set custom properties of a test
-synctl patch test <synthetic-id> --custom-property key=value
+synctl patch test <synthetic-id> --custom-properties key=value
 
 # Set multiple custom properties of a test
-synctl patch test <synthetic-id> --custom-property "key1=value1,key2=value2,key3=value3"
+synctl patch test <synthetic-id> --custom-properties "key1=value1,key2=value2,key3=value3"
 ```
 
 ### Examples for API Simple tests
@@ -135,7 +145,7 @@ synctl patch test <synthetic-id> --validation-string "synthetic-test"
 ### Examples for API Script tests
 ```
 # Update synthetic test with new script
-synctl patch test <synthetic-id> --script-file new-api-script.js
+synctl patch test <synthetic-id> --from-file new-api-script.js
 
 # Update bundle test with a zip file
 synctl patch test <synthetic-id> --bundle synthetic.zip
@@ -145,7 +155,7 @@ PATCH_BASE64_STR=`cat bundle.zip|base64`
 synctl patch test <synthetic-id> --bundle "${PATCH_BASE64_STR}"
 
 # Set entry file of bundle test
-synctl patch test <synthetic-id> --entry-file bundle-test/index.js
+synctl patch test <synthetic-id> --bundle-entry-file bundle-test/index.js
 ```
 
 ### Examples for Browser Script tests
@@ -154,7 +164,7 @@ synctl patch test <synthetic-id> --entry-file bundle-test/index.js
 synctl patch test <synthetic-id> --browser firefox
 
 # Set multiple custom properties of a test
-synctl patch test <synthetic-id> --custom-property "key1=value1,key2=value2,key3=value3"
+synctl patch test <synthetic-id> --custom-properties "key1=value1,key2=value2,key3=value3"
 ```
 
 ### Examples for Webpage Simple tests
@@ -169,7 +179,7 @@ synctl patch test <synthetic-id> --browser firefox
 ### Examples for Webpage Script tests
 ```
 # Update synthetic test with new script
-synctl patch test <synthetic-id> --script-file seleniumide-script.side
+synctl patch test <synthetic-id> --from-file seleniumide-script.side
 
 # Set record video true
 synctl patch test <synthetic-id> --record-video true
