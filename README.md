@@ -43,7 +43,7 @@ pip3 install --upgrade synctl==<version>
 Note : Version 2.0.0 introduces several changes that are not compatible with previous versions (1.x).
 
 **Incompatible Options:**
-- Option `--from-json` Removed: The `--from-json` option has been removed. Use the `-f` option instead. The `-f` option reads different files according to their suffix, such as `.js`, `.side`, and `.json`.
+- Option `--from-json` Removed: Use the `-f, --from-file` option instead. The `-f, --from-file` option reads different files according to their suffix, such as `.js`, `.side`, and `.json`.
 - Option `--bundle-entry-file` replaces `entry-file`: `--bundle-entry-file` option is now used to set entry file name of a bundle test.
 # Configuration
 
