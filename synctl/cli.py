@@ -4801,7 +4801,6 @@ def ctrl_exit_handler(signal_received, frame):
 def main():
     """main function"""
     signal.signal(signal.SIGINT, ctrl_exit_handler)
-    signal.signal(signal.SIGTSTP, signal.SIG_IGN)
     identify_hyphen()
 
     para_instanace = ParseParameter()
