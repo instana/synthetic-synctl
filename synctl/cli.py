@@ -4394,7 +4394,7 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5], required=False, metavar="<int>", 
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5], required=False, metavar="<int>",
             help="Synthetic type: HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4], SSLCertificate[5]")
 
         # support multiple locations
@@ -4795,7 +4795,6 @@ def ctrl_exit_handler(signal_received, frame):
 def main():
     """main function"""
     signal.signal(signal.SIGINT, ctrl_exit_handler)
-    signal.signal(signal.SIGTSTP, signal.SIG_IGN)
     identify_hyphen()
 
     para_instanace = ParseParameter()
