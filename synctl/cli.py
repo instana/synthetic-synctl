@@ -1163,6 +1163,10 @@ class SyntheticConfiguration(Base):
         if custom_prop is not None and isinstance(custom_prop, dict):
             self.syn_test_config["customProperties"] = custom_prop
 
+    def set_validation_string(self, validation_string):
+        if validation_string is not None or validation_string != "":
+            self.syn_test_config["configuration"]["validationString"] = validation_string
+
     def set_locations(self, locations: list = None):
         """locations"""
         if locations is None:
@@ -4457,6 +4461,8 @@ class ParseParameter:
             '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
         self.parser_create.add_argument(
             '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+        self.parser_create.add_argument(
+            '--validation-string', type=str, metavar="<string>", help='set validation-string')
 
         # browser type
         self.parser_create.add_argument(
@@ -5123,6 +5129,8 @@ def main():
                         payload.set_expect_not_empty(expect_not_empty_list)
                     if get_args.allow_insecure is not None:
                         payload.set_allow_insecure(get_args.allow_insecure)
+                    if get_args.validation_string is not None:
+                        payload.set_validation_string(get_args.validation_string)
 
                 # basic type HTTPScript and WebpageScript
                 elif get_args.type in (1, 2, 3) and get_args.bundle is None:
