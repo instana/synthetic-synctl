@@ -5064,8 +5064,8 @@ def main():
             # --from-file, -f  options
             # create from a json file
             # if use a json file, all options should config in json
-            if get_args.from_file is not None and get_args.from_file.endswith('.json') :
-                json_file = get_args.from_file
+            if get_args.from_json is not None and get_args.from_json.endswith('.json') :
+                json_file = get_args.from_json
                 alert_payload.loads_from_json_file(json_file_name=json_file)
                 syn_instance.set_synthetic_payload(
                     payload=alert_payload.get_json())
