@@ -18,6 +18,7 @@ synctl create alert [options]
     --alert-channel <id>              alerting channel
     --violation-count <int>           the number of consecutive failures to trigger an alert
     --tag-filter-expression <json>    tag filter expression
+    -f, --from-file <file>            Synthetic alert payload
 ```
 
 ## Examples
@@ -47,5 +48,9 @@ synctl create alert --name "smart alert" \
         --violation-count 3 \
         --tag-filter-expression '{"type": "EXPRESSION", "logicalOperator": "AND", "elements": []}'
 ```
+Create a smart alert with json payload
+ ```
+ synctl create alert --from-file alert.json
+ ```
 
 **Note:** To get alert channel, use command `synctl get alert-channel`.
