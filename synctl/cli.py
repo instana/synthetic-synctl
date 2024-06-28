@@ -1666,6 +1666,14 @@ class SmartAlertConfiguration(Base):
         else:
             self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
 
+    def loads_from_json_file(self, json_file_name):
+        try:
+            with open(json_file_name, "r", encoding="utf-8") as json_file1:
+                json_payload = json_file1.read()
+                self.smart_alert_config = json.loads(json_payload)
+        except FileNotFoundError as not_found_e:
+            self.exit_synctl(ERROR_CODE, not_found_e)
+
     def get_json(self):
         """return payload as json"""
         if len(self.smart_alert_config["syntheticTestIds"]) == 0:
@@ -5052,6 +5060,19 @@ def main():
             return
         elif get_args.syn_type == SYN_ALERT:
             alert_payload = SmartAlertConfiguration()
+
+            # --from-file, -f  options
+            # create from a json file
+            # if use a json file, all options should config in json
+            if get_args.from_file is not None and get_args.from_file.endswith('.json') :
+                json_file = get_args.from_file
+                alert_payload.loads_from_json_file(json_file_name=json_file)
+                syn_instance.set_synthetic_payload(
+                    payload=alert_payload.get_json())
+                alert_instance.set_alert_payload(alert_payload.get_json())
+                alert_instance.create_synthetic_alert()
+                return
+
             if get_args.name is not None:
                 alert_payload.set_alert_name(get_args.name)
             if get_args.test is not None:
