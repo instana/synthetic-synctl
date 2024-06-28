@@ -5061,7 +5061,7 @@ def main():
         elif get_args.syn_type == SYN_ALERT:
             alert_payload = SmartAlertConfiguration()
 
-            # --from-file, -f  options
+            # --from-json  options
             # create from a json file
             # if use a json file, all options should config in json
             if get_args.from_json is not None and get_args.from_json.endswith('.json') :
