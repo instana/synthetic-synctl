@@ -51,8 +51,8 @@ synctl update test <id> [options]
 ### Options for API Script test
 ```
     --script <file>                    load script (.js) from file
-    --bundle <bundle>                  set bundle content
-    --bundle-entry-file <string>       entry file of a bundle test
+    --bundle <bundle>                  Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
+    --bundle-entry-file <file-name>    Synthetic bundle test entry file, e.g, myscript.js
     --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
@@ -60,8 +60,8 @@ synctl update test <id> [options]
 ```
     --script <file>                    load script (.js) from file
     --mark-synthetic-call <boolean>    set markSyntheticCall
-    --bundle <bundle>                  set bundle content
-    --bundle-entry-file <string>       entry file of a bundle test
+    --bundle <bundle>                  Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
+    --bundle-entry-file <file-name>    Synthetic bundle test entry file, e.g, myscript.js
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
 ```

@@ -47,16 +47,16 @@ synctl patch test id [options]
 ### Options for API script test
 ```
     --script <file>                    load script (.js) from file
-    --bundle <bundle>                  set bundle content
-    --bundle-entry-file <string>       entry file of a bundle test
+    --bundle <bundle>                  Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
+    --bundle-entry-file <file-name>    Synthetic bundle test entry file, e.g, myscript.js
     --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
 ### Options for Browser Script test
 ```
     --script <file>                    load script (.js) from file
-    --bundle <bundle>                  set bundle content
-    --bundle-entry-file <string>       entry file of a bundle test
+    --bundle <bundle>                  Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
+    --bundle-entry-file <file-name>    Synthetic bundle test entry file, e.g, myscript.js
     --browser <string>                 browser type, support chrome and firefox
     --record-video <boolean>           enable/disable record video, false by default
     --mark-synthetic-call <boolean>    set markSyntheticCall

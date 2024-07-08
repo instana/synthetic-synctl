@@ -46,12 +46,14 @@ synctl create test [options]
 ### Options for API Script test
 ```  
     --script <file>                     load script (.js) from file
-    --bundle <bundle>                   Synthetic bundle test script, support zip file, zip file encoded with base64
+    --bundle <bundle>                   Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
     --bundle-entry-file <file-name>     Synthetic bundle test entry file, e.g, myscript.js
 ```
 ### Options for Browser Script test
 ```    
     --script <file>                     load script (.js) from file
+    --bundle <bundle>                   Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
+    --bundle-entry-file <file-name>     Synthetic bundle test entry file, e.g, myscript.js
     --browser <string>                  browser type, support chrome and firefox
     --record-video <boolean>            set true to record video
 ```

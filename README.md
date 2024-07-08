@@ -40,11 +40,12 @@ Upgrade `synctl` to a specified version.
 ```
 pip3 install --upgrade synctl==<version>
 ```
-Note : Version 2.0.0 introduces several changes that are not compatible with previous versions (1.x).
+### Note : Version 2.0.0 introduces several changes that are not compatible with previous versions (1.x).
 
 **Incompatible Options:**
-- Option `--from-json` Removed: Use the `-f, --from-file` option instead. The `-f, --from-file` option reads different files according to their suffix, such as `.js`, `.side`, and `.json`.
+- Option `--from-json` removed: Use the `-f, --from-file` option instead. The `-f, --from-file` option reads synthetic test payload from `.json` files.
 - Option `--bundle-entry-file` replaces `entry-file`: `--bundle-entry-file` option is now used to set entry file name of a bundle test.
+- Option `--script` added: `--script` options reads different files according to their suffix, such as `.js`and `.side`.
 # Configuration
 
 `synctl` support three types of configurations:
