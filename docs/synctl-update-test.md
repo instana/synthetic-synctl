@@ -49,7 +49,8 @@ synctl update test <id> [options]
 
 ### Options for API Script test
 ```
-    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
+    -f, --from-file <file-name>        load synthetic test payload from (.json) file
+    --script <file>                    load script (.js) from file
     --bundle <bundle>                  set bundle content
     --bundle-entry-file <string>       entry file of a bundle test
     --mark-synthetic-call <boolean>    set markSyntheticCall
@@ -57,7 +58,8 @@ synctl update test <id> [options]
 
 ### Options for Browser Script test
 ```
-    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
+    -f, --from-file <file-name>        load synthetic test payload from (.json) file
+    --script <file>                    load script (.js) from file
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --bundle <bundle>                  set bundle content
     --bundle-entry-file <string>       entry file of a bundle test
@@ -75,7 +77,8 @@ synctl update test <id> [options]
 
 ### Options for Webpage Script test
 ```
-    -f, --from-file <file-name>        specify a script file to update API/Browser script(.js/.side), or json payload(.json)
+    -f, --from-file <file-name>        load synthetic test payload from (.json) file
+    --script <file>                    load script (.side) from file
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
@@ -167,7 +170,7 @@ synctl update test <synthetic-id> \
 ```
 synctl update test <synthetic-id> \
     --mark-synthetic-call false \
-    --from-file script.json
+    --script script.js
 ```
 
 ### Example for Webpage Simple test

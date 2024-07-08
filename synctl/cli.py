@@ -3302,7 +3302,7 @@ class UpdateSyntheticTest(SyntheticTest):
             self.exit_synctl(ERROR_CODE, "markSyntheticCall should be true or false")
 
     def update_config_script_file(self, script_file_name):
-        """-f, --from-file update script from a file"""
+        """--script update script from a file"""
         try:
             with open(script_file_name, "r", encoding="utf-8") as file1:
                 script = file1.read()
@@ -4734,7 +4734,9 @@ class ParseParameter:
         update_group.add_argument(
             '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
         update_group.add_argument(
-            '-f', '--from-file', type=str, metavar="<filename>", help="specify API/Browser script file or json payload, supported file suffix are .js/.side/.json")
+            '-f', '--from-file', type=str, metavar="<filename>", help="Synthetic payload from (.json) file")
+        update_group.add_argument(
+            '--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
         update_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         update_group.add_argument(
@@ -5327,7 +5329,7 @@ def main():
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
             update_instance.set_updated_payload(payload)
             # accept a full json payload
-            if get_args.from_file is not None and get_args.from_file.endswith('.json') :
+            if get_args.from_file is not None and get_args.from_file.endswith('.json'):
                 new_payload = update_instance.update_using_file(get_args.from_file)
                 update_instance.update_a_synthetic_test(get_args.id, new_payload)
             else:
@@ -5345,8 +5347,8 @@ def main():
                     update_instance.update_retry_interval(get_args.retry_interval)
                 if get_args.operation is not None:
                     update_instance.update_ping_operation(get_args.operation)
-                if get_args.from_file is not None:
-                    update_instance.update_config_script_file(get_args.from_file)
+                if get_args.script is not None:
+                    update_instance.update_config_script_file(get_args.script)
                 if get_args.description is not None:
                     update_instance.update_description(get_args.description)
                 if get_args.record_video is not None:
