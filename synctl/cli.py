@@ -154,21 +154,21 @@ examples:
 synctl create test -t 0 --label simple-ping-test --url <url> --location <id> --frequency 5
 
 # create an API Script
-synctl create test -t 1 --label script-test --from-file script-name.js --location <id>
+synctl create test -t 1 --label script-test --script script-name.js --location <id>
 
 # create an API Script bundle
 synctl create test -t 1 --label script-bundle-test --bundle file.zip --bundle-entry-file index.js --location <id>
 synctl create test -t 1 --label script-bundle-test --bundle <base64> --bundle-entry-file index.js --location <id>
 
 # create browserscript
-synctl create test -t 2 --label browserscript-test --from-file browserscripts/api-sample.js --browser firefox --location <id>
+synctl create test -t 2 --label browserscript-test --script browserscripts/api-sample.js --browser firefox --location <id>
 
 # create browserscript bundle
 synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --bundle-entry-file mytest.js --browser chrome --location <id>
 synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --bundle-entry-file mytest.js --browser chrome --location <id>
 
 # create webpagescript
-synctl create test -t 3 --label "webpagescript-test" --from-file side/webpage-script.side --browser chrome --location <id>
+synctl create test -t 3 --label "webpagescript-test" --script side/webpage-script.side --browser chrome --location <id>
 
 # create WebpageAction
 synctl create test -t 4 --label "webpageaction-test" --url <url> --location <id> --frequency 5 --record-video true
@@ -3661,6 +3661,14 @@ class PatchSyntheticTest(SyntheticTest):
         self.__ensure_test_id_not_none(test_id)
         self.test_id = test_id
 
+    def patch_payload(self, file):
+        with open(file, 'rb') as json_file:
+            payload = json_file.read()
+            if payload is None:
+                print("No payload")
+            else:
+                self.__patch_a_synthetic_test(self.test_id, payload)
+
     def patch_label(self, label):
         """label"""
         payload = {"label": ""}
@@ -4638,7 +4646,9 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
         patch_exclusive_group.add_argument(
-            '-f', '--from-file', type=str, metavar="<filename>", help="specify a script file to update APIScript or BrowserScript")
+            '-f', '--from-file', type=str, metavar="<filename>", help='load synthetic test payload from file (.json)')
+        patch_exclusive_group.add_argument(
+            '--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
         patch_exclusive_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
         patch_exclusive_group.add_argument(
@@ -5261,7 +5271,9 @@ def main():
         elif get_args.operation is not None:
             patch_instance.patch_ping_operation(get_args.operation)
         elif get_args.from_file is not None:
-            patch_instance.patch_script_from_file(get_args.from_file)
+            patch_instance.patch_payload(get_args.from_file)
+        elif get_args.script is not None:
+            patch_instance.patch_script_from_file(get_args.script)
         elif get_args.description is not None:
             patch_instance.patch_description(get_args.description)
         elif get_args.record_video is not None:
