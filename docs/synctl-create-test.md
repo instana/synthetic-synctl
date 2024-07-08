@@ -44,19 +44,22 @@ synctl create test [options]
 ```
 ### Options for API Script test
 ```  
-    -f, --from-file <file>              Synthetic script/payload, support json, js and side file, e.g, script.js
+    -f, --from-file <file>              load synthetic test payload from file (.json)
+    --script <file>                     load script (.js) from file
     --bundle <bundle>                   Synthetic bundle test script, support zip file, zip file encoded with base64
     --bundle-entry-file <file-name>     Synthetic bundle test entry file, e.g, myscript.js
 ```
 ### Options for Browser Script test
 ```    
-    -f, --from-file <file>              Synthetic script/payload, support json, js and side file, e.g, script.js
+    -f, --from-file <file>              load synthetic test payload from file (.json)
+    --script <file>                     load script (.js) from file
     --browser <string>                  browser type, support chrome and firefox
     --record-video <boolean>            set true to record video
 ```
 ### Options for Webpage Script test
 ```
-    -f, --from-file <file>              Synthetic script/payload, support json, js and side file, e.g, script.js
+    -f, --from-file <file>              load synthetic test payload from file (.json)
+    --script <file>                     load script (.side) from file
     --record-video <boolean>            enable/disable record video, false by default
     --browser <string>                  browser type, support chrome and firefox
 ```
@@ -184,7 +187,7 @@ Create a simple API script from file
 ```
 synctl create test -t 1 \
     --label "simple-api-script" \
-    --from-file http-scripts/http-get.js \
+    --script http-scripts/http-get.js \
     --location "$LOCATION" \
     --frequency 5
 ```
@@ -193,7 +196,7 @@ Custom properties example
 ```
 synctl create test -t 1 \
     --label custom-properties-test \
-    --from-file api-script.js \
+    --script api-script.js \
     --location "$LOCATION1" \
     --custom-properties '{"key1":"value1"}'
 ```
@@ -233,7 +236,7 @@ create a browser script test
 ```
 synctl create test -t 2 \
     --label browser-script-test \
-    --from-file browserscripts/api-sample.js \
+    --script browserscripts/api-sample.js \
     --location "$LOCATION" \
     --frequency 15
 ```
@@ -265,7 +268,7 @@ synctl create test -t 2 \
 synctl create test -t 3 \
     --label "webpage-script-test" \
     --location "$LOCATION" --frequency 15 \
-    --from-file side/webpage-script.side  \
+    --script side/webpage-script.side  \
     --browser chrome
 ```
 

@@ -4448,7 +4448,9 @@ class ParseParameter:
 
         # options for api script
         self.parser_create.add_argument(
-            '-f', '--from-file', type=str, metavar="<file>", help='Synthetic script, support js, json, side file, e.g, script.js')
+            '-f', '--from-file', type=str, metavar="<file>", help='Synthetic payload from (.json) file')
+        self.parser_create.add_argument(
+            '--script', type=str, metavar="<file>", help='load script (.js/.side) from file')
 
         # options for bundle script
         self.parser_create.add_argument(
@@ -5157,9 +5159,9 @@ def main():
                 elif get_args.type in (1, 2, 3) and get_args.bundle is None:
                     syn_type_t = synthetic_type[get_args.type]
                     payload = SyntheticConfiguration(syn_type=syn_type_t)
-                    if get_args.from_file is not None:
+                    if get_args.script is not None:
                         script_content = payload.read_js_file(
-                            get_args.from_file)
+                            get_args.script)
                         payload.set_api_script_script(
                             script_str=script_content)
                     if payload.get_api_script_script() == "":
