@@ -20,6 +20,7 @@ synctl patch test id [options]
     --retries <int>                    set retries, min is 0 and max is 2
     --retry-interval <int>             set retry-interval, min is 1, max is 10
     --timeout <num>ms|s|m              set timeout, accept <number>(ms|s|m)
+    -f, --from-file <file>             load synthetic test payload from file (.json)
     --custom-properties <key>=<value>  set custom property, should be <key,value> pair
     
     --use-env, -e <name>               use a config hostname
@@ -45,7 +46,6 @@ synctl patch test id [options]
 
 ### Options for API script test
 ```
-    -f, --from-file <file-name>        load synthetic test payload from (.json) file
     --script <file>                    load script (.js) from file
     --bundle <bundle>                  set bundle content
     --bundle-entry-file <string>       entry file of a bundle test
@@ -54,7 +54,6 @@ synctl patch test id [options]
 
 ### Options for Browser Script test
 ```
-    -f, --from-file <file-name>        load synthetic test payload from (.json) file
     --script <file>                    load script (.js) from file
     --bundle <bundle>                  set bundle content
     --bundle-entry-file <string>       entry file of a bundle test
@@ -74,7 +73,6 @@ synctl patch test id [options]
 
 ### Options for Webpage Script test
 ```
-    -f, --from-file <file-name>        load synthetic test payload from (.json) file
     --script <file>                    load script (.side) from file
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --record-video <boolean>           enable/disable record video, false by default

@@ -21,6 +21,7 @@ synctl create test [options]
     --retries <int>                     retry times, value is from [0, 2]
     --retry-interval <int>              retry interval, range is [1, 10]
     --timeout <num>ms|s|m               set timeout, accept <number>(ms|s|m)
+    -f, --from-file <file>              load synthetic test payload from file (.json)
     --custom-properties <string>        An object with name/value pairs to provide additional information of the Synthetic test
     
     --use-env <name>, -e <name>         use a specified configuration
@@ -44,21 +45,18 @@ synctl create test [options]
 ```
 ### Options for API Script test
 ```  
-    -f, --from-file <file>              load synthetic test payload from file (.json)
     --script <file>                     load script (.js) from file
     --bundle <bundle>                   Synthetic bundle test script, support zip file, zip file encoded with base64
     --bundle-entry-file <file-name>     Synthetic bundle test entry file, e.g, myscript.js
 ```
 ### Options for Browser Script test
 ```    
-    -f, --from-file <file>              load synthetic test payload from file (.json)
     --script <file>                     load script (.js) from file
     --browser <string>                  browser type, support chrome and firefox
     --record-video <boolean>            set true to record video
 ```
 ### Options for Webpage Script test
-```
-    -f, --from-file <file>              load synthetic test payload from file (.json)
+```  
     --script <file>                     load script (.side) from file
     --record-video <boolean>            enable/disable record video, false by default
     --browser <string>                  browser type, support chrome and firefox
