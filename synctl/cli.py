@@ -3661,14 +3661,6 @@ class PatchSyntheticTest(SyntheticTest):
         self.__ensure_test_id_not_none(test_id)
         self.test_id = test_id
 
-    def patch_payload(self, file):
-        with open(file, 'rb') as json_file:
-            payload = json_file.read()
-            if payload is None:
-                print("No payload")
-            else:
-                self.__patch_a_synthetic_test(self.test_id, payload)
-
     def patch_label(self, label):
         """label"""
         payload = {"label": ""}
@@ -4646,8 +4638,6 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
         patch_exclusive_group.add_argument(
-            '-f', '--from-file', type=str, metavar="<filename>", help='load synthetic test payload from file (.json)')
-        patch_exclusive_group.add_argument(
             '--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
         patch_exclusive_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='set bundle')
@@ -5272,8 +5262,6 @@ def main():
             patch_instance.patch_retry_interval(get_args.retry_interval)
         elif get_args.operation is not None:
             patch_instance.patch_ping_operation(get_args.operation)
-        elif get_args.from_file is not None:
-            patch_instance.patch_payload(get_args.from_file)
         elif get_args.script is not None:
             patch_instance.patch_script_from_file(get_args.script)
         elif get_args.description is not None:

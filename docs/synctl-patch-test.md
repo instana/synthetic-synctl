@@ -20,7 +20,6 @@ synctl patch test id [options]
     --retries <int>                    set retries, min is 0 and max is 2
     --retry-interval <int>             set retry-interval, min is 1, max is 10
     --timeout <num>ms|s|m              set timeout, accept <number>(ms|s|m)
-    -f, --from-file <file>             load synthetic test payload from file (.json)
     --custom-properties <key>=<value>  set custom property, should be <key,value> pair
     
     --use-env, -e <name>               use a config hostname
