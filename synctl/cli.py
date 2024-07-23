@@ -4343,6 +4343,24 @@ class Application(Base):
 
         for app in app_list:
             self.__delete_an_application(app)
+    def delete_applications_label_match_regex(self, label_regex=None):
+        delete_app_id_lists = []
+        if label_regex is None:
+            print('no regex')
+        else:
+            prog = re.compile(label_regex)
+
+            for app_res_gen in self.__get_all_application():
+                if "items" in app_res_gen and len(app_res_gen["items"]) > 0:
+                    for i in app_res_gen["items"]:
+                        label_1 = i['label']
+                        match_result1 = prog.match(label_1)
+                        if match_result1 is not None:
+                            print(f"application \"{label_1}\"")
+                            delete_app_id_lists.append(i["id"])
+                            # self.__delete_an_application(i["id"])
+            if len(delete_app_id_lists) > 0 and self.ask_answer("are you sure to delete these applications?"):
+                self.delete_applications(delete_app_id_lists)
 
 
 class Synctl:
@@ -5504,7 +5522,11 @@ def main():
             else:
                 print('no smart alert to delete')
         if get_args.delete_type in (SYN_APPLICATION, SYN_APP):
-            app_instance.delete_applications(get_args.id)
+            if get_args.id is not None and len(get_args.id) > 0:
+                app_instance.delete_applications(get_args.id)
+            elif get_args.match_regex is not None:
+                app_instance.delete_applications_label_match_regex(
+                    label_regex=get_args.match_regex)
 
     else:
         print('unknown command:', get_args.sub_command)
