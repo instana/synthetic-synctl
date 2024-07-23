@@ -4298,6 +4298,51 @@ class Application(Base):
                     app_count += 1
         print(f"total app: {app_count}")
 
+    def __delete_an_application(self, app_id=""):
+        """delete a Synthetic location"""
+        if app_id == "":
+            print("location id should not be empty")
+            return
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+
+        host = self.auth["host"]
+
+        # delete_url = f"{host}/api/synthetics/settings/locations/{app_id}"
+        delete_url = f"{host}/api/application-monitoring/settings/endpoint/{id}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "apiToken %s" % (self.auth["token"])
+        }
+        try:
+            r = requests.delete(delete_url,
+                                headers=headers,
+                                timeout=60,
+                                verify=self.insecure)
+
+            if _status_is_204(r.status_code):
+                print(f'application \"{app_id}\" deleted')
+            elif _status_is_404(r.status_code):
+                print(f"{app_id} not found")
+            elif _status_is_429(r.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                print(f"Fail to delete {app_id}, status code {r.status_code} {r.reason}")
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    def delete_applications(self, app_list):
+        if app_list is None:
+            app_list = []
+
+        if len(app_list) == 0:
+            print("no applications to delete")
+            return
+
+        for app in app_list:
+            self.__delete_an_application(app)
+
 
 class Synctl:
     def __init__(self, args) -> None:
@@ -4771,7 +4816,7 @@ class ParseParameter:
 
     def delete_command_options(self):
         self.parser_delete.add_argument(
-            'delete_type', choices=['location', 'lo', 'test', 'cred', 'alert'], help='specify Synthetic type: location/test/credential/smart alert')
+            'delete_type', choices=['location', 'lo', 'test', 'cred', 'alert', 'application', 'app'], help='specify Synthetic type: location/test/credential/smart alert/application')
         self.parser_delete.add_argument(
             'id', type=str, nargs="*", metavar="<id>", help='Synthetic test id, location id, credential name')
 
@@ -5457,6 +5502,8 @@ def main():
                 alert_instance.delete_multiple_smart_alerts(get_args.id)
             else:
                 print('no smart alert to delete')
+        if get_args.delete_type in (SYN_APPLICATION, SYN_APP):
+            app_instance.delete_applications(get_args.id)
 
     else:
         print('unknown command:', get_args.sub_command)
