@@ -4308,7 +4308,8 @@ class Application(Base):
         host = self.auth["host"]
 
         # delete_url = f"{host}/api/synthetics/settings/locations/{app_id}"
-        delete_url = f"{host}/api/application-monitoring/settings/endpoint/{id}"
+        delete_url = f"{host}/api/application-monitoring/settings/application/{app_id}"
+
         headers = {
             "Content-Type": "application/json",
             "Authorization": "apiToken %s" % (self.auth["token"])
