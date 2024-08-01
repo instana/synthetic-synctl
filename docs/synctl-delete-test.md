@@ -10,6 +10,7 @@ synctl delete test [id...] [options]
 ## Options
 ``` 
     -h, --help            show this help message and exit
+    --verify-tls          verify tls certificate
 
     --match-regex <regex> use a regex to match synthetic label
     --match-location <id> delete tests match this location id

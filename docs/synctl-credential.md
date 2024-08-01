@@ -1,5 +1,12 @@
 # Manage Credentials
 
+Manage Synthetic credentials.
+
+## Options
+```
+    -h, --help            show this help message and exit
+    --verify-tls          verify tls certificate
+```
 ### Display all credentials
 ```
 synctl get cred

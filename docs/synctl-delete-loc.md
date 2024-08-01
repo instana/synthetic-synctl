@@ -6,6 +6,11 @@ Delete Synthetic location.
 ```
 synctl delete location <location-id>
 ```
+## Options
+```
+    -h, --help            show this help message and exit
+    --verify-tls          verify tls certificate
+```
 
 ## Examples
 

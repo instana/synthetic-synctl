@@ -9,9 +9,12 @@ synctl get result [id] [options]
 ## Options
 ```
     -h, --help               show this help message and exit
+    --verify-tls             verify tls certificate
+
     --test                   Synthetic test id
     --window-size <window>   set synthetic result window size, support [1,60]m, [1-24]h
     --har                    save HAR to local
+
     --use-env, -e <name>     use a specified config
     --host <host>            set hostname
     --token <token>          set token

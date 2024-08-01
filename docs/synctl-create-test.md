@@ -11,6 +11,8 @@ synctl create test [options]
 ### Common options
 ```
     -h, --help                          show this help message and exit
+    --verify-tls                        verify tls certificate
+
 
     -t <int>, --type <int>              Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple, 5 SSLCertificate
     --location id [id ...]              location id, support multiple locations id

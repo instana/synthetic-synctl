@@ -6,6 +6,11 @@ Delete Synthetic smart alert.
 ```
 synctl delete alert [id...] 
 ```
+## Options
+```
+    -h, --help            show this help message and exit
+    --verify-tls          verify tls certificate
+```
 
 ## Examples
 

@@ -14,6 +14,8 @@ commands:
 
 options:
   -h, --help            show this help message and exit
+  --verify-tls           verify tls certificate
+  
   --name-filter <app>   filter application by name
 ```
 
