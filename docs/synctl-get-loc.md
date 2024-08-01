@@ -10,6 +10,7 @@ synctl get location|lo [id] [options]
 ## Options
 ```
     -h, --help            show this help message and exit
+    --verify-tls          verify tls certificate
 
     --show-details        output location details to console
 ```

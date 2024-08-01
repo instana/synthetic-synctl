@@ -9,6 +9,7 @@ synctl get test [id] [options]
 ## Options
 ```
     -h, --help              show this help message and exit
+    --verify-tls            verify tls certificate
 
     --type, -t <int>        Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction, 5 SSLCertificate
     --window-size <window>  set synthetic result window size, support [1,60]m, [1-24]h

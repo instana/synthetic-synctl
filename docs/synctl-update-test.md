@@ -12,6 +12,7 @@ synctl update test <id> [options]
 ### Common options
 ```
     -h, --help                         show this help message and exit
+    --verify-tls                       verify tls certificate
 
     --active <boolean>                 set active
     --frequency <int>                  set frequency

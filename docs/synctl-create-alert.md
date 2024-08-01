@@ -10,6 +10,7 @@ synctl create alert [options]
 ## Options
 ```
     -h, --help                        show this help message and exit
+    --verify-tls                      verify tls certificate
 
     --test id [id ...]                Synthetic test id, support multiple Synthetic tests id
     --name <string>                   friendly name of the Smart Alerts

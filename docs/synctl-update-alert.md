@@ -8,6 +8,7 @@ synctl update alert <id> [options]
 ## Options
 ```
     -h, --help                          show this help message and exit
+    --verify-tls                        verify tls certificate
 
     --from-file,-f <file-name>          json payload
     --test id [id ...]                  synthetic-test id, support multiple synthetic tests id

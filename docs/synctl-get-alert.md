@@ -11,6 +11,8 @@ synctl get alert [id] [options]
 ## Options
 ```
     -h, --help             show this help message and exit
+    --verify-tls           verify tls certificate
+    
     --show-details         output alert details to terminal
     --show-json            output alert json to terminal
 

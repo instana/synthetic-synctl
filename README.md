@@ -44,7 +44,7 @@ pip3 install --upgrade synctl==<version>
 
 **Incompatible Options:**
 - Option `--from-json` removed: Use the `-f, --from-file` option instead. The `-f, --from-file` option reads synthetic test payload from `.json` files.
-- Option `--bundle-entry-file` replaces `entry-file`: `--bundle-entry-file` option is now used to set entry file name of a bundle test.
+- Option `--bundle-entry-file` replaces `--entry-file`: `--bundle-entry-file` option is now used to set entry file name of a bundle test.
 - Option `--script` added: `--script` options reads different files according to their suffix, such as `.js`and `.side`.
 # Configuration
 
@@ -103,7 +103,6 @@ Usage: synctl [--verify-tls] <command> [options]
 Options:
   -h, --help            show this help message and exit
   --version, -v         show version
-  --verify-tls          verify tls certificate
 
 Commands:
     config              manage configuration file
@@ -140,7 +139,7 @@ Synthetic smart alert management:
 - [synctl update alert](docs/synctl-update-alert.md) - Update properties of Smart Alert.
 - [synctl delete alert](docs/synctl-delete-alert.md) - Delete smart alert.
 
-Synthetic credentials management:
+Synthetic credential management:
 - [synctl get/create/update/delete cred](docs/synctl-credential.md) - Manage credentials.
 
 Others:
