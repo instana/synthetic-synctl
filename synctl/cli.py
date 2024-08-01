@@ -105,7 +105,6 @@ def general_helper() -> None:
 Options:
     -h, --help          show this help message and exit
     --version, -v       show version
-    --verify-tls        verify tls certificate
 
 Commands:
     config              manage configuration file
