@@ -4938,13 +4938,7 @@ def main():
                 auth_instance.remove_an_item_from_config(get_args.env)
 
     elif COMMAND_GET == get_args.sub_command:
-        if get_args.verify_tls is not None:
-            syn_instance.set_insecure(get_args.verify_tls)
-            alert_instance.set_insecure(get_args.verify_tls)
-            cred_instance.set_insecure(get_args.verify_tls)
-            pop_instance.set_insecure(get_args.verify_tls)
-            app_instance.set_insecure(get_args.verify_tls)
-
+        print(get_args)
         if get_args.op_type == SYN_TEST:
             # synctl_instanace.synctl_get()
             # deal test
@@ -5060,10 +5054,6 @@ def main():
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
             pop_estimate.print_estimated_cost()
     elif COMMAND_CREATE == get_args.sub_command:
-        if get_args.verify_tls is not None:
-            syn_instance.set_insecure(get_args.verify_tls)
-            alert_instance.set_insecure(get_args.verify_tls)
-            cred_instance.set_insecure(get_args.verify_tls)
 
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
@@ -5265,8 +5255,6 @@ def main():
             else:
                 syn_instance.exit_synctl(ERROR_CODE, '-t/--type is required to create synthetic test')
     elif COMMAND_PATCH == get_args.sub_command:
-        if get_args.verify_tls is not None:
-            patch_instance.set_insecure(get_args.verify_tls)
         if get_args.id is not None:
             patch_instance.set_test_id(get_args.id)
         if get_args.active is not None:
@@ -5329,12 +5317,6 @@ def main():
         elif get_args.remaining_days_check is not None:
             patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days_check)
     elif COMMAND_UPDATE == get_args.sub_command:
-        if get_args.verify_tls is not None:
-            syn_instance.set_insecure(get_args.verify_tls)
-            alert_instance.set_insecure(get_args.verify_tls)
-            cred_instance.set_insecure(get_args.verify_tls)
-            update_instance.set_insecure(get_args.verify_tls)
-            update_alert.set_insecure(get_args.verify_tls)
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
             update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
@@ -5456,11 +5438,6 @@ def main():
             cred_instance.set_cred_payload(payload=cred_payload.get_json())
             cred_instance.update_a_credential(get_args.id)
     elif COMMAND_DELETE == get_args.sub_command:
-        if get_args.verify_tls is not None:
-            syn_instance.set_insecure(get_args.verify_tls)
-            alert_instance.set_insecure(get_args.verify_tls)
-            cred_instance.set_insecure(get_args.verify_tls)
-            pop_instance.set_insecure(get_args.verify_tls)
         if get_args.delete_type == SYN_TEST:
             if get_args.id is not None and len(get_args.id) > 0:
                 syn_instance.delete_multiple_synthetic_tests(
