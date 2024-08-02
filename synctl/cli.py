@@ -4938,7 +4938,6 @@ def main():
                 auth_instance.remove_an_item_from_config(get_args.env)
 
     elif COMMAND_GET == get_args.sub_command:
-        print(get_args)
         if get_args.op_type == SYN_TEST:
             # synctl_instanace.synctl_get()
             # deal test
