@@ -100,7 +100,7 @@ def show_version():
 
 
 def general_helper() -> None:
-    m = """Usage: synctl [--verify-tls] <command> [options]
+    m = """Usage: synctl <command> [options]
 
 Options:
     -h, --help          show this help message and exit
@@ -4383,8 +4383,6 @@ class ParseParameter:
     def global_options(self):
         self.parser.add_argument(
             '--version', '-v', action="store_true", default=True, help="show version")
-        self.parser.add_argument(
-            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
 
     def config_command_options(self):
         self.parser_config.add_argument(
@@ -4401,6 +4399,8 @@ class ParseParameter:
             '--default', action="store_true", help='set as default')
 
     def create_command_options(self):
+        self.parser_create.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_create.add_argument(
             'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
@@ -4526,6 +4526,8 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
+        self.parser_get.add_argument(
             'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'size', 'pop-cost', 'cost'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
@@ -4579,6 +4581,8 @@ class ParseParameter:
             '--token', type=str,  metavar="<token>", help='set token')
 
     def patch_command_options(self):
+        self.parser_patch.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_patch.add_argument(
             'syn_type', type=str, choices=["test"], help="Synthetic type, only test support")
 
@@ -4660,6 +4664,8 @@ class ParseParameter:
             '--token', type=str, metavar="<token>", help='set token')
 
     def update_command_options(self):
+        self.parser_update.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_update.add_argument(
             'syn_type', type=str, choices=["test", "alert", "cred"], help="Synthetic type/ smart alert/ credential")
         self.parser_update.add_argument(
@@ -4769,6 +4775,8 @@ class ParseParameter:
             '--token', type=str, metavar="<token>", help='set token')
 
     def delete_command_options(self):
+        self.parser_delete.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_delete.add_argument(
             'delete_type', choices=['location', 'lo', 'test', 'cred', 'alert'], help='specify Synthetic type: location/test/credential/smart alert')
         self.parser_delete.add_argument(
@@ -4930,7 +4938,6 @@ def main():
                 auth_instance.remove_an_item_from_config(get_args.env)
 
     elif COMMAND_GET == get_args.sub_command:
-
         if get_args.op_type == SYN_TEST:
             # synctl_instanace.synctl_get()
             # deal test
@@ -5046,6 +5053,7 @@ def main():
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
             pop_estimate.print_estimated_cost()
     elif COMMAND_CREATE == get_args.sub_command:
+
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
             if get_args.key is not None:
