@@ -4854,17 +4854,6 @@ def main():
     app_instance = Application()
 
 
-    # set --verify-tls
-    if get_args.verify_tls is not None:
-        syn_instance.set_insecure(get_args.verify_tls)
-        alert_instance.set_insecure(get_args.verify_tls)
-        cred_instance.set_insecure(get_args.verify_tls)
-        patch_instance.set_insecure(get_args.verify_tls)
-        update_instance.set_insecure(get_args.verify_tls)
-        update_alert.set_insecure(get_args.verify_tls)
-        pop_instance.set_insecure(get_args.verify_tls)
-        app_instance.set_insecure(get_args.verify_tls)
-
     # both host and token are required when using in command line
     if get_args.host is not None and get_args.token is not None:
         syn_instance.set_host_token(
@@ -4898,6 +4887,17 @@ def main():
             update_alert.set_auth(auth)
             summary_instance.set_auth(auth)
             app_instance.set_auth(auth)
+
+            # set --verify-tls
+            if get_args.verify_tls is not None :
+                syn_instance.set_insecure(get_args.verify_tls)
+                alert_instance.set_insecure(get_args.verify_tls)
+                cred_instance.set_insecure(get_args.verify_tls)
+                patch_instance.set_insecure(get_args.verify_tls)
+                update_instance.set_insecure(get_args.verify_tls)
+                update_alert.set_insecure(get_args.verify_tls)
+                pop_instance.set_insecure(get_args.verify_tls)
+                app_instance.set_insecure(get_args.verify_tls)
 
     if COMMAND_CONFIG == get_args.sub_command:
         if get_args.config_type == "list":
