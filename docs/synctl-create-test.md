@@ -19,7 +19,9 @@ synctl create test [options]
     --label <string>                    friendly name of the Synthetic test
     --description, -d <string>          the description of Synthetic test
     --frequency <int>                   the range is from 1 to 120 minute, default is 15
-    --app-id, --application-id <id>     application id
+    --apps, --applications [id ...]     application id, support multiple applications
+    --websites [id ...]                 website id, support multiple websites
+    --mobile-apps [id ...]              mobile application id, support multiple mobile applications
     --retries <int>                     retry times, value is from [0, 2]
     --retry-interval <int>              retry interval, range is [1, 10]
     --timeout <num>ms|s|m               set timeout, accept <number>(ms|s|m)
@@ -107,7 +109,7 @@ synctl create test -t 0 \
     --url <url> \
     --location "$LOCATION" \
     --frequency 5 \
-    --app-id "$APPID" \
+    --apps "$APPID" \
     --operation GET \
     --headers '{"content-type":"application/json"}' \
     --retries 2 \

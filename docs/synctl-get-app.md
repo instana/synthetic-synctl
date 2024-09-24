@@ -35,7 +35,7 @@ synctl get app --name-filter <patten>
 
 ### Create Synthetic test with application id
 ```
-synctl create test --app-id <application-id> -t <type>...
+synctl create test --apps "$APPLICATION1" "$APPLICATION2" "$APPLICATION3" ... -t <type>...
 ```
 
 
