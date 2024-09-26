@@ -3360,6 +3360,20 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.exit_synctl(ERROR_CODE, "application id should not be none")
 
+    def update_websites(self, website):
+        """update websites"""
+        if website is not None:
+            self.update_config["websites"] = website
+        else:
+            self.exit_synctl(ERROR_CODE, "application id should not be none")
+
+    def update_mobile_app(self, mobile_app):
+        """update mobile applications"""
+        if mobile_app is not None:
+            self.update_config["mobileApps"] = mobile_app
+        else:
+            self.exit_synctl(ERROR_CODE, "application id should not be none")
+
     def update_expect_status(self, expect_status):
         """update expect status"""
         if expect_status is not None:
@@ -4718,6 +4732,11 @@ class ParseParameter:
             '--custom-properties', type=str, metavar="<string>", help="set custom property of a test")
         update_group.add_argument(
             '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+        update_group.add_argument(
+            '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
+        update_group.add_argument(
+            '--mobile-apps', type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
+
 
         # API Simple
         update_group.add_argument(
@@ -5392,6 +5411,10 @@ def main():
                     syn_update_instance.update_follow_redirect(get_args.follow_redirect)
                 if get_args.app_id is not None:
                     syn_update_instance.update_application_id(get_args.app_id)
+                if get_args.websites is not None:
+                    syn_update_instance.update_websites(get_args.websites)
+                if get_args.mobile_apps is not None:
+                    syn_update_instance.update_mobile_app(get_args.mobile_apps)
                 if get_args.expect_status is not None:
                     syn_update_instance.update_expect_status(get_args.expect_status)
                 if get_args.allow_insecure is not None:
