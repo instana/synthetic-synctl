@@ -5270,6 +5270,7 @@ def main():
                 if get_args.frequency is not None:
                     payload.set_frequency(get_args.type, get_args.frequency)
                 if get_args.apps is not None:
+                    print("Warning: --app-id/--application-id will be deprecated soon. Use --apps/--applications")
                     payload.set_application_id(get_args.apps)
                 if get_args.websites is not None:
                     payload.set_websites(get_args.websites)
@@ -5409,8 +5410,9 @@ def main():
                     syn_update_instance.update_url(get_args.url)
                 if get_args.follow_redirect is not None:
                     syn_update_instance.update_follow_redirect(get_args.follow_redirect)
-                if get_args.app_id is not None:
-                    syn_update_instance.update_application_id(get_args.app_id)
+                if get_args.apps is not None:
+                    print("Warning: --app-id/--application-id will be deprecated soon. Use --apps/--applications")
+                    syn_update_instance.update_application_id(get_args.apps)
                 if get_args.websites is not None:
                     syn_update_instance.update_websites(get_args.websites)
                 if get_args.mobile_apps is not None:
