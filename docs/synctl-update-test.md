@@ -25,6 +25,8 @@ synctl update test <id> [options]
     -f, --from-file <file>             load synthetic test payload from file (.json)
     --custom-properties <key>=<value>  set custom property, should be <key,value> pair
     --app-id, --application-id <id>    set application id
+    --websites <id> [<id> ...]         set websites
+    --mobile-apps <id> [<id> ...]      set mobile appliactions
     
     --use-env, -e <name>               use a config hostname
     --host <host>                      set hostname
