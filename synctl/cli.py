@@ -4454,7 +4454,7 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
         self.parser_create.add_argument(
-            '--apps', '--applications', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
+            '--apps', '--applications', '--app-id', '--application-id', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
         self.parser_create.add_argument(
             '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
         self.parser_create.add_argument(
@@ -4731,7 +4731,7 @@ class ParseParameter:
         update_group.add_argument(
             '--custom-properties', type=str, metavar="<string>", help="set custom property of a test")
         update_group.add_argument(
-            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+            '--apps', '--applications', '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
         update_group.add_argument(
             '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
         update_group.add_argument(

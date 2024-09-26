@@ -19,7 +19,8 @@ synctl create test [options]
     --label <string>                    friendly name of the Synthetic test
     --description, -d <string>          the description of Synthetic test
     --frequency <int>                   the range is from 1 to 120 minute, default is 15
-    --apps, --applications [id ...]     application id, support multiple applications
+    --app-id, --application-id <id>     set application id
+    --apps, --applications [id ...]     support multiple applications
     --websites [id ...]                 website id, support multiple websites
     --mobile-apps [id ...]              mobile application id, support multiple mobile applications
     --retries <int>                     retry times, value is from [0, 2]
