@@ -1138,10 +1138,26 @@ class SyntheticConfiguration(Base):
             if bundle_scripts is None or bundle_scripts == "":
                 self.exit_synctl(ERROR_CODE, "Error: bundle script cannot be empty")
 
-    def set_application_id(self, application_id: str):
+    def set_application_id(self, applications: list):
         """set application id"""
-        if application_id is not None:
-            self.syn_test_config["applicationId"] = application_id
+        if applications is None:
+            applications = []
+        if len(applications) > 0:
+            self.syn_test_config["applications"] = applications
+
+    def set_websites(self, websites: list):
+        """set website application"""
+        if websites is None:
+            websites = []
+        if len(websites) > 0:
+            self.syn_test_config["websites"] = websites
+
+    def set_mobile_apps(self, mobile_apps: list):
+        """set mobile app"""
+        if mobile_apps is None:
+            mobile_apps = []
+        if len(mobile_apps) > 0:
+            self.syn_test_config["mobileApps"] = mobile_apps
 
     def set_label(self, label: str = "default-test-name") -> None:
         """set label"""
@@ -3344,6 +3360,20 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.exit_synctl(ERROR_CODE, "application id should not be none")
 
+    def update_websites(self, website):
+        """update websites"""
+        if website is not None:
+            self.update_config["websites"] = website
+        else:
+            self.exit_synctl(ERROR_CODE, "application id should not be none")
+
+    def update_mobile_app(self, mobile_app):
+        """update mobile applications"""
+        if mobile_app is not None:
+            self.update_config["mobileApps"] = mobile_app
+        else:
+            self.exit_synctl(ERROR_CODE, "application id should not be none")
+
     def update_expect_status(self, expect_status):
         """update expect status"""
         if expect_status is not None:
@@ -4424,7 +4454,11 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
         self.parser_create.add_argument(
-            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+            '--apps', '--applications', '--app-id', '--application-id', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
+        self.parser_create.add_argument(
+            '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
+        self.parser_create.add_argument(
+            '--mobile-apps', type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
         # [0, 2]
         self.parser_create.add_argument(
             '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
@@ -4697,7 +4731,12 @@ class ParseParameter:
         update_group.add_argument(
             '--custom-properties', type=str, metavar="<string>", help="set custom property of a test")
         update_group.add_argument(
-            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+            '--apps', '--applications', '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+        update_group.add_argument(
+            '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
+        update_group.add_argument(
+            '--mobile-apps', type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
+
 
         # API Simple
         update_group.add_argument(
@@ -5230,8 +5269,13 @@ def main():
                     payload.set_description(get_args.description)
                 if get_args.frequency is not None:
                     payload.set_frequency(get_args.type, get_args.frequency)
-                if get_args.app_id is not None:
-                    payload.set_application_id(get_args.app_id)
+                if get_args.apps is not None:
+                    print("Warning: --app-id/--application-id will be deprecated soon. Use --apps/--applications")
+                    payload.set_application_id(get_args.apps)
+                if get_args.websites is not None:
+                    payload.set_websites(get_args.websites)
+                if get_args.mobile_apps is not None:
+                    payload.set_mobile_apps(get_args.mobile_apps)
                 if get_args.timeout is not None:
                     payload.set_timeout(get_args.timeout)
 
@@ -5366,8 +5410,13 @@ def main():
                     syn_update_instance.update_url(get_args.url)
                 if get_args.follow_redirect is not None:
                     syn_update_instance.update_follow_redirect(get_args.follow_redirect)
-                if get_args.app_id is not None:
-                    syn_update_instance.update_application_id(get_args.app_id)
+                if get_args.apps is not None:
+                    print("Warning: --app-id/--application-id will be deprecated soon. Use --apps/--applications")
+                    syn_update_instance.update_application_id(get_args.apps)
+                if get_args.websites is not None:
+                    syn_update_instance.update_websites(get_args.websites)
+                if get_args.mobile_apps is not None:
+                    syn_update_instance.update_mobile_app(get_args.mobile_apps)
                 if get_args.expect_status is not None:
                     syn_update_instance.update_expect_status(get_args.expect_status)
                 if get_args.allow_insecure is not None:
