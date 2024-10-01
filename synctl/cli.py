@@ -1604,6 +1604,53 @@ class SyntheticCredential(Base):
         else:
             print("Credential already exists")
 
+    def patch_a_credential(self, cred, applications: list):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        if cred is None:
+            print("credential should not be empty")
+            return
+
+        patch_url = f"{host}/api/synthetics/settings/credentials/associations/{cred}"
+
+        payload = {"applications": []}
+        if applications is None:
+            print("No applications")
+            return
+        else:
+            payload["applications"] = applications
+
+        if payload is None:
+            self.exit_synctl(ERROR_CODE, "Patch Error:data cannot be empty")
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        try:
+            patch_result = requests.patch(patch_url,
+                                          headers=headers,
+                                          data=json.dumps(payload),
+                                          timeout=60,
+                                          verify=self.insecure)
+
+            if _status_is_200(patch_result.status_code):
+                print(f"{cred} updated")
+            elif _status_is_400(patch_result.status_code):
+                print(f'Patch Error: {patch_result}', patch_result.json())
+            elif _status_is_429(patch_result.status_code):
+                print(TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'patch test {cred} failed, status code: {patch_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+
     def print_credentials(self, credentials):
         sorted_cred = sorted(credentials, key=str.lower)
         for cred in sorted_cred:
@@ -4625,7 +4672,7 @@ class ParseParameter:
         self.parser_patch.add_argument(
             "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_patch.add_argument(
-            'syn_type', type=str, choices=["test"], help="Synthetic type, only test support")
+            'syn_type', type=str, choices=["test", "cred"], help="specify test/cred/")
 
         self.parser_patch.add_argument(
             'id', type=str, help="Synthetic test id")
@@ -4695,6 +4742,10 @@ class ParseParameter:
             '--port', type=int, help='set port')
         patch_exclusive_group.add_argument(
             '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
+
+        # Patch cred
+        patch_exclusive_group.add_argument(
+            '--applications', '--apps', nargs="+", metavar="<id>", help="set application")
 
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
@@ -4809,7 +4860,7 @@ class ParseParameter:
             '--enable', action='store_true', help='enable smart alert')
         update_exclusive_group.add_argument(
             '--disable', action='store_true', help='disable smart alert')
-        #update cred
+        # update cred
         update_group.add_argument(
             '--value', type=str, metavar="<value>", help='set credential value')
 
@@ -5368,6 +5419,9 @@ def main():
             patch_instance.patch_port(get_args.id, get_args.port)
         elif get_args.remaining_days_check is not None:
             patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days_check)
+        if get_args.syn_type == SYN_CRED:
+            if get_args.applications is not None:
+                cred_instance.patch_a_credential(get_args.id, get_args.applications)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
