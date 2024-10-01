@@ -1408,6 +1408,9 @@ class CredentialConfiguration(Base):
     def set_credential_value(self, value):
         self.credential_config["credentialValue"] = value
 
+    def set_credential_applications(self, applications: list):
+        self.credential_config["applications"] = applications
+
     def get_json(self):
         """return payload as json"""
         if len(self.credential_config["credentialName"]) == 0:
@@ -5103,6 +5106,8 @@ def main():
                 cred_payload.set_credential_name(get_args.key)
             if get_args.value is not None:
                 cred_payload.set_credential_value(get_args.value)
+            if get_args.apps is not None:
+                cred_payload.set_credential_applications(get_args.apps)
 
             cred_instance.set_cred_payload(payload=cred_payload.get_json())
             cred_instance.create_credential()
