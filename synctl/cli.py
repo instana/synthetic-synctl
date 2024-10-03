@@ -1515,6 +1515,36 @@ class SyntheticCredential(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
+    def retrieve_a_credential(self, cred):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/synthetics/settings/credentials/associations/{cred}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        try:
+            cred_result = requests.get(retrieve_url,
+                                       headers=headers,
+                                       timeout=60,
+                                       verify=self.insecure)
+
+            if _status_is_200(cred_result.status_code):
+                if len(cred_result.content) == 0:
+                    return {}
+                else:
+                    data = json.loads(cred_result.content.decode())
+                    return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
     def delete_a_credential(self, cred):
         """Delete a credential"""
         self.check_host_and_token(self.auth["host"], self.auth["token"])
@@ -1695,6 +1725,15 @@ class SyntheticCredential(Base):
             for cred in sorted_cred:
                 print(cred)
             print(f"Total: {len(credentials)}")
+
+    def print_a_credential(self, credential):
+        """show a Synthetic credential details data"""
+        print(self.fill_space("Name".upper(), 30), "Value".upper())
+        for key, value in credential.items():
+                if key == 'createdAt' or key == 'modifiedAt':
+                    print(self.fill_space(key, 30), self.format_time(value))
+                else:
+                    print(self.fill_space(key, 30), value)
 
 
 class SmartAlertConfiguration(Base):
@@ -5135,12 +5174,16 @@ def main():
                 app_instance.set_name_filter(get_args.name_filter)
             app_instance.print_app_list()
         elif get_args.op_type == SYN_CRED:
-            if get_args.show_details is not None:
-                cred_details = cred_instance.retrieve_credentials(get_args.show_details)
-                cred_instance.print_credentials(cred_details, get_args.show_details)
+            if get_args.id is None:
+                if get_args.show_details is True:
+                    cred_details = cred_instance.retrieve_credentials(get_args.show_details)
+                    cred_instance.print_credentials(cred_details, get_args.show_details)
+                else:
+                    credentials = cred_instance.retrieve_credentials()
+                    cred_instance.print_credentials(credentials)
             else:
-                credentials = cred_instance.retrieve_credentials()
-                cred_instance.print_credentials(credentials)
+                credential = cred_instance.retrieve_a_credential(get_args.id)
+                cred_instance.print_a_credential(credential)
         elif get_args.op_type == SYN_ALERT:
             if get_args.id is None:
                 alerts = alert_instance.retrieve_all_smart_alerts()
