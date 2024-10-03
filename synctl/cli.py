@@ -347,6 +347,16 @@ class Base:
             test_frequency = str(frequency)+"m"
         return test_frequency
 
+    def change_time_format(self, t, return_date_only=False):
+        """format time to YYYY-MM-DD, HH:MM:SS"""
+        date_time = datetime.fromtimestamp(t/1000)
+        if return_date_only == False:
+            formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+        else:
+            formatted_date_time = date_time.strftime("%Y-%m-%d")
+
+        return formatted_date_time
+
     def exit_synctl(self, error_code=-1, message=''):
         """exit synctl"""
         if message != '':
@@ -1473,12 +1483,14 @@ class SyntheticCredential(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def retrieve_credentials(self):
+    def retrieve_credentials(self, show_details=False):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
 
         retrieve_url = f"{host}/api/synthetics/settings/credentials/"
+        if show_details is True:
+            retrieve_url = f"{host}/api/synthetics/settings/credentials/associations"
 
         headers = {
             'Content-Type': 'application/json',
@@ -1650,12 +1662,39 @@ class SyntheticCredential(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
+    def __get_max_cred_length(self, cred_list, max_len=60):
+        label_len = 0
+        if cred_list is not None and isinstance(cred_list, list):
+            for cred in cred_list:
+                if cred is not None and label_len < len(cred["credentialName"]):
+                    label_len = len(cred["credentialName"]) + 5
+        if label_len > 60:
+            return 60
+        else:
+            return label_len if label_len > 10 else 10
 
-    def print_credentials(self, credentials):
-        sorted_cred = sorted(credentials, key=str.lower)
-        for cred in sorted_cred:
-            print(cred)
-        print(f"Total: {len(credentials)}")
+    def print_credentials(self, credentials, show_details=False):
+        if show_details is True:
+            cred_length = self.__get_max_cred_length(credentials)
+            created_length = 30
+            modified_length = 30
+            applications_length = 30
+            print(self.fill_space("Credential Name".upper(), cred_length),
+                  self.fill_space("Created".upper(), created_length),
+                  self.fill_space("Modified".upper(), modified_length),
+                  self.fill_space("Applications".upper(), applications_length))
+            for cred in credentials:
+                applications = cred.get("applications", "N/A")
+
+                print(self.fill_space(str(cred["credentialName"]), cred_length),
+                      self.fill_space(str(self.change_time_format(cred["createdAt"])), created_length),
+                      self.fill_space(str(self.change_time_format(cred["modifiedAt"])), modified_length),
+                      self.fill_space(str(applications), applications_length))
+        else:
+            sorted_cred = sorted(credentials, key=str.lower)
+            for cred in sorted_cred:
+                print(cred)
+            print(f"Total: {len(credentials)}")
 
 
 class SmartAlertConfiguration(Base):
@@ -2347,16 +2386,6 @@ class SyntheticTest(Base):
         else:
             t = f"{time_ms}ms"
         return t
-
-    def change_time_format(self, t, return_date_only=False):
-        """format time to YYYY-MM-DD, HH:MM:SS"""
-        date_time = datetime.fromtimestamp(t/1000)
-        if return_date_only == False:
-            formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
-        else:
-            formatted_date_time = date_time.strftime("%Y-%m-%d")
-
-        return formatted_date_time
 
     def print_result_details(self, result_details, result_list):
         test = self.retrieve_a_synthetic_test(result_details["testid"])
@@ -5106,8 +5135,12 @@ def main():
                 app_instance.set_name_filter(get_args.name_filter)
             app_instance.print_app_list()
         elif get_args.op_type == SYN_CRED:
-            credentials = cred_instance.retrieve_credentials()
-            cred_instance.print_credentials(credentials)
+            if get_args.show_details is not None:
+                cred_details = cred_instance.retrieve_credentials(get_args.show_details)
+                cred_instance.print_credentials(cred_details, get_args.show_details)
+            else:
+                credentials = cred_instance.retrieve_credentials()
+                cred_instance.print_credentials(credentials)
         elif get_args.op_type == SYN_ALERT:
             if get_args.id is None:
                 alerts = alert_instance.retrieve_all_smart_alerts()
