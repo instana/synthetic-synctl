@@ -1734,18 +1734,26 @@ class SyntheticCredential(Base):
             cred_length = self.__get_max_cred_length(credentials)
             created_length = 30
             modified_length = 30
-            applications_length = 30
+            applications_length = 50
+            websites_length = 50
+            mobile_apps_length = 50
             print(self.fill_space("Credential Name".upper(), cred_length),
                   self.fill_space("Created".upper(), created_length),
                   self.fill_space("Modified".upper(), modified_length),
-                  self.fill_space("Applications".upper(), applications_length))
+                  self.fill_space("Applications".upper(), applications_length),
+                  self.fill_space("Websites".upper(), websites_length),
+                  self.fill_space("Mobile Applications".upper(), mobile_apps_length))
             for cred in credentials:
                 applications = cred.get("applications", "N/A")
+                websites = cred.get("websites", "N/A")
+                mobile_apps = cred.get("mobileApps", "N/A")
 
                 print(self.fill_space(str(cred["credentialName"]), cred_length),
                       self.fill_space(str(self.change_time_format(cred["createdAt"])), created_length),
                       self.fill_space(str(self.change_time_format(cred["modifiedAt"])), modified_length),
-                      self.fill_space(str(applications), applications_length))
+                      self.fill_space(str(applications), applications_length),
+                      self.fill_space(str(websites), websites_length),
+                      self.fill_space(str(mobile_apps), mobile_apps_length))
         else:
             sorted_cred = sorted(credentials, key=str.lower)
             for cred in sorted_cred:
