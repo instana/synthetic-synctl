@@ -1421,6 +1421,12 @@ class CredentialConfiguration(Base):
     def set_credential_applications(self, applications: list):
         self.credential_config["applications"] = applications
 
+    def set_credential_websites(self, websites: list):
+        self.credential_config["websites"] = websites
+
+    def set_credential_mobile_apps(self, mobile_apps):
+        self.credential_config["mobileApps"] = mobile_apps
+
     def get_json(self):
         """return payload as json"""
         if len(self.credential_config["credentialName"]) == 0:
@@ -5235,6 +5241,10 @@ def main():
                 cred_payload.set_credential_value(get_args.value)
             if get_args.apps is not None:
                 cred_payload.set_credential_applications(get_args.apps)
+            if get_args.websites is not None:
+                cred_payload.set_credential_websites(get_args.websites)
+            if get_args.mobile_apps is not None:
+                cred_payload.set_credential_mobile_apps(get_args.mobile_apps)
 
             cred_instance.set_cred_payload(payload=cred_payload.get_json())
             cred_instance.create_credential()
