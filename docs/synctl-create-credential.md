@@ -29,7 +29,11 @@ synctl create cred --key <key-name> --value <value>
 synctl create cred --key <key-name> --value <value> --apps "$APPLICATION1" "$APPLICATION2" "$APPLICATION3" ...
 ```
 
-### Create a credential with WEBSITES
+### Create a credential with websites
 ```
 synctl create cred --key <key-name> --value <value> --websites "$WEBSITE1" "$WEBSITE2" ...
+```
+### Create a credential with mobile applications
+```
+synctl create cred --key <key-name> --value <value> --mobile-apps "$MOBILE-APP1" "$MOBILE-APP2" ...
 ```
