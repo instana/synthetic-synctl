@@ -1,4 +1,4 @@
-# synctl create credential
+# synctl create cred
 
 Create Synthetic credential.
 
@@ -14,7 +14,7 @@ synctl create cred [options]
     --verify-tls                                verify tls certificate
 
     --apps, --applications <id>                 set application id
-    --mobile-apps, --mobile-applications <id>   set mobile apllication id
+    --mobile-apps, --mobile-applications <id>   set mobile application id
     --websites <id>                             set websites
 ```
 ## Examples

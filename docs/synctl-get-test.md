@@ -17,6 +17,7 @@ synctl get test [id] [options]
     --show-script           output test script to terminal
     --show-details          output test script details to terminal
     --show-json             output test json to terminal
+    --show-result           output latency and success rate
     --filter <filter>       filter test by application id or location id
 ```
 
@@ -54,6 +55,11 @@ synctl get test --window-size 6h
 ### Show a test details
 ```
 synctl get test <id> --show-details
+```
+
+### Show latency and success rate of synthetic tests
+```
+synctl get test --show-result
 ```
 
 ### Show test configuration in json format

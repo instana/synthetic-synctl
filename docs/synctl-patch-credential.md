@@ -1,4 +1,4 @@
-# synctl patch credential
+# synctl patch cred
 The command `patch` can be used to update selected attributes of a Synthetic credential, only one attribute can be patched each time.
 
 ## Syntax

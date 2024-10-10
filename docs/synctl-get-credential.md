@@ -1,9 +1,9 @@
-# synctl get credential
+# synctl get cred
 List Synthetic credential.
 
 ## Syntax
 ```
-synctl get credential [cred-name] [options]
+synctl get cred [cred-name] [options]
 ```
 
 ## Options
@@ -18,7 +18,12 @@ synctl get credential [cred-name] [options]
 synctl get cred
 ```
 
-### Display a credential details
+### Display all credential details
 ```
 synctl get cred --show-details
+```
+
+### Display a credential details
+```
+synctl get cred <cred-name> --show-details
 ```

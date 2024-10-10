@@ -1,4 +1,4 @@
-# synctl update credential
+# synctl update cred
 
 Update Synthetic credential
 
