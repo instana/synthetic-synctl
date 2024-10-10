@@ -10,28 +10,28 @@ synctl create test [options]
 ## Options
 ### Common options
 ```
-    -h, --help                          show this help message and exit
-    --verify-tls                        verify tls certificate
+    -h, --help                                  show this help message and exit
+    --verify-tls                                verify tls certificate
 
 
-    -t <int>, --type <int>              Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple, 5 SSLCertificate
-    --location id [id ...]              location id, support multiple locations id
-    --label <string>                    friendly name of the Synthetic test
-    --description, -d <string>          the description of Synthetic test
-    --frequency <int>                   the range is from 1 to 120 minute, default is 15
-    --app-id, --application-id <id>     set application id
-    --apps, --applications [id ...]     support multiple applications
-    --websites [id ...]                 website id, support multiple websites
-    --mobile-apps [id ...]              mobile application id, support multiple mobile applications
-    --retries <int>                     retry times, value is from [0, 2]
-    --retry-interval <int>              retry interval, range is [1, 10]
-    --timeout <num>ms|s|m               set timeout, accept <number>(ms|s|m)
-    -f, --from-file <file>              load synthetic test payload from file (.json)
-    --custom-properties <string>        An object with name/value pairs to provide additional information of the Synthetic test
+    -t <int>, --type <int>                      Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple, 5 SSLCertificate
+    --location id [id ...]                      location id, support multiple locations id
+    --label <string>                            friendly name of the Synthetic test
+    --description, -d <string>                  the description of Synthetic test
+    --frequency <int>                           the range is from 1 to 120 minute, default is 15
+    --app-id, --application-id <id>             set application id
+    --apps, --applications [id ...]             support multiple applications
+    --websites [id ...]                         website id, support multiple websites
+    --mobile-apps, mobile-applications [id ...] mobile application id, support multiple mobile applications
+    --retries <int>                             retry times, value is from [0, 2]
+    --retry-interval <int>                      retry interval, range is [1, 10]
+    --timeout <num>ms|s|m                       set timeout, accept <number>(ms|s|m)
+    -f, --from-file <file>                      load synthetic test payload from file (.json)
+    --custom-properties <string>                An object with name/value pairs to provide additional information of the Synthetic test
     
-    --use-env <name>, -e <name>         use a specified configuration
-    --host <host>                       set hostname
-    --token <token>                     set token
+    --use-env <name>, -e <name>                 use a specified configuration
+    --host <host>                               set hostname
+    --token <token>                             set token
 ```
 ### Options for API Simple test
 ```
