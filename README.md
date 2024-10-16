@@ -98,7 +98,7 @@ After export the variables then command can be run without any options.
 # Usage
 
 ```
-Usage: synctl [--verify-tls] <command> [options]
+Usage: synctl <command> [options]
 
 Options:
   -h, --help            show this help message and exit

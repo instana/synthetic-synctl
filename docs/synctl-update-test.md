@@ -11,24 +11,27 @@ synctl update test <id> [options]
 
 ### Common options
 ```
-    -h, --help                         show this help message and exit
-    --verify-tls                       verify tls certificate
+    -h, --help                                         show this help message and exit
+    --verify-tls                                       verify tls certificate
 
-    --active <boolean>                 set active
-    --frequency <int>                  set frequency
-    --location <id> [<id> ...]         set location
-    --description <string>             set description
-    --label <string>                   set label
-    --retries <int>                    set retries, min is 0 and max is 2
-    --retry-interval <int>             set retry-interval, min is 1, max is 10
-    --timeout <num>ms|s|m              set timeout, accept <number>(ms|s|m)
-    -f, --from-file <file>             load synthetic test payload from file (.json)
-    --custom-properties <key>=<value>  set custom property, should be <key,value> pair
-    --app-id, --application-id <id>    set application id
+    --active <boolean>                                 set active
+    --frequency <int>                                  set frequency
+    --location <id> [<id> ...]                         set location
+    --description <string>                             set description
+    --label <string>                                   set label
+    --retries <int>                                    set retries, min is 0 and max is 2
+    --retry-interval <int>                             set retry-interval, min is 1, max is 10
+    --timeout <num>ms|s|m                              set timeout, accept <number>(ms|s|m)
+    -f, --from-file <file>                             load synthetic test payload from file (.json)
+    --custom-properties <key>=<value>                  set custom property, should be <key,value> pair
+    --app-id, --application-id <id>                    set application id
+    --apps, --applications [<id> ...]                  set multiple applications
+    --websites [<id> ...]                              set websites
+    --mobile-apps, --mobile-applications [<id> ...]    set mobile appliactions
     
-    --use-env, -e <name>               use a config hostname
-    --host <host>                      set hostname
-    --token <token>                    set token
+    --use-env, -e <name>                               use a config hostname
+    --host <host>                                      set hostname
+    --token <token>                                    set token
 ```
 
 ### Options for API Simple test

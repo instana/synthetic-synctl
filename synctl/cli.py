@@ -100,12 +100,11 @@ def show_version():
 
 
 def general_helper() -> None:
-    m = """Usage: synctl [--verify-tls] <command> [options]
+    m = """Usage: synctl <command> [options]
 
 Options:
     -h, --help          show this help message and exit
     --version, -v       show version
-    --verify-tls        verify tls certificate
 
 Commands:
     config              manage configuration file
@@ -347,6 +346,16 @@ class Base:
         else:
             test_frequency = str(frequency)+"m"
         return test_frequency
+
+    def change_time_format(self, t, return_date_only=False):
+        """format time to YYYY-MM-DD, HH:MM:SS"""
+        date_time = datetime.fromtimestamp(t/1000)
+        if return_date_only == False:
+            formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+        else:
+            formatted_date_time = date_time.strftime("%Y-%m-%d")
+
+        return formatted_date_time
 
     def exit_synctl(self, error_code=-1, message=''):
         """exit synctl"""
@@ -1139,10 +1148,26 @@ class SyntheticConfiguration(Base):
             if bundle_scripts is None or bundle_scripts == "":
                 self.exit_synctl(ERROR_CODE, "Error: bundle script cannot be empty")
 
-    def set_application_id(self, application_id: str):
+    def set_application_id(self, applications: list):
         """set application id"""
-        if application_id is not None:
-            self.syn_test_config["applicationId"] = application_id
+        if applications is None:
+            applications = []
+        if len(applications) > 0:
+            self.syn_test_config["applications"] = applications
+
+    def set_websites(self, websites: list):
+        """set website application"""
+        if websites is None:
+            websites = []
+        if len(websites) > 0:
+            self.syn_test_config["websites"] = websites
+
+    def set_mobile_apps(self, mobile_apps: list):
+        """set mobile app"""
+        if mobile_apps is None:
+            mobile_apps = []
+        if len(mobile_apps) > 0:
+            self.syn_test_config["mobileApps"] = mobile_apps
 
     def set_label(self, label: str = "default-test-name") -> None:
         """set label"""
@@ -1393,6 +1418,15 @@ class CredentialConfiguration(Base):
     def set_credential_value(self, value):
         self.credential_config["credentialValue"] = value
 
+    def set_credential_applications(self, applications: list):
+        self.credential_config["applications"] = applications
+
+    def set_credential_websites(self, websites: list):
+        self.credential_config["websites"] = websites
+
+    def set_credential_mobile_apps(self, mobile_apps):
+        self.credential_config["mobileApps"] = mobile_apps
+
     def get_json(self):
         """return payload as json"""
         if len(self.credential_config["credentialName"]) == 0:
@@ -1404,15 +1438,17 @@ class CredentialConfiguration(Base):
         return result
 
 class SyntheticCredential(Base):
-
+    
     def __init__(self) -> None:
         Base.__init__(self)
+        self.payload = None
 
     def set_cred_payload(self, payload=None):
         if payload is None:
             print("payload should not be none")
         else:
             self.payload = payload
+
     def create_credential(self):
         """create credential"""
         cred_payload = self.payload
@@ -1453,12 +1489,14 @@ class SyntheticCredential(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def retrieve_credentials(self):
+    def retrieve_credentials(self, show_details=False):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
 
         retrieve_url = f"{host}/api/synthetics/settings/credentials/"
+        if show_details is True:
+            retrieve_url = f"{host}/api/synthetics/settings/credentials/associations"
 
         headers = {
             'Content-Type': 'application/json',
@@ -1471,8 +1509,41 @@ class SyntheticCredential(Base):
                                        verify=self.insecure)
 
             if _status_is_200(cred_result.status_code):
-                data = json.loads(cred_result.content.decode())
-                return data
+                if len(cred_result.content) == 0:
+                    return {}
+                else:
+                    data = json.loads(cred_result.content.decode())
+                    return data
+            else:
+                self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    def retrieve_a_credential(self, cred):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        retrieve_url = f"{host}/api/synthetics/settings/credentials/associations/{cred}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        try:
+            cred_result = requests.get(retrieve_url,
+                                       headers=headers,
+                                       timeout=60,
+                                       verify=self.insecure)
+
+            if _status_is_200(cred_result.status_code):
+                if len(cred_result.content) == 0:
+                    return {}
+                else:
+                    data = json.loads(cred_result.content.decode())
+                    return data
             else:
                 self.exit_synctl(ERROR_CODE, f'get cred failed, status code: {cred_result.status_code}')
         except requests.ConnectTimeout as timeout_error:
@@ -1581,12 +1652,122 @@ class SyntheticCredential(Base):
         else:
             print("Credential already exists")
 
+    def patch_applications(self, cred, applications):
+        payload = {"applications": []}
+        if applications is None:
+            print("No applications")
+            return
+        else:
+            payload["applications"] = applications
+            self.__patch_a_credential(cred, json.dumps(payload))
 
-    def print_credentials(self, credentials):
-        sorted_cred = sorted(credentials, key=str.lower)
-        for cred in sorted_cred:
-            print(cred)
-        print(f"Total: {len(credentials)}")
+    def patch_websites(self, cred, websites):
+        payload = {"websites": []}
+        if websites is None:
+            print("No websites")
+            return
+        else:
+            payload["websites"] = websites
+            self.__patch_a_credential(cred, json.dumps(payload))
+
+    def patch_mobile_apps(self, cred, mobile_apps):
+        payload = {"mobileApps": []}
+        if mobile_apps is None:
+            print("No mobile applications")
+            return
+        else:
+            payload["mobileApps"] = mobile_apps
+            self.__patch_a_credential(cred, json.dumps(payload))
+
+    def __patch_a_credential(self, cred, data):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        if cred is None:
+            print("credential should not be empty")
+            return
+
+        patch_url = f"{host}/api/synthetics/settings/credentials/associations/{cred}"
+
+        if data is None:
+            self.exit_synctl(ERROR_CODE, "Patch Error:data cannot be empty")
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        try:
+            patch_result = requests.patch(patch_url,
+                                          headers=headers,
+                                          data=data,
+                                          timeout=60,
+                                          verify=self.insecure)
+
+            if _status_is_200(patch_result.status_code):
+                print(f"{cred} updated")
+            elif _status_is_400(patch_result.status_code):
+                print(f'Patch Error: {patch_result}', patch_result.json())
+            elif _status_is_429(patch_result.status_code):
+                print(TOO_MANY_REQUEST_ERROR)
+            else:
+                print(
+                    f'patch test {cred} failed, status code: {patch_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    def __get_max_cred_length(self, cred_list, max_len=60):
+        label_len = 0
+        if cred_list is not None and isinstance(cred_list, list):
+            for cred in cred_list:
+                if cred is not None and label_len < len(cred["credentialName"]):
+                    label_len = len(cred["credentialName"]) + 5
+        if label_len > 60:
+            return 60
+        else:
+            return label_len if label_len > 10 else 10
+
+    def print_credentials(self, credentials, show_details=False):
+        if show_details is True:
+            cred_length = self.__get_max_cred_length(credentials)
+            created_length = 30
+            modified_length = 30
+            applications_length = 50
+            websites_length = 50
+            mobile_apps_length = 50
+            print(self.fill_space("Credential Name".upper(), cred_length),
+                  self.fill_space("Created".upper(), created_length),
+                  self.fill_space("Modified".upper(), modified_length),
+                  self.fill_space("Applications".upper(), applications_length),
+                  self.fill_space("Websites".upper(), websites_length),
+                  self.fill_space("Mobile Applications".upper(), mobile_apps_length))
+            for cred in credentials:
+                applications = cred.get("applications", "N/A")
+                websites = cred.get("websites", "N/A")
+                mobile_apps = cred.get("mobileApps", "N/A")
+
+                print(self.fill_space(str(cred["credentialName"]), cred_length),
+                      self.fill_space(str(self.change_time_format(cred["createdAt"])), created_length),
+                      self.fill_space(str(self.change_time_format(cred["modifiedAt"])), modified_length),
+                      self.fill_space(str(applications), applications_length),
+                      self.fill_space(str(websites), websites_length),
+                      self.fill_space(str(mobile_apps), mobile_apps_length))
+        else:
+            sorted_cred = sorted(credentials, key=str.lower)
+            for cred in sorted_cred:
+                print(cred)
+            print(f"Total: {len(credentials)}")
+
+    def print_a_credential(self, credential):
+        """show a Synthetic credential details data"""
+        print(self.fill_space("Name".upper(), 30), "Value".upper())
+        for key, value in credential.items():
+                if key == 'createdAt' or key == 'modifiedAt':
+                    print(self.fill_space(key, 30), self.format_time(value))
+                else:
+                    print(self.fill_space(key, 30), value)
 
 
 class SmartAlertConfiguration(Base):
@@ -2278,16 +2459,6 @@ class SyntheticTest(Base):
         else:
             t = f"{time_ms}ms"
         return t
-
-    def change_time_format(self, t, return_date_only=False):
-        """format time to YYYY-MM-DD, HH:MM:SS"""
-        date_time = datetime.fromtimestamp(t/1000)
-        if return_date_only == False:
-            formatted_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
-        else:
-            formatted_date_time = date_time.strftime("%Y-%m-%d")
-
-        return formatted_date_time
 
     def print_result_details(self, result_details, result_list):
         test = self.retrieve_a_synthetic_test(result_details["testid"])
@@ -3341,6 +3512,20 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.exit_synctl(ERROR_CODE, "application id should not be none")
 
+    def update_websites(self, website):
+        """update websites"""
+        if website is not None:
+            self.update_config["websites"] = website
+        else:
+            self.exit_synctl(ERROR_CODE, "application id should not be none")
+
+    def update_mobile_app(self, mobile_app):
+        """update mobile applications"""
+        if mobile_app is not None:
+            self.update_config["mobileApps"] = mobile_app
+        else:
+            self.exit_synctl(ERROR_CODE, "application id should not be none")
+
     def update_expect_status(self, expect_status):
         """update expect status"""
         if expect_status is not None:
@@ -4384,8 +4569,6 @@ class ParseParameter:
     def global_options(self):
         self.parser.add_argument(
             '--version', '-v', action="store_true", default=True, help="show version")
-        self.parser.add_argument(
-            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
 
     def config_command_options(self):
         self.parser_config.add_argument(
@@ -4402,6 +4585,8 @@ class ParseParameter:
             '--default', action="store_true", help='set as default')
 
     def create_command_options(self):
+        self.parser_create.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_create.add_argument(
             'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
@@ -4421,7 +4606,11 @@ class ParseParameter:
         self.parser_create.add_argument(
             '--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
         self.parser_create.add_argument(
-            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+            '--apps', '--applications', '--app-id', '--application-id', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
+        self.parser_create.add_argument(
+            '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
+        self.parser_create.add_argument(
+            '--mobile-apps', '--mobile-applications' , type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
         # [0, 2]
         self.parser_create.add_argument(
             '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
@@ -4527,6 +4716,8 @@ class ParseParameter:
 
     def get_command_options(self):
         self.parser_get.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
+        self.parser_get.add_argument(
             'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'size', 'pop-cost', 'cost'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
@@ -4581,7 +4772,9 @@ class ParseParameter:
 
     def patch_command_options(self):
         self.parser_patch.add_argument(
-            'syn_type', type=str, choices=["test"], help="Synthetic type, only test support")
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
+        self.parser_patch.add_argument(
+            'syn_type', type=str, choices=["test", "cred"], help="specify test/cred/")
 
         self.parser_patch.add_argument(
             'id', type=str, help="Synthetic test id")
@@ -4652,6 +4845,15 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
 
+        # Patch cred
+        patch_exclusive_group.add_argument(
+            '--applications', '--apps', nargs="+", metavar="<id>", help="set applications")
+        patch_exclusive_group.add_argument(
+            '--websites', nargs="+", metavar="<id>", help="set websites")
+        patch_exclusive_group.add_argument(
+            '--mobile-apps', '--mobile-applications', nargs="+", metavar="<id>", help="set mobile applications")
+
+
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
             '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a config hostname')
@@ -4661,6 +4863,8 @@ class ParseParameter:
             '--token', type=str, metavar="<token>", help='set token')
 
     def update_command_options(self):
+        self.parser_update.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_update.add_argument(
             'syn_type', type=str, choices=["test", "alert", "cred"], help="Synthetic type/ smart alert/ credential")
         self.parser_update.add_argument(
@@ -4688,7 +4892,12 @@ class ParseParameter:
         update_group.add_argument(
             '--custom-properties', type=str, metavar="<string>", help="set custom property of a test")
         update_group.add_argument(
-            '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+            '--apps', '--applications', '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+        update_group.add_argument(
+            '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
+        update_group.add_argument(
+            '--mobile-apps', '--mobile-applications', type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
+
 
         # API Simple
         update_group.add_argument(
@@ -4758,7 +4967,7 @@ class ParseParameter:
             '--enable', action='store_true', help='enable smart alert')
         update_exclusive_group.add_argument(
             '--disable', action='store_true', help='disable smart alert')
-        #update cred
+        # update cred
         update_group.add_argument(
             '--value', type=str, metavar="<value>", help='set credential value')
 
@@ -4770,6 +4979,8 @@ class ParseParameter:
             '--token', type=str, metavar="<token>", help='set token')
 
     def delete_command_options(self):
+        self.parser_delete.add_argument(
+            "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_delete.add_argument(
             'delete_type', choices=['location', 'lo', 'test', 'cred', 'alert'], help='specify Synthetic type: location/test/credential/smart alert')
         self.parser_delete.add_argument(
@@ -4839,24 +5050,13 @@ def main():
     alert_instance = SmartAlert()
     cred_instance = SyntheticCredential()
     patch_instance = PatchSyntheticTest()
-    update_instance = UpdateSyntheticTest()
+    syn_update_instance = UpdateSyntheticTest()
     update_alert = UpdateSmartAlert()
     pop_instance = SyntheticLocation()
 
     summary_instance = SyntheticResult()
     app_instance = Application()
 
-
-    # set --verify-tls
-    if get_args.verify_tls is not None:
-        syn_instance.set_insecure(get_args.verify_tls)
-        alert_instance.set_insecure(get_args.verify_tls)
-        cred_instance.set_insecure(get_args.verify_tls)
-        patch_instance.set_insecure(get_args.verify_tls)
-        update_instance.set_insecure(get_args.verify_tls)
-        update_alert.set_insecure(get_args.verify_tls)
-        pop_instance.set_insecure(get_args.verify_tls)
-        app_instance.set_insecure(get_args.verify_tls)
 
     # both host and token are required when using in command line
     if get_args.host is not None and get_args.token is not None:
@@ -4870,7 +5070,7 @@ def main():
             new_host=get_args.host, new_token=get_args.token)
         patch_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
-        update_instance.set_host_token(
+        syn_update_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         update_alert.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
@@ -4887,10 +5087,21 @@ def main():
             cred_instance.set_auth(auth)
             pop_instance.set_auth(auth)
             patch_instance.set_auth(auth)
-            update_instance.set_auth(auth)
+            syn_update_instance.set_auth(auth)
             update_alert.set_auth(auth)
             summary_instance.set_auth(auth)
             app_instance.set_auth(auth)
+
+            # set --verify-tls
+            if get_args.verify_tls is not None :
+                syn_instance.set_insecure(get_args.verify_tls)
+                alert_instance.set_insecure(get_args.verify_tls)
+                cred_instance.set_insecure(get_args.verify_tls)
+                patch_instance.set_insecure(get_args.verify_tls)
+                syn_update_instance.set_insecure(get_args.verify_tls)
+                update_alert.set_insecure(get_args.verify_tls)
+                pop_instance.set_insecure(get_args.verify_tls)
+                app_instance.set_insecure(get_args.verify_tls)
 
     if COMMAND_CONFIG == get_args.sub_command:
         if get_args.config_type == "list":
@@ -4931,7 +5142,6 @@ def main():
                 auth_instance.remove_an_item_from_config(get_args.env)
 
     elif COMMAND_GET == get_args.sub_command:
-
         if get_args.op_type == SYN_TEST:
             # synctl_instanace.synctl_get()
             # deal test
@@ -5003,8 +5213,16 @@ def main():
                 app_instance.set_name_filter(get_args.name_filter)
             app_instance.print_app_list()
         elif get_args.op_type == SYN_CRED:
-            credentials = cred_instance.retrieve_credentials()
-            cred_instance.print_credentials(credentials)
+            if get_args.id is None:
+                if get_args.show_details is True:
+                    cred_details = cred_instance.retrieve_credentials(get_args.show_details)
+                    cred_instance.print_credentials(cred_details, get_args.show_details)
+                else:
+                    credentials = cred_instance.retrieve_credentials()
+                    cred_instance.print_credentials(credentials)
+            else:
+                credential = cred_instance.retrieve_a_credential(get_args.id)
+                cred_instance.print_a_credential(credential)
         elif get_args.op_type == SYN_ALERT:
             if get_args.id is None:
                 alerts = alert_instance.retrieve_all_smart_alerts()
@@ -5047,12 +5265,19 @@ def main():
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
             pop_estimate.print_estimated_cost()
     elif COMMAND_CREATE == get_args.sub_command:
+
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
             if get_args.key is not None:
                 cred_payload.set_credential_name(get_args.key)
             if get_args.value is not None:
                 cred_payload.set_credential_value(get_args.value)
+            if get_args.apps is not None:
+                cred_payload.set_credential_applications(get_args.apps)
+            if get_args.websites is not None:
+                cred_payload.set_credential_websites(get_args.websites)
+            if get_args.mobile_apps is not None:
+                cred_payload.set_credential_mobile_apps(get_args.mobile_apps)
 
             cred_instance.set_cred_payload(payload=cred_payload.get_json())
             cred_instance.create_credential()
@@ -5219,8 +5444,13 @@ def main():
                     payload.set_description(get_args.description)
                 if get_args.frequency is not None:
                     payload.set_frequency(get_args.type, get_args.frequency)
-                if get_args.app_id is not None:
-                    payload.set_application_id(get_args.app_id)
+                if get_args.apps is not None:
+                    print("Warning: --app-id/--application-id will be deprecated soon. Use --apps/--applications")
+                    payload.set_application_id(get_args.apps)
+                if get_args.websites is not None:
+                    payload.set_websites(get_args.websites)
+                if get_args.mobile_apps is not None:
+                    payload.set_mobile_apps(get_args.mobile_apps)
                 if get_args.timeout is not None:
                     payload.set_timeout(get_args.timeout)
 
@@ -5308,91 +5538,103 @@ def main():
             patch_instance.patch_port(get_args.id, get_args.port)
         elif get_args.remaining_days_check is not None:
             patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days_check)
+        if get_args.syn_type == SYN_CRED:
+            if get_args.applications is not None:
+                cred_instance.patch_applications(get_args.id, get_args.applications)
+            if get_args.websites is not None:
+                cred_instance.patch_websites(get_args.id, get_args.websites)
+            if get_args.mobile_apps is not None:
+                cred_instance.patch_mobile_apps(get_args.id, get_args.mobile_apps)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
-            update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
+            syn_update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
             if get_args.enable is True or get_args.disable is True:
-                update_instance.exit_synctl(ERROR_CODE, "option: --enable/--disable not supported by synthetic tests")
+                syn_update_instance.exit_synctl(ERROR_CODE, "option: --enable/--disable not supported by synthetic tests")
             payload = syn_instance.retrieve_a_synthetic_test(get_args.id)
-            update_instance.set_updated_payload(payload)
+            syn_update_instance.set_updated_payload(payload)
             # accept a full json payload
             if get_args.from_file is not None and get_args.from_file.endswith('.json'):
-                new_payload = update_instance.update_using_file(get_args.from_file)
-                update_instance.update_a_synthetic_test(get_args.id, new_payload)
+                new_payload = syn_update_instance.update_using_file(get_args.from_file)
+                syn_update_instance.update_a_synthetic_test(get_args.id, new_payload)
             else:
                 if get_args.label is not None:
-                    update_instance.update_label(get_args.label)
+                    syn_update_instance.update_label(get_args.label)
                 if get_args.active is not None:
-                    update_instance.update_active(get_args.active)
+                    syn_update_instance.update_active(get_args.active)
                 if get_args.timeout is not None:
-                    update_instance.update_config_timeout(get_args.timeout)
+                    syn_update_instance.update_config_timeout(get_args.timeout)
                 if get_args.retries is not None:
-                    update_instance.update_retries(get_args.retries)
+                    syn_update_instance.update_retries(get_args.retries)
                 if get_args.frequency is not None:
-                    update_instance.update_frequency(get_args.frequency)
+                    syn_update_instance.update_frequency(get_args.frequency)
                 if get_args.retry_interval is not None:
-                    update_instance.update_retry_interval(get_args.retry_interval)
+                    syn_update_instance.update_retry_interval(get_args.retry_interval)
                 if get_args.operation is not None:
-                    update_instance.update_ping_operation(get_args.operation)
+                    syn_update_instance.update_ping_operation(get_args.operation)
                 if get_args.script is not None:
-                    update_instance.update_config_script_file(get_args.script)
+                    syn_update_instance.update_config_script_file(get_args.script)
                 if get_args.description is not None:
-                    update_instance.update_description(get_args.description)
+                    syn_update_instance.update_description(get_args.description)
                 if get_args.record_video is not None:
-                    update_instance.update_record_video(get_args.record_video)
+                    syn_update_instance.update_record_video(get_args.record_video)
                 if get_args.browser is not None:
-                    update_instance.update_browser(get_args.browser)
+                    syn_update_instance.update_browser(get_args.browser)
                 if get_args.location is not None:
-                    update_instance.update_locations(get_args.location)
+                    syn_update_instance.update_locations(get_args.location)
                 if get_args.mark_synthetic_call:
-                    update_instance.update_mark_synthetic_call(get_args.mark_synthetic_call)
+                    syn_update_instance.update_mark_synthetic_call(get_args.mark_synthetic_call)
                 if get_args.bundle is not None:
-                    update_instance.update_bundle(get_args.bundle)
+                    syn_update_instance.update_bundle(get_args.bundle)
                 if get_args.bundle_entry_file is not None:
-                    update_instance.update_bundle_entry_file(get_args.bundle_entry_file)
+                    syn_update_instance.update_bundle_entry_file(get_args.bundle_entry_file)
                 if get_args.url is not None:
-                    update_instance.update_url(get_args.url)
+                    syn_update_instance.update_url(get_args.url)
                 if get_args.follow_redirect is not None:
-                    update_instance.update_follow_redirect(get_args.follow_redirect)
-                if get_args.app_id is not None:
-                    update_instance.update_application_id(get_args.app_id)
+                    syn_update_instance.update_follow_redirect(get_args.follow_redirect)
+                if get_args.apps is not None:
+                    print("Warning: --app-id/--application-id will be deprecated soon. Use --apps/--applications")
+                    syn_update_instance.update_application_id(get_args.apps)
+                if get_args.websites is not None:
+                    syn_update_instance.update_websites(get_args.websites)
+                if get_args.mobile_apps is not None:
+                    syn_update_instance.update_mobile_app(get_args.mobile_apps)
                 if get_args.expect_status is not None:
-                    update_instance.update_expect_status(get_args.expect_status)
+                    syn_update_instance.update_expect_status(get_args.expect_status)
                 if get_args.allow_insecure is not None:
-                    update_instance.update_allow_insecure(get_args.allow_insecure)
+                    syn_update_instance.update_allow_insecure(get_args.allow_insecure)
                 if get_args.expect_json is not None:
-                    update_instance.update_expect_json(get_args.expect_json)
+                    syn_update_instance.update_expect_json(get_args.expect_json)
                 if get_args.expect_not_empty is not None:
-                    update_instance.update_expect_not_empty(get_args.expect_not_empty)
+                    syn_update_instance.update_expect_not_empty(get_args.expect_not_empty)
                 if get_args.expect_exists is not None:
-                    update_instance.update_expect_exists(get_args.expect_exists)
+                    syn_update_instance.update_expect_exists(get_args.expect_exists)
                 if get_args.expect_match is not None:
-                    update_instance.update_expect_match(get_args.expect_match)
+                    syn_update_instance.update_expect_match(get_args.expect_match)
                 if get_args.validation_string is not None:
-                    update_instance.update_validation_string(get_args.validation_string)
+                    syn_update_instance.update_validation_string(get_args.validation_string)
                 if get_args.custom_properties is not None:
                     split_string = get_args.custom_properties.split(',')
-                    update_instance.update_custom_properties(split_string)
+                    syn_update_instance.update_custom_properties(split_string)
                 if get_args.body is not None:
-                    update_instance.update_body(get_args.body)
+                    syn_update_instance.update_body(get_args.body)
                 if get_args.headers is not None:
                     split_string = get_args.headers.split(',')
-                    update_instance.update_headers(split_string)
+                    syn_update_instance.update_headers(split_string)
                 if get_args.hostname is not None:
-                    update_instance.update_host(get_args.hostname)
+                    syn_update_instance.update_host(get_args.hostname)
                 if get_args.port is not None:
-                    update_instance.update_port(get_args.port)
+                    syn_update_instance.update_port(get_args.port)
                 if get_args.remaining_days_check is not None:
-                    update_instance.update_remaining_days(get_args.remaining_days_check)
-                updated_payload = update_instance.get_updated_test_config()
-                update_instance.update_a_synthetic_test(get_args.id, updated_payload)
+                    syn_update_instance.update_remaining_days(get_args.remaining_days_check)
+                updated_payload = syn_update_instance.get_updated_test_config()
+                syn_update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:
             get_args.id = get_args.id.lstrip() if get_args.id.startswith(' ') else get_args.id
             invalid_options = ["label", "active", "frequency", "timeout", "retry_interval", "retries", "operation", "script_file",
                                "location", "record_video", "mark_synthetic_call", "entry_file", "url", "follow_redirect",
                                "expect_status", "validation_string", "bundle", "custom_properties"]
-            update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
+            syn_update_instance.invalid_update_options(invalid_options, update_args, syn_type=get_args.syn_type)
             payload = alert_instance.retrieve_a_smart_alert(get_args.id)
             update_alert.set_updated_payload(payload)
             if get_args.from_file is not None and get_args.from_file.endswith('.json'):
@@ -5401,7 +5643,7 @@ def main():
             elif get_args.enable is True or get_args.disable is True:
                 operation = "enable" if get_args.enable else "disable"
                 invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
-                update_instance.invalid_update_options(invalid_options, update_args, toggle=operation)
+                syn_update_instance.invalid_update_options(invalid_options, update_args, toggle=operation)
                 update_alert.toggle_smart_alert(get_args.id, operation)
             else:
                 if get_args.name is not None:
