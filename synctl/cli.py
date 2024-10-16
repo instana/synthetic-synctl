@@ -1688,7 +1688,7 @@ class SyntheticCredential(Base):
             print("credential should not be empty")
             return
 
-        patch_url = f"{host}/api/synthetics/settings/credentials/associations/{cred}"
+        patch_url = f"{host}/api/synthetics/settings/credentials/{cred}"
 
         if data is None:
             self.exit_synctl(ERROR_CODE, "Patch Error:data cannot be empty")
