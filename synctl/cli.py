@@ -56,6 +56,7 @@ synthetic_type = (
 SYN_TEST = "test"
 SYN_LOCATION = "location"
 SYN_LO = "lo"  # short for location
+SYN_DATACENTER = "datacenter"
 SYN_APPLICATION = "application"
 SYN_APP = "app"  # short for application
 SYN_CRED = "cred"  # short for credentials
@@ -2156,6 +2157,114 @@ class SyntheticLocation(Base):
             print('no location')
         print('total:', len(pop_data))
 
+class SyntheticDatacenter(Base):
+    def __init__(self) -> None:
+        Base.__init__(self)
+
+    def retrieve_synthetic_datacenters(self, datacenter_id=None):
+        host = self.auth["host"]
+        token = self.auth["token"]
+        self.check_host_and_token(host, token)
+        if datacenter_id is None:
+            request_url = f"{host}/api/synthetics/settings/datacenters"
+        else:
+            request_url = f"{host}/api/synthetics/settings/datacenters/{datacenter_id}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        try:
+            retrieve_res = requests.get(request_url,
+                                        headers=headers,
+                                        timeout=60,
+                                        verify=self.insecure)
+
+            if _status_is_200(retrieve_res.status_code):
+                data = retrieve_res.json()
+
+                if isinstance(data, dict):
+                    return [data]
+                else:
+                    return data
+            elif _status_is_429(retrieve_res.status_code):
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            else:
+                self.exit_synctl(ERROR_CODE,
+                                 f"Failed to get datacenters, status code {retrieve_res.status_code}")
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    def print_a_datacenter_details(self, single_datacenter, show_json=False, show_details=False,):
+        if single_datacenter is None or len(single_datacenter) == 0:
+            print("no Synthetic datacenter")
+            return
+        if show_json is True:
+            # print json data
+            print(json.dumps(single_datacenter[0]))
+        elif show_details is True:
+            self.__print_a_datacenter_details(single_datacenter)
+
+    def __print_a_datacenter_details(self, single_datacenter):
+        """show a Synthetic datacenter details data"""
+        if single_datacenter is None or len(single_datacenter) == 0:
+            print("no Synthetic datacenter")
+            return
+        a_single_location = single_datacenter[0]
+        print(self.fill_space("Name".upper(), 30), "value".upper())
+        for key, value in a_single_location.items():
+            if key == 'createdAt' or key == 'modifiedAt' or key == 'observedAt':
+                print(self.fill_space(key, 30), self.format_time(value))
+            else:
+                print(self.fill_space(key, 30), value)
+
+    def __sort_synthetic_datacenter(self, datacenter_list):
+        """sort Synthetic datacenter list by labels"""
+        new_list = sorted(
+            datacenter_list, key=lambda syn: syn["label"] if syn is not None else [])
+        return new_list
+
+    def print_synthetic_datacenter(self, out_list=None):
+        n_list = self.__sort_synthetic_datacenter(out_list)
+        if n_list is not None:
+            self.output_datacenters_to_terminal(n_list)
+
+    def __get_max_label_length(self, datacenter_list, max_len=60):
+        label_len = 0
+        if datacenter_list is not None and isinstance(datacenter_list, list):
+            for syn in datacenter_list:
+                if syn is not None and label_len < len(syn["label"]):
+                    label_len = len(syn["label"])
+        if label_len > 60:
+            return 60
+        else:
+            return label_len if label_len > 10 else 10
+
+    def output_datacenters_to_terminal(self, datacenters: list):
+        id_length = 30
+        max_label_length = self.__get_max_label_length(datacenters)
+        status_length = 15
+        provider_length = 10
+        city_length = 15
+        country_length = 12
+
+        print(self.fill_space("ID".upper(), id_length),
+              self.fill_space("Label".upper(), max_label_length),
+              self.fill_space("status".upper(), status_length),
+              self.fill_space("Provider".upper(), provider_length),
+              self.fill_space("City".upper(), city_length),
+              self.fill_space("Country".upper(), country_length))
+        for d in datacenters:
+            if d is None:
+                continue
+            print(self.fill_space(d["datacenterId"], id_length),
+                  self.fill_space(d['label'], max_label_length),
+                  self.fill_space(d["status"], status_length),
+                  self.fill_space(d["provider"], provider_length),
+                  self.fill_space(d["cityName"], city_length),
+                  self.fill_space(d["countryName"], country_length))
 
 class SyntheticTest(Base):
     """create, query, update and delete Synthetic test"""
@@ -4756,7 +4865,7 @@ class ParseParameter:
         self.parser_get.add_argument(
             "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'size', 'pop-cost', 'cost'],
+            'op_type', choices=['location', 'lo', 'datacenter', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'size', 'pop-cost', 'cost'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -5091,6 +5200,7 @@ def main():
     syn_update_instance = UpdateSyntheticTest()
     update_alert = UpdateSmartAlert()
     pop_instance = SyntheticLocation()
+    datacenter_instance = SyntheticDatacenter()
 
     summary_instance = SyntheticResult()
     app_instance = Application()
@@ -5105,6 +5215,8 @@ def main():
         cred_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         pop_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
+        datacenter_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         patch_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
@@ -5124,6 +5236,7 @@ def main():
             alert_instance.set_auth(auth)
             cred_instance.set_auth(auth)
             pop_instance.set_auth(auth)
+            datacenter_instance.set_auth(auth)
             patch_instance.set_auth(auth)
             syn_update_instance.set_auth(auth)
             update_alert.set_auth(auth)
@@ -5139,6 +5252,7 @@ def main():
                 syn_update_instance.set_insecure(get_args.verify_tls)
                 update_alert.set_insecure(get_args.verify_tls)
                 pop_instance.set_insecure(get_args.verify_tls)
+                datacenter_instance.set_insecure(get_args.verify_tls)
                 app_instance.set_insecure(get_args.verify_tls)
 
     if COMMAND_CONFIG == get_args.sub_command:
@@ -5261,6 +5375,19 @@ def main():
             else:
                 credential = cred_instance.retrieve_a_credential(get_args.id)
                 cred_instance.print_a_credential(credential)
+        elif get_args.op_type == SYN_DATACENTER:
+            if get_args.id is None:
+                pop_datacenter = datacenter_instance.retrieve_synthetic_datacenters()
+            else:
+                pop_datacenter = datacenter_instance.retrieve_synthetic_datacenters(datacenter_id=get_args.id)
+                if get_args.show_details is True:
+                    datacenter_instance.print_a_datacenter_details(pop_datacenter, show_details=True)
+                    datacenter_instance.exit_synctl(ERROR_CODE)
+                elif get_args.show_json is True:
+                    datacenter_instance.print_a_datacenter_details(pop_datacenter, show_json=True)
+                    datacenter_instance.exit_synctl(ERROR_CODE)
+            datacenter_instance.print_synthetic_datacenter(pop_datacenter)
+
         elif get_args.op_type == SYN_ALERT:
             if get_args.id is None:
                 alerts = alert_instance.retrieve_all_smart_alerts()
