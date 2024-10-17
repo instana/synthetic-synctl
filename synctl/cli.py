@@ -1619,48 +1619,6 @@ class SyntheticCredential(Base):
             return
 
         cred_payload = self.payload
-        # if cred_payload["credentialValue"] is not None:
-        #     credential = self.retrieve_credentials()
-        #
-        #     # delete cred
-        #     delete_url = f"{host}/api/synthetics/settings/credentials/{cred}"
-        #     headers = {
-        #         "Content-Type": "application/json",
-        #         "Authorization": f"apiToken {token}"
-        #     }
-        #     if cred in credential:
-        #         delete_res = requests.delete(delete_url,
-        #                                      headers=headers,
-        #                                      timeout=60,
-        #                                      verify=self.insecure)
-        #
-        #         if _status_is_204(delete_res.status_code):
-        #             pass
-        #         else:
-        #             self.exit_synctl(ERROR_CODE, f"Fail to delete {cred}")
-        #     else:
-        #         self.exit_synctl(ERROR_CODE, f"no credential {cred}")
-        #
-        #     # create cred
-        #     create_url = f"{host}/api/synthetics/settings/credentials/"
-        #
-        #     credential = self.retrieve_credentials()
-        #     cred_payload = self.payload
-        #
-        #     if cred not in credential:
-        #         create_cred_res = requests.post(create_url,
-        #                                         headers=headers,
-        #                                         data=cred_payload,
-        #                                         timeout=60,
-        #                                         verify=self.insecure)
-        #         if _status_is_201(create_cred_res.status_code):
-        #             print(f"Credential \"{cred}\" updated")
-        #         else:
-        #             print('Update credential failed, status code:',
-        #                   create_cred_res.status_code, create_cred_res.json())
-        #     else:
-        #         print("Credential already exists")
-        # else:
         put_url = f"{host}/api/synthetics/settings/credentials/{cred}"
 
         headers = {
