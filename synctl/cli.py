@@ -216,7 +216,7 @@ synctl patch test <syn-id> --active false
 # update frequency to 5, run test every 5min
 synctl patch test <id> --frequency 5"""
 
-UPDATE_USAGE = """synctl update {test,alert} <id> [options]
+UPDATE_USAGE = """synctl update {test,alert, cred} <id> [options]
 
 examples:
 # update synthetic test/smart alert using file
@@ -243,6 +243,12 @@ synctl update alert <alert-id> --name "Smart-alert" \\
     --test "$SYNTHETIC_TEST1" "$SYNTHETIC_TEST2" "$SYNTHETIC_TEST3" ... \\
     --violation-count 2 \\
     --severity warning
+    
+# update credential with multiple options
+synctl update cred <cred-name> \\
+    --apps "$APP-ID1" "$APP-ID2" \\
+    --websites "$WEBSITE-ID1" "$WEBSITE-ID2" \\
+    --mobile-apps "$MOBILEAPP-ID1" "$MOBILEAPP-ID2"
 
 # enable/disable a smart alert
 synctl update alert <alert-id> --enable
@@ -1409,7 +1415,10 @@ class CredentialConfiguration(Base):
         Base.__init__(self)
         self.credential_config = {
             "credentialName": "",
-            "credentialValue": ""
+            "credentialValue": "",
+            "applications": [],
+            "mobileApps": [],
+            "websites": []
         }
 
     def set_credential_name(self, key):
@@ -1424,15 +1433,13 @@ class CredentialConfiguration(Base):
     def set_credential_websites(self, websites: list):
         self.credential_config["websites"] = websites
 
-    def set_credential_mobile_apps(self, mobile_apps):
+    def set_credential_mobile_apps(self, mobile_apps: list):
         self.credential_config["mobileApps"] = mobile_apps
 
     def get_json(self):
         """return payload as json"""
         if len(self.credential_config["credentialName"]) == 0:
             self.exit_synctl(ERROR_CODE, "Error: no credential name, set --key <credential-name>")
-        elif len(self.credential_config["credentialValue"]) == 0:
-            self.exit_synctl(ERROR_CODE, "Error: no credential value, set --value <credential-value> ")
 
         result = json.dumps(self.credential_config)
         return result
@@ -1604,53 +1611,84 @@ class SyntheticCredential(Base):
 
     def update_a_credential(self, cred):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
-        if cred is None:
-            print("credential should not be empty")
-            return
-
-        credential = self.retrieve_credentials()
-
         host = self.auth["host"]
         token = self.auth["token"]
+        if cred is None:
+            self.exit_synctl(ERROR_CODE, "credential should not be empty")
+            return
 
-        # delete cred
-        delete_url = f"{host}/api/synthetics/settings/credentials/{cred}"
+        cred_payload = self.payload
+        # if cred_payload["credentialValue"] is not None:
+        #     credential = self.retrieve_credentials()
+        #
+        #     # delete cred
+        #     delete_url = f"{host}/api/synthetics/settings/credentials/{cred}"
+        #     headers = {
+        #         "Content-Type": "application/json",
+        #         "Authorization": f"apiToken {token}"
+        #     }
+        #     if cred in credential:
+        #         delete_res = requests.delete(delete_url,
+        #                                      headers=headers,
+        #                                      timeout=60,
+        #                                      verify=self.insecure)
+        #
+        #         if _status_is_204(delete_res.status_code):
+        #             pass
+        #         else:
+        #             self.exit_synctl(ERROR_CODE, f"Fail to delete {cred}")
+        #     else:
+        #         self.exit_synctl(ERROR_CODE, f"no credential {cred}")
+        #
+        #     # create cred
+        #     create_url = f"{host}/api/synthetics/settings/credentials/"
+        #
+        #     credential = self.retrieve_credentials()
+        #     cred_payload = self.payload
+        #
+        #     if cred not in credential:
+        #         create_cred_res = requests.post(create_url,
+        #                                         headers=headers,
+        #                                         data=cred_payload,
+        #                                         timeout=60,
+        #                                         verify=self.insecure)
+        #         if _status_is_201(create_cred_res.status_code):
+        #             print(f"Credential \"{cred}\" updated")
+        #         else:
+        #             print('Update credential failed, status code:',
+        #                   create_cred_res.status_code, create_cred_res.json())
+        #     else:
+        #         print("Credential already exists")
+        # else:
+        put_url = f"{host}/api/synthetics/settings/credentials/{cred}"
+
         headers = {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             "Authorization": f"apiToken {token}"
         }
-        if cred in credential:
-            delete_res = requests.delete(delete_url,
+        try:
+            update_result = requests.put(put_url,
                                          headers=headers,
+                                         data=cred_payload,
                                          timeout=60,
                                          verify=self.insecure)
 
-            if _status_is_204(delete_res.status_code):
-                pass
+            if _status_is_200(update_result.status_code):
+                print(f"cred {cred} updated")
+            elif _status_is_400(update_result.status_code):
+                print(f'Error: {update_result}', update_result.content)
+            elif _status_is_429(update_result.status_code):
+                print(update_result.content)
+                self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
             else:
-                self.exit_synctl(ERROR_CODE, f"Fail to delete {cred}")
-        else:
-            self.exit_synctl(ERROR_CODE, f"no credential {cred}")
+                print(
+                    f'update cred {cred} failed, status code: {update_result.status_code, }')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-        # create cred
-        create_url = f"{host}/api/synthetics/settings/credentials/"
 
-        credential = self.retrieve_credentials()
-        cred_payload = self.payload
-
-        if cred not in credential:
-            create_cred_res = requests.post(create_url,
-                                            headers=headers,
-                                            data=cred_payload,
-                                            timeout=60,
-                                            verify=self.insecure)
-            if _status_is_201(create_cred_res.status_code):
-                print(f"Credential \"{cred}\" updated")
-            else:
-                print('Update credential failed, status code:',
-                      create_cred_res.status_code)
-        else:
-            print("Credential already exists")
 
     def patch_applications(self, cred, applications):
         payload = {"applications": []}
@@ -4892,7 +4930,7 @@ class ParseParameter:
         update_group.add_argument(
             '--custom-properties', type=str, metavar="<string>", help="set custom property of a test")
         update_group.add_argument(
-            '--apps', '--applications', '--app-id', '--application-id', type=str, metavar="<application-id>", help="application id")
+            '--apps', '--applications', '--app-id', '--application-id',nargs='+', type=str, metavar="<application-id>", help="application id")
         update_group.add_argument(
             '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
         update_group.add_argument(
@@ -5665,9 +5703,16 @@ def main():
                 update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
         if get_args.syn_type == SYN_CRED:
             cred_payload = CredentialConfiguration()
-            if get_args.value is not None:
+            if get_args.id is not None:
                 cred_payload.set_credential_name(get_args.id)
-                cred_payload.set_credential_value(get_args.value)
+                if get_args.value is not None:
+                    cred_payload.set_credential_value(get_args.value)
+                if get_args.apps is not None:
+                    cred_payload.set_credential_applications(get_args.apps)
+                if get_args.websites is not None:
+                    cred_payload.set_credential_websites(get_args.websites)
+                if get_args.mobile_apps is not None:
+                    cred_payload.set_credential_mobile_apps(get_args.mobile_apps)
 
             cred_instance.set_cred_payload(payload=cred_payload.get_json())
             cred_instance.update_a_credential(get_args.id)
