@@ -1676,6 +1676,15 @@ class SyntheticCredential(Base):
             payload["mobileApps"] = mobile_apps
             self.__patch_a_credential(cred, json.dumps(payload))
 
+    def patch_credential_value(self, cred, cred_value):
+        payload = {"credentialValue": ""}
+        if cred_value is None:
+            print("No value for credential")
+            return
+        else:
+            payload["credentialValue"] = cred_value
+            self.__patch_a_credential(cred, json.dumps(payload))
+
     def __patch_a_credential(self, cred, data):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
@@ -4952,6 +4961,8 @@ class ParseParameter:
 
         # Patch cred
         patch_exclusive_group.add_argument(
+            '--value', type=str, metavar="<string>", help='set credential value')
+        patch_exclusive_group.add_argument(
             '--applications', '--apps', nargs="+", metavar="<id>", help="set applications")
         patch_exclusive_group.add_argument(
             '--websites', nargs="+", metavar="<id>", help="set websites")
@@ -5668,6 +5679,8 @@ def main():
                 cred_instance.patch_websites(get_args.id, get_args.websites)
             if get_args.mobile_apps is not None:
                 cred_instance.patch_mobile_apps(get_args.id, get_args.mobile_apps)
+            if get_args.value is not None:
+                cred_instance.patch_credential_value(get_args.id, get_args.value)
     elif COMMAND_UPDATE == get_args.sub_command:
         if get_args.syn_type == SYN_TEST:
             invalid_options = ["name", "severity", "alert_channel", "test", "violation_count"]
