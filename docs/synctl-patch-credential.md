@@ -13,19 +13,27 @@ synctl patch cred <cred-name> [options]
     -h, --help                         show this help message and exit
     --verify-tls                       verify tls certificate
 
+    --value <value>                    set credential value
     --apps, --applications [<id> ...]  set multiple applications
     --websites <id> [<id> ...]         set websites
     --mobile-apps <id> [<id> ...]      set mobile appliactions
 ```
 ## Examples
+### Patch a synthetic credential value
+```
+synctl patch cred swecred --value <value>
+```
+
 ### Patch a Synthetic credential with multiple applications.
 ```
 synctl patch cred <cred-name> --applications/--apps "$APPLICATION1" "$APPLICATION2" "$APPLICATION3" ..."
 ```
+
 ### Patch a Synthetic credential with multiple websites.
 ```
 synctl patch cred <cred-name> --websites "$WEBSITE1" "$WEBSITE2" ...
 ```
+
 ### Patch a Synthetic credential with multiple mobile applications.
 ```
 synctl patch cred <cred-name> --mobile-applications/--mobile-apps "$APPLICATION1" "$APPLICATION2" "$APPLICATION3" ..."

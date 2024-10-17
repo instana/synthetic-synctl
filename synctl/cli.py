@@ -208,14 +208,21 @@ synctl get pop-size
 # Estimate the cost of Instana-hosted Pop
 synctl get pop-cost"""
 
-PATCH_USAGE = """synctl patch test id [options]
+PATCH_USAGE = """synctl patch {test,cred} id [options]
 
 examples:
 # set active to false
 synctl patch test <syn-id> --active false
 
 # update frequency to 5, run test every 5min
-synctl patch test <id> --frequency 5"""
+synctl patch test <id> --frequency 5
+
+# update a credential value
+synctl patch cred <cred-name> --value <value>
+
+# update a credential with multiple applications
+synctl patch cred <cred-name> --apps "$APPLICATION1" "$APPLICATION2" ...
+"""
 
 UPDATE_USAGE = """synctl update {test,alert, cred} <id> [options]
 
