@@ -2246,45 +2246,36 @@ class  SyntheticMetricConfiguration(Base):
         Base.__init__(self)
 
         self.syn_metric_config = {
-            "metrics": {
-                "aggregation": "SUM",
-                "granularity": 1000,
-                "metric": "synthetic.metricsStatus"
-            },
-            "tagFilterExpression": {
-                "type": 'EXPRESSION',
-                "logicalOperator": 'AND',
-                "elements": []
-            },
+            "metrics": [
+                {
+                    "aggregation": "SUM",
+                    "metric": "synthetic.successRate"
+                }
+            ],
             "timeFrame": {
                 "to": 0,
-                "windowSize": window_size
+                "windowSize": 1800000
             },
-            "pagination": {
-                "page": page,
-                "pageSize": page_size
-            }
+            "groups": [
+                {
+                    "groupbyTag": "synthetic.tags",
+                    "groupbyTagEntity": "SOURCE"
+                }
+            ]
         }
 
     def set_group_by_tag(self, tag):
         if tag is not None:
-            self.syn_metric_config["groups"]["groupbyTag"] = tag
+            self.syn_metric_config["groups"] = tag
+        else:
+            self.exit_synctl(ERROR_CODE, "Group by tag should not be None")
 
-    def set_group_by_tag_entity(self, entity):
-        if entity is not None:
-            self.syn_metric_config["groups"]["groupbyTagEntity"] = entity
-
-    def set_group_by_second_level_key(self, key):
-        if key is not None:
-            self.syn_metric_config["groups"]["groupbyTagSecondLevelKey"] = key
-
-    def set_metric_aggregation(self, aggregation):
-        if aggregation is not None:
-            self.syn_metric_config["metrics"]["aggregation"] = aggregation
 
     def set_metrics(self, metric):
         if metric is not None:
-            self.syn_metric_config["metrics"]["metric"] = metric
+            self.syn_metric_config["metrics"] = [metric]
+        else:
+            self.exit_synctl(ERROR_CODE, "Metrics should not be None")
 
     def set_granularity(self, granularity):
         if granularity is not None:
@@ -2297,6 +2288,10 @@ class  SyntheticMetricConfiguration(Base):
         else:
             self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
 
+    def get_json(self):
+        """return payload as json"""
+        return json.dumps(self.syn_metric_config)
+
 
 class SyntheticMetric(Base):
 
@@ -2305,8 +2300,13 @@ class SyntheticMetric(Base):
 
         self.payload = None
 
-    def retreive_synthetic_metrics(self):
-        metric_payload = self.payload
+    def set_metric_payload(self, payload=None):
+        if payload is None:
+            print("payload should not be none")
+        else:
+            self.payload = payload
+
+    def retreive_synthetic_metrics(self, metrics, page=1, page_size=200, window_size=60*60*1000):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
@@ -2336,6 +2336,8 @@ class SyntheticMetric(Base):
         #                       "windowSize": window_size
         #                   }}
 
+        metrics_payload = metrics.get_json()
+        print(metrics_payload)
         retrieve_url = f"{host}/api/synthetics/metrics/"
 
         headers = {
@@ -2345,15 +2347,16 @@ class SyntheticMetric(Base):
         try:
             retrieve_metric = requests.post(retrieve_url,
                                        headers=headers,
-                                       data=metric_payload,
+                                       data=metrics_payload,
                                        timeout=60,
                                        verify=self.insecure)
 
             if _status_is_200(retrieve_metric.status_code):
                 # extracting data in json format
                 data = retrieve_metric.json()
+                print(data)
                 return data
-            elif _status_is_429(create_res.status_code):
+            elif _status_is_429(retrieve_metric.status_code):
                 self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
             else:
                 print('Retrieve metric failed, status code:', retrieve_metric.status_code)
@@ -2363,7 +2366,6 @@ class SyntheticMetric(Base):
             self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
-
 
 
 
@@ -4966,7 +4968,7 @@ class ParseParameter:
         self.parser_get.add_argument(
             "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'datacenter', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'size', 'pop-cost', 'cost'],
+            'op_type', choices=['location', 'lo', 'datacenter', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'metric', 'pop-size', 'size', 'pop-cost', 'cost'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -5006,11 +5008,19 @@ class ParseParameter:
 
         # metrics
         self.parser_get.add_argument(
-            '--tag', type=str, help="group metrics by tag")
+            '--tag', type=str,  metavar="<json>", help="group metrics by tag")
+        # self.parser_get.add_argument(
+        #     '--tag-entity', type=str, help="group metrics by tagentity")
+        # self.parser_get.add_argument(
+        #     '--tag-second-level-key', type=str, help="group metrics by 2nd level key part of tag")
+        # self.parser_get.add_argument(
+        #     '--aggregation', type=str, help="set aggregation")
         self.parser_get.add_argument(
-            '--tag-entity', type=str, help="group metrics by tagentity")
+            '--metric', type=str, metavar="<json>", help="set metric")
+        # self.parser_get.add_argument(
+        #     '--granularity', type=str, help="set granularity")
         self.parser_get.add_argument(
-            '--tag-second-level-key', type=str, help="group metrics by 2nd level key part of tag")
+            '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
 
 
         host_token_group = self.parser_get.add_argument_group()
@@ -5329,6 +5339,8 @@ def main():
             new_host=get_args.host, new_token=get_args.token)
         pop_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
+        metric_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
         datacenter_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         patch_instance.set_host_token(
@@ -5349,6 +5361,7 @@ def main():
             alert_instance.set_auth(auth)
             cred_instance.set_auth(auth)
             pop_instance.set_auth(auth)
+            metric_instance.set_auth(auth)
             datacenter_instance.set_auth(auth)
             patch_instance.set_auth(auth)
             syn_update_instance.set_auth(auth)
@@ -5365,6 +5378,7 @@ def main():
                 syn_update_instance.set_insecure(get_args.verify_tls)
                 update_alert.set_insecure(get_args.verify_tls)
                 pop_instance.set_insecure(get_args.verify_tls)
+                metric_instance.set_insecure(get_args.verify_tls)
                 datacenter_instance.set_insecure(get_args.verify_tls)
                 app_instance.set_insecure(get_args.verify_tls)
 
@@ -5539,8 +5553,23 @@ def main():
             else:
                 print('testid is required')
         elif get_args.op_type == SYN_METRIC:
+            metric_payload = SyntheticMetricConfiguration()
             if get_args.tag is not None:
-                metric_instance.set_group_by_tag(get_args.tag)
+                metric_payload.set_group_by_tag(get_args.tag)
+            # if get_args.tag_enity is not None:
+            #     metric_payload.set_group_by_tag_entity(get_args.tag_enity)
+            # if get_args.tag_second_level_key is not None:
+            #     metric_payload.set_group_by_second_level_key(get_args.tag_second_level_key)
+            # if get_args.aggregation is not None:
+            #     metric_payload.set_metric_aggregation(get_args.aggregation)
+            if get_args.metric is not None:
+                metric_payload.set_metrics(json.loads(get_args.metric))
+            # if get_args.granularity is not None:
+            #     metric_payload.set_granularity(get_args.granularity)
+            if get_args.tag_filter_expression is not None:
+                tag_filter_expression = json.loads(get_args.tag_filter_expression)
+                metric_payload.set_tag_filter_expression(tag_filter_expression)
+            metric_instance.retreive_synthetic_metrics(metric_payload)
         elif get_args.op_type == POP_SIZE or get_args.op_type == 'size':
             pop_estimate.print_estimated_pop_size()
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
