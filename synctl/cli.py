@@ -2264,16 +2264,36 @@ class  SyntheticMetricConfiguration(Base):
             ]
         }
 
+    def parse_arguments(self, arg):
+        if arg is not None:
+            # self.syn_metric_config["groups"] = [tag]
+            try:
+                parsed_tag = json.loads(arg)
+                if isinstance(arg, dict):
+                    parsed_arg = [arg]
+                elif not isinstance(arg, list):
+                    raise ValueError("Invalid format for --tag argument")
+
+                return parsed_arg
+
+            except json.JSONDecodeError:
+                try:
+                    arg_objects = f"[{arg}]"
+                    parsed_arg = json.loads(arg_objects)
+                    return parsed_arg
+                except json.JSONDecodeError:
+                    raise ValueError(f"Failed to parse --tag argument: {arg}")
+
     def set_group_by_tag(self, tag):
         if tag is not None:
-            self.syn_metric_config["groups"] = [tag]
+            self.syn_metric_config["groups"] = tag
         else:
             self.exit_synctl(ERROR_CODE, "Group by tag should not be None")
 
 
     def set_metrics(self, metric):
         if metric is not None:
-            self.syn_metric_config["metrics"] = [metric]
+            self.syn_metric_config["metrics"] = metri
         else:
             self.exit_synctl(ERROR_CODE, "Metrics should not be None")
 
@@ -2366,6 +2386,9 @@ class SyntheticMetric(Base):
             self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    # def  print_metrics(self, metrics):
+
 
 
 
@@ -5555,7 +5578,8 @@ def main():
         elif get_args.op_type == SYN_METRIC:
             metric_payload = SyntheticMetricConfiguration()
             if get_args.tag is not None:
-                metric_payload.set_group_by_tag(json.loads(get_args.tag))
+                parsed_tag = metric_payload.parse_arguments(get_args.tag)
+                metric_payload.set_group_by_tag(parsed_tag)
             # if get_args.tag_enity is not None:
             #     metric_payload.set_group_by_tag_entity(get_args.tag_enity)
             # if get_args.tag_second_level_key is not None:
@@ -5563,13 +5587,15 @@ def main():
             # if get_args.aggregation is not None:
             #     metric_payload.set_metric_aggregation(get_args.aggregation)
             if get_args.metric is not None:
-                metric_payload.set_metrics(json.loads(get_args.metric))
+                parsed_metric = metric_payload.parse_arguments(get_args.metric)
+                metric_payload.set_metrics(parsed_metric)
             # if get_args.granularity is not None:
             #     metric_payload.set_granularity(get_args.granularity)
             if get_args.tag_filter_expression is not None:
                 tag_filter_expression = json.loads(get_args.tag_filter_expression)
                 metric_payload.set_tag_filter_expression(tag_filter_expression)
-            metric_instance.retreive_synthetic_metrics(metric_payload)
+            metric_results = metric_instance.retreive_synthetic_metrics(metric_payload)
+            # metric_instance.print_metrics(metric_results)
         elif get_args.op_type == POP_SIZE or get_args.op_type == 'size':
             pop_estimate.print_estimated_pop_size()
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
