@@ -2266,7 +2266,7 @@ class  SyntheticMetricConfiguration(Base):
 
     def set_group_by_tag(self, tag):
         if tag is not None:
-            self.syn_metric_config["groups"] = tag
+            self.syn_metric_config["groups"] = [tag]
         else:
             self.exit_synctl(ERROR_CODE, "Group by tag should not be None")
 
@@ -5555,7 +5555,7 @@ def main():
         elif get_args.op_type == SYN_METRIC:
             metric_payload = SyntheticMetricConfiguration()
             if get_args.tag is not None:
-                metric_payload.set_group_by_tag(get_args.tag)
+                metric_payload.set_group_by_tag(json.loads(get_args.tag))
             # if get_args.tag_enity is not None:
             #     metric_payload.set_group_by_tag_entity(get_args.tag_enity)
             # if get_args.tag_second_level_key is not None:
