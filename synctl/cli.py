@@ -2266,23 +2266,22 @@ class  SyntheticMetricConfiguration(Base):
 
     def parse_arguments(self, arg):
         if arg is not None:
-            # self.syn_metric_config["groups"] = [tag]
             try:
-                parsed_tag = json.loads(arg)
-                if isinstance(arg, dict):
-                    parsed_arg = [arg]
-                elif not isinstance(arg, list):
-                    raise ValueError("Invalid format for --tag argument")
+                if not arg.strip().startswith("["):
+                    arg = f"[{arg}]"
 
-                return parsed_arg
+                parsed_arg = json.loads(arg)
 
-            except json.JSONDecodeError:
-                try:
-                    arg_objects = f"[{arg}]"
-                    parsed_arg = json.loads(arg_objects)
+                if isinstance(parsed_arg, dict):
+                    return [parsed_arg]
+                elif isinstance(parsed_arg, list) and all(isinstance(item, dict) for item in parsed_arg):
                     return parsed_arg
-                except json.JSONDecodeError:
-                    raise ValueError(f"Failed to parse --tag argument: {arg}")
+                else:
+                    raise ValueError("Invalid format: Argument must be a JSON object or an array of objects.")
+
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Failed to parse argument: {arg}\nError: {e}")
+
 
     def set_group_by_tag(self, tag):
         if tag is not None:
@@ -2293,7 +2292,7 @@ class  SyntheticMetricConfiguration(Base):
 
     def set_metrics(self, metric):
         if metric is not None:
-            self.syn_metric_config["metrics"] = metri
+            self.syn_metric_config["metrics"] = metric
         else:
             self.exit_synctl(ERROR_CODE, "Metrics should not be None")
 
@@ -2357,7 +2356,6 @@ class SyntheticMetric(Base):
         #                   }}
 
         metrics_payload = metrics.get_json()
-        print(metrics_payload)
         retrieve_url = f"{host}/api/synthetics/metrics/"
 
         headers = {
@@ -2374,7 +2372,6 @@ class SyntheticMetric(Base):
             if _status_is_200(retrieve_metric.status_code):
                 # extracting data in json format
                 data = retrieve_metric.json()
-                print(data)
                 return data
             elif _status_is_429(retrieve_metric.status_code):
                 self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
@@ -2387,9 +2384,26 @@ class SyntheticMetric(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    # def  print_metrics(self, metrics):
+    def  print_metrics(self, metrics):
+        print("\nMetric Results")
+        print("-" * 80)
+        output_rows = []
 
+        for result in metrics["metricsResult"]:
+            for field_name, field_value in result.items():
+                if isinstance(field_value, list):
+                    field_str = ", ".join([f"{key}: {value}" for item in field_value for key, value in item.items()])
+                elif isinstance(field_value, dict):
+                    field_str = ", ".join([f"{key}: {value}" for key, value in field_value.items()])
+                else:
+                    field_str = str(field_value)
 
+                output_rows.append(f"{field_name}: {field_str}")
+
+            output_rows.append("-" * 80)
+
+        for row in output_rows:
+            print(row)
 
 
 class SyntheticTest(Base):
@@ -5595,7 +5609,7 @@ def main():
                 tag_filter_expression = json.loads(get_args.tag_filter_expression)
                 metric_payload.set_tag_filter_expression(tag_filter_expression)
             metric_results = metric_instance.retreive_synthetic_metrics(metric_payload)
-            # metric_instance.print_metrics(metric_results)
+            metric_instance.print_metrics(metric_results)
         elif get_args.op_type == POP_SIZE or get_args.op_type == 'size':
             pop_estimate.print_estimated_pop_size()
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
