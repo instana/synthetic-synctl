@@ -5562,17 +5562,9 @@ def main():
             if get_args.tag is not None:
                 parsed_tag = metric_payload.parse_arguments(get_args.tag)
                 metric_payload.set_group_by_tag(parsed_tag)
-            # if get_args.tag_enity is not None:
-            #     metric_payload.set_group_by_tag_entity(get_args.tag_enity)
-            # if get_args.tag_second_level_key is not None:
-            #     metric_payload.set_group_by_second_level_key(get_args.tag_second_level_key)
-            # if get_args.aggregation is not None:
-            #     metric_payload.set_metric_aggregation(get_args.aggregation)
             if get_args.metric is not None:
                 parsed_metric = metric_payload.parse_arguments(get_args.metric)
                 metric_payload.set_metrics(parsed_metric)
-            # if get_args.granularity is not None:
-            #     metric_payload.set_granularity(get_args.granularity)
             if get_args.tag_filter_expression is not None:
                 tag_filter_expression = json.loads(get_args.tag_filter_expression)
                 metric_payload.set_tag_filter_expression(tag_filter_expression)
