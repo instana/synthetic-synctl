@@ -5028,27 +5028,13 @@ class ParseParameter:
         # metrics
         self.parser_get.add_argument(
             '--tag', type=str,  metavar="<json>", help="group metrics by tag")
-        # self.parser_get.add_argument(
-        #     '--tag-entity', type=str, help="group metrics by tagentity")
-        # self.parser_get.add_argument(
-        #     '--tag-second-level-key', type=str, help="group metrics by 2nd level key part of tag")
-        # self.parser_get.add_argument(
-        #     '--aggregation', type=str, help="set aggregation")
         self.parser_get.add_argument(
             '--metric', type=str, metavar="<json>", help="set metric")
-        # self.parser_get.add_argument(
-        #     '--granularity', type=str, help="set granularity")
         self.parser_get.add_argument(
             '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
 
 
         host_token_group = self.parser_get.add_argument_group()
-        # self.parser_get.add_argument(
-        #     '--use-env', type=str, default=None, help='use a specified config')
-        # self.parser_get.add_argument(
-        #     '--host', type=str, help='set hostname')
-        # self.parser_get.add_argument(
-        #     '--token', type=str, help='set token')
         host_token_group.add_argument(
             '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a specified config')
         host_token_group.add_argument(
