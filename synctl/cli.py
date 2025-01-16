@@ -2372,6 +2372,7 @@ class SyntheticMetric(Base):
             if _status_is_200(retrieve_metric.status_code):
                 # extracting data in json format
                 data = retrieve_metric.json()
+                # print(data)
                 return data
             elif _status_is_429(retrieve_metric.status_code):
                 self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
@@ -2385,15 +2386,15 @@ class SyntheticMetric(Base):
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
     def  print_metrics(self, metrics):
+        if metrics is None:
+            sys.exit(1)
+
         print("\nMetric Results")
         print("-" * 80)
         output_rows = []
 
-        if not metrics or not metrics.get("metricsResult"):
-            print("No data")
-        else:
-            output_rows = []
-            for result in metrics["metricsResult"]:
+        for result in metrics["metricsResult"]:
+            for field_name, field_value in result.items():
                 if isinstance(field_value, list):
                     field_str = ", ".join([f"{key}: {value}" for item in field_value for key, value in item.items()])
                 elif isinstance(field_value, dict):
@@ -5606,6 +5607,8 @@ def main():
             if get_args.metric is not None:
                 parsed_metric = metric_payload.parse_arguments(get_args.metric)
                 metric_payload.set_metrics(parsed_metric)
+            # if get_args.granularity is not None:
+            #     metric_payload.set_granularity(get_args.granularity)
             if get_args.tag_filter_expression is not None:
                 tag_filter_expression = json.loads(get_args.tag_filter_expression)
                 metric_payload.set_tag_filter_expression(tag_filter_expression)
