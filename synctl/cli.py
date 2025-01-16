@@ -184,7 +184,7 @@ synctl create cred --key MY_PASS --value password123
 synctl create alert --name "Smart-alert" --alert-channel "$ALERT_CHANNEL" --test "$SYNTHETIC_TEST" --violation-count 2
 """
 
-GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert, pop-size, pop-cost} [id] [options]
+GET_USAGE = """synctl get {location,lo,test,metric,application,app,cred,alert, pop-size, pop-cost} [id] [options]
 
 examples:
 # display all tests
@@ -202,6 +202,9 @@ synctl get cred
 
 # Display all alert
 synctl get alert
+
+# Display metrics
+synctl get metrics [options]
 
 # Estimate the size of the PoP hardware configuration
 synctl get pop-size
