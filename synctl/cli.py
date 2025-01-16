@@ -2372,15 +2372,15 @@ class SyntheticMetric(Base):
         output_rows = []
 
         for result in metrics["metricsResult"]:
-            for field_name, field_value in result.items():
-                if isinstance(field_value, list):
-                    field_str = ", ".join([f"{key}: {value}" for item in field_value for key, value in item.items()])
-                elif isinstance(field_value, dict):
-                    field_str = ", ".join([f"{key}: {value}" for key, value in field_value.items()])
+            for result_name, result_value in result.items():
+                if isinstance(result_value, list):
+                    str = ", ".join([f"{key}: {value}" for item in result_value for key, value in item.items()])
+                elif isinstance(result_value, dict):
+                    str = ", ".join([f"{key}: {value}" for key, value in result_value.items()])
                 else:
-                    field_str = str(field_value)
+                    str = str(result_value)
 
-                output_rows.append(f"{field_name}: {field_str}")
+                output_rows.append(f"{result_name}: {str}")
 
             output_rows.append("-" * 80)
 
