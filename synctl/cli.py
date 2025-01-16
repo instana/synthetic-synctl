@@ -2330,31 +2330,6 @@ class SyntheticMetric(Base):
         host = self.auth["host"]
         token = self.auth["token"]
 
-
-        # summary_config = {"syntheticMetrics":["synthetic.metricsResponseTime","synthetic.metricsResponseSize", "status","synthetic.errors", "custom_metrics"],
-        #                   "metrics": [{
-        #                       "aggregation": "SUM",
-        #                       "granularity": 600,
-        #                       "metric": "synthetic.metricsStatus"
-        #                   }],
-        #                   "order":{
-        #                       "by":"synthetic.metricsResponseTime",
-        #                       "direction":"DESC"
-        #                   },
-        #                   "tagFilters":[{
-        #                       "stringValue": test_id,
-        #                       "name":"synthetic.testId",
-        #                       "operator":"EQUALS"
-        #                   }],
-        #                   "pagination": {
-        #                       "page": page,
-        #                       "pageSize": page_size
-        #                   },
-        #                   "timeFrame": {
-        #                       "to": 0,
-        #                       "windowSize": window_size
-        #                   }}
-
         metrics_payload = metrics.get_json()
         retrieve_url = f"{host}/api/synthetics/metrics/"
 
