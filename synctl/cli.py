@@ -2251,8 +2251,8 @@ class  SyntheticMetricConfiguration(Base):
         self.syn_metric_config = {
             "metrics": [
                 {
-                    "aggregation": "SUM",
-                    "metric": "synthetic.successRate"
+                    "aggregation": "",
+                    "metric": ""
                 }
             ],
             "timeFrame": {
@@ -2261,8 +2261,8 @@ class  SyntheticMetricConfiguration(Base):
             },
             "groups": [
                 {
-                    "groupbyTag": "synthetic.tags",
-                    "groupbyTagEntity": "SOURCE"
+                    "groupbyTag": "",
+                    "groupbyTagEntity": ""
                 }
             ]
         }
@@ -2350,7 +2350,6 @@ class SyntheticMetric(Base):
             if _status_is_200(retrieve_metric.status_code):
                 # extracting data in json format
                 data = retrieve_metric.json()
-                # print(data)
                 return data
             elif _status_is_429(retrieve_metric.status_code):
                 self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
@@ -5562,9 +5561,13 @@ def main():
             if get_args.tag is not None:
                 parsed_tag = metric_payload.parse_arguments(get_args.tag)
                 metric_payload.set_group_by_tag(parsed_tag)
+            else:
+                print("groups is required")
             if get_args.metric is not None:
                 parsed_metric = metric_payload.parse_arguments(get_args.metric)
                 metric_payload.set_metrics(parsed_metric)
+            else:
+                print("metrics is required")
             if get_args.tag_filter_expression is not None:
                 tag_filter_expression = json.loads(get_args.tag_filter_expression)
                 metric_payload.set_tag_filter_expression(tag_filter_expression)
