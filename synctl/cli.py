@@ -204,7 +204,7 @@ synctl get cred
 synctl get alert
 
 # Display metrics
-synctl get metrics [options]
+synctl get metric [options]
 
 # Estimate the size of the PoP hardware configuration
 synctl get pop-size
