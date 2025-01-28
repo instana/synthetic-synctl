@@ -62,6 +62,7 @@ SYN_APP = "app"  # short for application
 SYN_CRED = "cred"  # short for credentials
 SYN_ALERT = "alert"  # short for smart alerts
 SYN_RESULT = "result"
+SYN_METRIC = "metric"
 POP_SIZE = "pop-size"
 POP_COST = "pop-cost"
 
@@ -183,7 +184,7 @@ synctl create cred --key MY_PASS --value password123
 synctl create alert --name "Smart-alert" --alert-channel "$ALERT_CHANNEL" --test "$SYNTHETIC_TEST" --violation-count 2
 """
 
-GET_USAGE = """synctl get {location,lo,test,application,app,cred,alert, pop-size, pop-cost} [id] [options]
+GET_USAGE = """synctl get {location,lo,test,metric,application,app,cred,alert, pop-size, pop-cost} [id] [options]
 
 examples:
 # display all tests
@@ -201,6 +202,9 @@ synctl get cred
 
 # Display all alert
 synctl get alert
+
+# Display metrics
+synctl get metric [options]
 
 # Estimate the size of the PoP hardware configuration
 synctl get pop-size
@@ -2239,6 +2243,149 @@ class SyntheticDatacenter(Base):
                   self.fill_space(d["provider"], provider_length),
                   self.fill_space(d["cityName"], city_length),
                   self.fill_space(d["countryName"], country_length))
+
+class  SyntheticMetricConfiguration(Base):
+    def __init__(self) -> None:
+        Base.__init__(self)
+
+        self.syn_metric_config = {
+            "metrics": [
+                {
+                    "aggregation": "",
+                    "metric": ""
+                }
+            ],
+            "timeFrame": {
+                "to": 0,
+                "windowSize": 1800000
+            },
+            "groups": [
+                {
+                    "groupbyTag": "",
+                    "groupbyTagEntity": ""
+                }
+            ]
+        }
+
+    def parse_arguments(self, arg):
+        if arg is not None:
+            try:
+                if not arg.strip().startswith("["):
+                    arg = f"[{arg}]"
+
+                parsed_arg = json.loads(arg)
+
+                if isinstance(parsed_arg, dict):
+                    return [parsed_arg]
+                elif isinstance(parsed_arg, list) and all(isinstance(item, dict) for item in parsed_arg):
+                    return parsed_arg
+                else:
+                    raise ValueError("Invalid format: Argument must be a JSON object or an array of objects.")
+
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Failed to parse argument: {arg}\nError: {e}")
+
+
+    def set_group_by_tag(self, tag):
+        if tag is not None:
+            self.syn_metric_config["groups"] = tag
+        else:
+            self.exit_synctl(ERROR_CODE, "Group by tag should not be None")
+
+
+    def set_metrics(self, metric):
+        if metric is not None:
+            self.syn_metric_config["metrics"] = metric
+        else:
+            self.exit_synctl(ERROR_CODE, "Metrics should not be None")
+
+    def set_granularity(self, granularity):
+        if granularity is not None:
+            self.syn_metric_config["metrics"]["granularity"] = granularity
+
+    def set_tag_filter_expression(self, tag_filter_json):
+        """set tag filter expression"""
+        if tag_filter_json is not None:
+            self.syn_metric_config["tagFilterExpression"] = tag_filter_json
+        else:
+            self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
+
+    def get_json(self):
+        """return payload as json"""
+        return json.dumps(self.syn_metric_config)
+
+
+class SyntheticMetric(Base):
+
+    def __init__(self) -> None:
+        Base.__init__(self)
+
+        self.payload = None
+
+    def set_metric_payload(self, payload=None):
+        if payload is None:
+            print("payload should not be none")
+        else:
+            self.payload = payload
+
+    def retreive_synthetic_metrics(self, metrics, page=1, page_size=200, window_size=60*60*1000):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        metrics_payload = metrics.get_json()
+        retrieve_url = f"{host}/api/synthetics/metrics/"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        try:
+            retrieve_metric = requests.post(retrieve_url,
+                                       headers=headers,
+                                       data=metrics_payload,
+                                       timeout=60,
+                                       verify=self.insecure)
+
+            if _status_is_200(retrieve_metric.status_code):
+                # extracting data in json format
+                data = retrieve_metric.json()
+                return data
+            elif _status_is_429(retrieve_metric.status_code):
+                self.exit_synctl(-1, TOO_MANY_REQUEST_ERROR)
+            else:
+                print('Retrieve metric failed, status code:', retrieve_metric.status_code)
+                if retrieve_metric.text:
+                    print(retrieve_metric.text)
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    def  print_metrics(self, metrics):
+        if metrics is None:
+            sys.exit(1)
+
+        print("\nMetric Results")
+        print("-" * 80)
+        output_rows = []
+
+        for result in metrics["metricsResult"]:
+            for result_name, result_value in result.items():
+                if isinstance(result_value, list):
+                    str = ", ".join([f"{key}: {value}" for item in result_value for key, value in item.items()])
+                elif isinstance(result_value, dict):
+                    str = ", ".join([f"{key}: {value}" for key, value in result_value.items()])
+                else:
+                    str = str(result_value)
+
+                output_rows.append(f"{result_name}: {str}")
+
+            output_rows.append("-" * 80)
+
+        for row in output_rows:
+            print(row)
+
 
 class SyntheticTest(Base):
     """create, query, update and delete Synthetic test"""
@@ -4839,7 +4986,7 @@ class ParseParameter:
         self.parser_get.add_argument(
             "--verify-tls", action="store_true", default=False, help="verify tls certificate")
         self.parser_get.add_argument(
-            'op_type', choices=['location', 'lo', 'datacenter', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'pop-size', 'size', 'pop-cost', 'cost'],
+            'op_type', choices=['location', 'lo', 'datacenter', 'test', 'application', 'app', 'cred', 'alert', 'alert-channel', 'result', 'metric', 'pop-size', 'size', 'pop-cost', 'cost'],
             help="command list")
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
@@ -4877,13 +5024,16 @@ class ParseParameter:
             '--name-filter', type=str, metavar="<app>", help="filter application by name, only applicable for application name")
         # application_group
 
+        # metrics
+        self.parser_get.add_argument(
+            '--tag', type=str,  metavar="<json>", help="group metrics by tag")
+        self.parser_get.add_argument(
+            '--metric', type=str, metavar="<json>", help="set metric")
+        self.parser_get.add_argument(
+            '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
+
+
         host_token_group = self.parser_get.add_argument_group()
-        # self.parser_get.add_argument(
-        #     '--use-env', type=str, default=None, help='use a specified config')
-        # self.parser_get.add_argument(
-        #     '--host', type=str, help='set hostname')
-        # self.parser_get.add_argument(
-        #     '--token', type=str, help='set token')
         host_token_group.add_argument(
             '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a specified config')
         host_token_group.add_argument(
@@ -5177,6 +5327,7 @@ def main():
     update_alert = UpdateSmartAlert()
     pop_instance = SyntheticLocation()
     datacenter_instance = SyntheticDatacenter()
+    metric_instance = SyntheticMetric()
 
     summary_instance = SyntheticResult()
     app_instance = Application()
@@ -5191,6 +5342,8 @@ def main():
         cred_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         pop_instance.set_host_token(
+            new_host=get_args.host, new_token=get_args.token)
+        metric_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
         datacenter_instance.set_host_token(
             new_host=get_args.host, new_token=get_args.token)
@@ -5212,6 +5365,7 @@ def main():
             alert_instance.set_auth(auth)
             cred_instance.set_auth(auth)
             pop_instance.set_auth(auth)
+            metric_instance.set_auth(auth)
             datacenter_instance.set_auth(auth)
             patch_instance.set_auth(auth)
             syn_update_instance.set_auth(auth)
@@ -5228,6 +5382,7 @@ def main():
                 syn_update_instance.set_insecure(get_args.verify_tls)
                 update_alert.set_insecure(get_args.verify_tls)
                 pop_instance.set_insecure(get_args.verify_tls)
+                metric_instance.set_insecure(get_args.verify_tls)
                 datacenter_instance.set_insecure(get_args.verify_tls)
                 app_instance.set_insecure(get_args.verify_tls)
 
@@ -5401,6 +5556,23 @@ def main():
                     syn_instance.print_result_details(a_result_details, test_result["items"])
             else:
                 print('testid is required')
+        elif get_args.op_type == SYN_METRIC:
+            metric_payload = SyntheticMetricConfiguration()
+            if get_args.tag is not None:
+                parsed_tag = metric_payload.parse_arguments(get_args.tag)
+                metric_payload.set_group_by_tag(parsed_tag)
+            else:
+                print("groups is required")
+            if get_args.metric is not None:
+                parsed_metric = metric_payload.parse_arguments(get_args.metric)
+                metric_payload.set_metrics(parsed_metric)
+            else:
+                print("metrics is required")
+            if get_args.tag_filter_expression is not None:
+                tag_filter_expression = json.loads(get_args.tag_filter_expression)
+                metric_payload.set_tag_filter_expression(tag_filter_expression)
+            metric_results = metric_instance.retreive_synthetic_metrics(metric_payload)
+            metric_instance.print_metrics(metric_results)
         elif get_args.op_type == POP_SIZE or get_args.op_type == 'size':
             pop_estimate.print_estimated_pop_size()
         elif get_args.op_type == POP_COST or get_args.op_type == 'cost':
