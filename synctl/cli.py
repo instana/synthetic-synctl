@@ -1201,9 +1201,12 @@ class SyntheticConfiguration(Base):
         """set active default True"""
         pass
 
-    def set_custom_properties(self, custom_prop: dict):
+    def set_custom_properties(self, custom_prop):
         """customProperties"""
-        if custom_prop is not None and isinstance(custom_prop, dict):
+        if any(s == '' or s.isspace() for s in custom_prop):
+            self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
+
+        if custom_prop is not None:
             self.syn_test_config["customProperties"] = custom_prop
 
     def set_validation_string(self, validation_string):
@@ -5768,11 +5771,8 @@ def main():
                     payload.set_timeout(get_args.timeout)
 
                 if get_args.custom_properties is not None:
-                    try:
-                        payload.set_custom_properties(
-                            json.loads(get_args.custom_properties))
-                    except json.JSONDecodeError:
-                        print(payload.exit_synctl("Ensure that the JSON string is properly formatted"))
+                    dict_custom_properties = dict(pair.split('=') for pair in get_args.custom_properties.split(','))
+                    payload.set_custom_properties(dict_custom_properties)
 
                 # configuration
                 # retries [0, 2]
