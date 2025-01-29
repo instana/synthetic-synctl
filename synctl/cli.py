@@ -5768,8 +5768,9 @@ def main():
                     payload.set_timeout(get_args.timeout)
 
                 if get_args.custom_properties is not None:
-                    split_string = get_args.custom_properties.split(',')
-                    dict_custom_properties = dict(pair.split('=') for pair in split_string)
+                    # split_string = get_args.custom_properties.split(',')
+
+                    dict_custom_properties = dict(pair.split('=') for pair in get_args.custom_properties.split(','))
                     payload.set_custom_properties(dict_custom_properties)
                     # try:
                     #     payload.set_custom_properties(
