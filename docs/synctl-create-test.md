@@ -203,7 +203,7 @@ synctl create test -t 1 \
     --label custom-properties-test \
     --script api-script.js \
     --location "$LOCATION1" \
-    --custom-properties '{"key1":"value1"}'
+    --custom-properties "key1=value1,key2=value2"
 ```
 
 Create bundle test with a zip file
