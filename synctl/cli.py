@@ -5771,8 +5771,24 @@ def main():
                     payload.set_timeout(get_args.timeout)
 
                 if get_args.custom_properties is not None:
-                    dict_custom_properties = dict(pair.split('=') for pair in get_args.custom_properties.split(','))
-                    payload.set_custom_properties(dict_custom_properties)
+                    try:
+                        custom_properties = json.loads(get_args.custom_properties)
+                        if isinstance(custom_properties, dict):
+                            print("Warning: The '{\"key1\":\"value1\"}' format will be deprecated soon. Please use 'key1=value1' instead.")
+                            payload.set_custom_properties(custom_properties)
+                        else:
+                            raise json.JSONDecodeError("Not a dict", get_args.custom_properties)
+                    except json.JSONDecodeError:
+                        if "=" in get_args.custom_properties:
+                            try:
+                                dict_custom_properties = dict(
+                                    pair.strip().split("=", 1) for pair in get_args.custom_properties.split(",")
+                                )
+                                payload.set_custom_properties(dict_custom_properties)
+                            except ValueError:
+                                print(payload.exit_synctl('Ensure key-value pairs are formatted as "key=value"'))
+                        else:
+                            print(payload.exit_synctl('Invalid format: Use JSON or "key=value,key2=value2"'))
 
                 # configuration
                 # retries [0, 2]
