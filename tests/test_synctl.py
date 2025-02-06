@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from synctl import ParseParameter, SyntheticConfiguration, SyntheticTest
-from synctl import synthetic_type
+from synctl.cli import ParseParameter, SyntheticConfiguration, SyntheticTest
+from synctl.cli import synthetic_type
 from pathlib import Path
 
 import unittest
@@ -37,7 +37,7 @@ class TestStringMethods(unittest.TestCase):
         payload.set_label(get_args.label)
         payload.set_ping_url(get_args.url)
         payload.set_locations(get_args.location)
-        payload.set_frequency(get_args.frequency)
+        payload.set_frequency(get_args.type, get_args.frequency)
         payload.set_retries(get_args.retries)
         payload.set_retry_interval(get_args.retry_interval)
         payload.set_timeout(get_args.timeout)
@@ -74,7 +74,7 @@ class TestStringMethods(unittest.TestCase):
         payload = SyntheticConfiguration(syn_type_t, bundle_type=False)
         payload.set_label(get_args.label)
         payload.set_locations(get_args.location)
-        payload.set_frequency(get_args.frequency)
+        payload.set_frequency(get_args.type, get_args.frequency)
 
         with open(Path(get_args.from_file).resolve(), "r", encoding="utf-8") as file1:
             script_str = file1.read()
@@ -111,8 +111,8 @@ class TestStringMethods(unittest.TestCase):
         payload = SyntheticConfiguration(syn_type_t, bundle_type=True)
         payload.set_label(get_args.label)
         payload.set_locations(get_args.location)
-        payload.set_frequency(get_args.frequency)
-        payload.set_api_bundle_script(get_args.bundle, get_args.script_file)
+        payload.set_frequency(get_args.type, get_args.frequency)
+        payload.set_api_bundle_script(get_args.bundle, get_args.bundle_entry_file)
         payload.set_expect_status(get_args.expect_status)
         payload.set_expect_json(get_args.expect_json)
         payload.set_expect_match(get_args.expect_match)
@@ -152,8 +152,8 @@ class TestStringMethods(unittest.TestCase):
         payload.set_label(get_args.label)
         payload.set_locations(get_args.location)
         payload.set_browser_type(get_args.browser)
-        payload.set_frequency(get_args.frequency)
-        payload.set_api_bundle_script(get_args.bundle, get_args.script_file)
+        payload.set_frequency(get_args.type, get_args.frequency)
+        payload.set_api_bundle_script(get_args.bundle, get_args.bundle_entry_file)
 
         syn_payload = json.loads(payload.get_json())
 
@@ -188,7 +188,7 @@ class TestStringMethods(unittest.TestCase):
         payload.set_label(get_args.label)
         payload.set_locations(get_args.location)
         payload.set_browser_type(get_args.browser)
-        payload.set_frequency(get_args.frequency)
+        payload.set_frequency(get_args.type, get_args.frequency)
 
         # read script
         with open(Path(get_args.from_file).resolve(), "r", encoding="utf-8") as file1:
@@ -226,8 +226,7 @@ class TestStringMethods(unittest.TestCase):
         payload.set_label(get_args.label)
         payload.set_locations(get_args.location)
         payload.set_browser_type(get_args.browser)
-        payload.set_frequency(get_args.frequency)
-
+        payload.set_frequency(get_args.type, get_args.frequency)
         payload.set_ping_url(get_args.url)
 
 
@@ -238,6 +237,74 @@ class TestStringMethods(unittest.TestCase):
         self.assertEqual(syn_payload['configuration']['syntheticType'], synthetic_type[4])
         self.assertEqual(syn_payload['testFrequency'], 10)
         self.assertEqual(syn_payload['configuration']['browser'], 'firefox')
+        self.assertEqual(syn_payload['configuration']['url'], 'https://www.ibm.com')
+
+        syn_instance = SyntheticTest()
+        syn_instance.set_synthetic_payload(payload=syn_payload)
+
+    def test_create_using_custom_properties(self):
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'create', 'test',
+            '-t', '0',
+            '--label', 'check-format',
+            '--frequency', '10',
+            '--location', 'VyfBuornSVwvEK9QOsEV',
+            '--url', 'https://www.ibm.com',
+            '--custom-properties', 'key1=value1,key2=value2'
+        ])
+        self.assertEqual(get_args.sub_command, 'create')
+
+        syn_type_t = synthetic_type[get_args.type]
+        payload = SyntheticConfiguration(syn_type_t, bundle_type=False)
+        payload.set_label(get_args.label)
+        payload.set_locations(get_args.location)
+        payload.set_frequency(get_args.type, get_args.frequency)
+        payload.set_custom_properties(get_args.custom_properties)
+        payload.set_ping_url(get_args.url)
+
+        syn_payload = json.loads(payload.get_json())
+
+        self.assertEqual(syn_payload['label'], 'check-format')
+        self.assertEqual(syn_payload['locations'][0], 'VyfBuornSVwvEK9QOsEV')
+        self.assertEqual(syn_payload['configuration']['syntheticType'], synthetic_type[0])
+        self.assertEqual(syn_payload['testFrequency'], 10)
+        self.assertEqual(syn_payload['customProperties'], 'key1=value1,key2=value2')
+        self.assertEqual(syn_payload['configuration']['url'], 'https://www.ibm.com')
+
+        syn_instance = SyntheticTest()
+        syn_instance.set_synthetic_payload(payload=syn_payload)
+
+    def test_create_using_dict_custom_properties(self):
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'create', 'test',
+            '-t', '0',
+            '--label', 'check-format',
+            '--frequency', '10',
+            '--location', 'VyfBuornSVwvEK9QOsEV',
+            '--url', 'https://www.ibm.com',
+            '--custom-properties', '{"key1":"value1"}'
+        ])
+        self.assertEqual(get_args.sub_command, 'create')
+
+        syn_type_t = synthetic_type[get_args.type]
+        payload = SyntheticConfiguration(syn_type_t, bundle_type=False)
+        payload.set_label(get_args.label)
+        payload.set_locations(get_args.location)
+        payload.set_frequency(get_args.type, get_args.frequency)
+        payload.set_custom_properties(get_args.custom_properties)
+        payload.set_ping_url(get_args.url)
+
+        syn_payload = json.loads(payload.get_json())
+
+        self.assertEqual(syn_payload['label'], 'check-format')
+        self.assertEqual(syn_payload['locations'][0], 'VyfBuornSVwvEK9QOsEV')
+        self.assertEqual(syn_payload['configuration']['syntheticType'], synthetic_type[0])
+        self.assertEqual(syn_payload['testFrequency'], 10)
+        self.assertEqual(syn_payload['customProperties'], '{"key1":"value1"}')
         self.assertEqual(syn_payload['configuration']['url'], 'https://www.ibm.com')
 
         syn_instance = SyntheticTest()
