@@ -38,10 +38,11 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 HTTPAction_TYPE = "HTTPAction"
 HTTPScript_TYPE = "HTTPScript"
 
-BrowserScript_TYPE = "BrowserScript"
-WebpageScript_TYPE = "WebpageScript"
-WebpageAction_TYPE = "WebpageAction"
+BrowserScript_TYPE  = "BrowserScript"
+WebpageScript_TYPE  = "WebpageScript"
+WebpageAction_TYPE  = "WebpageAction"
 SSLCertificate_TYPE = "SSLCertificate"
+DNSAction_TYPE      = "DNS"
 
 # supported Synthetic type
 synthetic_type = (
@@ -50,7 +51,8 @@ synthetic_type = (
     BrowserScript_TYPE,  # 2
     WebpageScript_TYPE,  # 3
     WebpageAction_TYPE,  # 4
-    SSLCertificate_TYPE  # 5
+    SSLCertificate_TYPE, # 5
+    DNSAction_TYPE       # 6
 )
 
 SYN_TEST = "test"
@@ -3086,7 +3088,8 @@ class SyntheticTest(Base):
                               t['configuration']['url'] if 'url' in t['configuration'] else (
                                   t['configuration']['hostname'] if 'hostname' in  t['configuration'] else None))
                         output_lists.append(t)
-                if t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]:
+                # Below test types don't have a url
+                if t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE, DNSAction_TYPE]:
                     if len(t['locations']) > 0:
                         location_str = ','.join(t['locationDisplayLabels'])
                     else:
@@ -5437,7 +5440,7 @@ def main():
                 try:
                     syn_type_t = synthetic_type[get_args.type]
                 except IndexError:
-                    print("Synthetic type only support 0 1 2 3 4 5", syn_type_t)
+                    print("Synthetic type only support 0 1 2 3 4 5 6", syn_type_t)
 
             if get_args.id is None:
                 if get_args.filter is not None:
