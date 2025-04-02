@@ -3041,6 +3041,8 @@ class SyntheticTest(Base):
             syn_type = "Browser Script"
         elif syn_type == SSLCertificate_TYPE:
             syn_type = "SSLCertificate"
+        elif syn_type == DNSAction_TYPE:
+            syn_type = "DNS"
 
         return syn_type
 
@@ -3151,7 +3153,7 @@ class SyntheticTest(Base):
                               self.fill_space(location_str),
                               t['configuration']['url'] if 'url' in t['configuration'] else 'None')
                         output_lists.append(t)
-                if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE]):
+                if (t['configuration']['syntheticType'] in [HTTPScript_TYPE, WebpageScript_TYPE, BrowserScript_TYPE, DNSAction_TYPE]):
                     if len(t['locations']) > 0:
                         location_str = ','.join(t['locationDisplayLabels'])
                     else:
@@ -4997,7 +4999,7 @@ class ParseParameter:
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
         self.parser_get.add_argument(
-            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4, 5], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction, 5 SSLCertificate')
+            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4, 5, 6], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction, 5 SSLCertificate, 6 DNS')
         self.parser_get.add_argument(
             'id', type=str, nargs="?", help='Synthetic test id')
         self.parser_get.add_argument(
