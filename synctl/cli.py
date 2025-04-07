@@ -1122,6 +1122,16 @@ class SyntheticConfiguration(Base):
             "hostname": ""
         }
 
+        # syntheticType DNS
+        self.DNS_conf = {
+            "syntheticType": "DNS",
+            "acceptCNAME": False,
+            "port": 53,
+            "transport": "UDP",
+            "serverRetries": 1,
+            "queryType": "A"
+        }
+
         self.script_type = [HTTPScript_TYPE, BrowserScript_TYPE]
         if syn_type in [HTTPAction_TYPE, HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
             self.syn_type = syn_type
@@ -1376,6 +1386,52 @@ class SyntheticConfiguration(Base):
     def set_remaining_days(self, remaining_days):
         if remaining_days is not None:
             self.syn_test_config["configuration"]["daysRemainingCheck"] = remaining_days
+
+    # DNS
+    def set_cname(self, cname):
+        if cname is None:
+            cname = False
+        else:
+            self.syn_test_config["configuration"]["cname"] = cname
+
+    def set_lookup(self, lookup):
+        if lookup is not None:
+            self.syn_test_config["configuration"]["lookup"] = lookup
+
+    def set_lookup_server_name(self, lookup_server_name):
+        if lookup_server_name is not None:
+            self.syn_test_config["configuration"]["lookupServerName"] = lookup_server_name
+
+    def set_query_time(self, query_time):
+        if query_time is not None:
+            self.syn_test_config["configuration"]["queryTime"] = query_time
+
+    def set_query_type(self, query_type):
+        if any(s == '' or s.isspace() for s in query_type):
+            self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
+
+        if query_type is not None:
+            self.syn_test_config["configuration"]["queryType "] = query_type
+
+    def set_recursive_lookups(self, recursive_lookups):
+        if recursive_lookups is not None:
+            self.syn_test_config["configuration"]["recursiveLookups"] = recursive_lookups
+
+    def set_server(self, server):
+        if server is not None:
+            self.syn_test_config["configuration"]["server"] = server
+
+    def set_server_retries(self, server_retries):
+        if server_retries is not None:
+            self.syn_test_config["configuration"]["serverRetries"] = server_retries
+
+    def set_target_values(self, target_values):
+        if target_values is not None:
+            self.syn_test_config["configuration"]["targetValues"] = target_values
+
+    def set_transport(self, transport):
+        if transport is not None:
+            self.syn_test_config["configuration"]["transport"] = transport
 
     def read_js_file(self, file_name: str) -> str:
         """read javascript file"""
@@ -2446,6 +2502,7 @@ class SyntheticTest(Base):
             elif _status_is_429(create_res.status_code):
                 self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
             else:
+                print(test_payload)
                 print('create test failed, status code:', create_res.status_code)
                 if create_res.text:
                     print(create_res.text)
@@ -4867,7 +4924,7 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5], required=False, metavar="<int>",
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5, 6], required=False, metavar="<int>",
             help="Synthetic type: HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4], SSLCertificate[5]")
 
         # support multiple locations
@@ -4958,6 +5015,30 @@ class ParseParameter:
             '--key', type=str, metavar="<key>", help='set credential name')
         self.parser_create.add_argument(
             '--value', type=str, metavar="<value>", help='set credential value')
+
+        # DNS
+        self.parser_create.add_argument(
+            '--cname', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
+        self.parser_create.add_argument(
+            '--lookup', type=str, help='set the name or IP address of the host')
+        self.parser_create.add_argument(
+            '--lookup-server-name', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
+        # self.parser_create.add_argument(
+        #     '--port', type=int, help='set port')
+        self.parser_create.add_argument(
+            '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
+        self.parser_create.add_argument(
+            '--query-type', type=str, help='set DNS query type')
+        self.parser_create.add_argument(
+            '--recursive-lookups', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
+        self.parser_create.add_argument(
+            '--server', type=str, help='set IP address of the DNS server')
+        self.parser_create.add_argument(
+            '--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
+        self.parser_create.add_argument(
+            '--target-values', type=str, help='set list of filters to be used to validate the test response')
+        self.parser_create.add_argument(
+            '--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
 
         # smart alerts
         self.parser_create.add_argument(
@@ -5635,7 +5716,7 @@ def main():
             alert_instance.set_alert_payload(alert_payload.get_json())
             alert_instance.create_synthetic_alert()
         elif get_args.syn_type == SYN_TEST:
-            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4, 5]:
+            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4, 5, 6]:
                 syn_type_t = synthetic_type[get_args.type]
                 payload = SyntheticConfiguration(syn_type_t)
 
@@ -5747,6 +5828,7 @@ def main():
                     else:
                         print("URL is required")
 
+                # SSLCertificate
                 if get_args.type == 5:
                     if get_args.hostname is not None:
                         payload.set_host(get_args.hostname)
@@ -5755,6 +5837,31 @@ def main():
                     if get_args.remaining_days_check is not None:
                         payload.set_remaining_days(get_args.remaining_days_check)
                     payload.set_frequency(get_args.type, 1440)
+
+                # DNS
+                if get_args.type == 6:
+                    if get_args.cname is not None:
+                        payload.set_cname(get_args.cname)
+                    if get_args.lookup is not None:
+                        payload.set_lookup(get_args.lookup)
+                    if get_args.lookup_server_name is not None:
+                        payload.set_lookup_server_name(get_args.lookup_server_name)
+                    if get_args.port is not None:
+                        payload.set_port(get_args.port)
+                    if get_args.query_time is not None:
+                        payload.set_query_time(get_args.query_time)
+                    if get_args.query_type is not None:
+                        payload.set_query_type(get_args.query_type)
+                    if get_args.recursive_lookups is not None:
+                        payload.set_recursive_lookups(get_args.recursive_lookups)
+                    if get_args.server is not None:
+                        payload.set_server(get_args.server)
+                    if get_args.server_retries is not None:
+                        payload.set_server_retries(get_args.server_retries)
+                    if get_args.target_values is not None:
+                        payload.set_target_values(get_args.target_values)
+                    if get_args.transport is not None:
+                        payload.set_transport(get_args.transport)
 
                 # global operation, add label, location, description, frequency, etc.
                 if get_args.label is not None:
