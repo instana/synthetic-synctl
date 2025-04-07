@@ -1407,9 +1407,6 @@ class SyntheticConfiguration(Base):
             self.syn_test_config["configuration"]["queryTime"] = query_time
 
     def set_query_type(self, query_type):
-        if any(s == '' or s.isspace() for s in query_type):
-            self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
-
         if query_type is not None:
             self.syn_test_config["configuration"]["queryType "] = query_type
 
@@ -5849,7 +5846,8 @@ def main():
                     if get_args.port is not None:
                         payload.set_port(get_args.port)
                     if get_args.query_time is not None:
-                        payload.set_query_time(get_args.query_time)
+                        query_time_json = json.loads(get_args.query_time)
+                        payload.set_query_time(query_time_json)
                     if get_args.query_type is not None:
                         payload.set_query_type(get_args.query_type)
                     if get_args.recursive_lookups is not None:
@@ -5859,7 +5857,8 @@ def main():
                     if get_args.server_retries is not None:
                         payload.set_server_retries(get_args.server_retries)
                     if get_args.target_values is not None:
-                        payload.set_target_values(get_args.target_values)
+                        target_values_json = json.loads(get_args.target_values)
+                        payload.set_target_values([target_values_json])
                     if get_args.transport is not None:
                         payload.set_transport(get_args.transport)
 
