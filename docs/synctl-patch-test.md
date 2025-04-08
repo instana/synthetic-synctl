@@ -87,6 +87,21 @@ synctl patch test id [options]
     --remaining-days-check <int>       set days remaining before expiration of SSL certificate
 ```
 
+### Options for DNS test
+```
+    --cname <boolean>                   enable the canonical name in the DNS response, false by default
+    --lookup <host>                     set the name or IP address of the host
+    --lookup-server-name <boolean>      enable recursive DNS lookups, false by default
+    --port <int>                        set port, default is 53
+    --query-time <string>               an object with name/value pairs used to validate the test response time
+    --query-type <string>               DNS query type: Value must be one of ALL, ALL_CONDITIONS, ANY, A, AAAA, CNAME, NS. Default value is A.
+    --recursive-lookups <boolean>       enables recursive DNS lookups, false by default
+    --server <string>                   set IP address of the DNS server
+    --server-retries <int>              set number of times to try a timed-out DNS lookup before returning failure. Default is 1
+    --target-values <str>               set list of filters to be used to validate the test response
+    --transport <str>                   set protocol used to do DNS check. Only UDP is supported.
+```
+
 ## Examples
 ### Common Examples for All tests
 
@@ -199,4 +214,23 @@ synctl patch test <synthetic-id> --port 443
 
 # Set remaining days of a SSLCertificate test
 synctl patch test <synthetic-id> --remaining-days-check 30
+
+```
+### Examples for DNS test
+```
+# Set lookup of a DNS test
+synctl patch test <synthetic-id> --lookup true
+
+# Set port of DNS test
+synctl patch <synthetic-id> --port 53
+
+# Set query type of DNS test
+synctl patch test <synthetic-id> --query-type A
+
+# Set server of DNS test
+synctl patch test <synthetic-id> --server 8.8.8.8
+
+# Set quesry time of DNS test
+synctl patch test <synthetic-id> --query-time  '{"key": "responseTime", "operator": "LESS_THAN", "value": 120}'
+```
 

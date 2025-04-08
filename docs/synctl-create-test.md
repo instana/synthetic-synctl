@@ -91,7 +91,8 @@ synctl create test [options]
     --recursive-lookups <boolean>       enables recursive DNS lookups, false by default
     --server <string>                   set IP address of the DNS server
     --server-retries <int>              set number of times to try a timed-out DNS lookup before returning failure. Default is 1
-    --target-values <str>               set list of filters to be used to validate the test response  
+    --target-values <str>               set list of filters to be used to validate the test response
+    --transport <str>                   set protocol used to do DNS check. Only UDP is supported.
 ```
 ## Examples  
 
@@ -307,6 +308,23 @@ synctl create test -t 5 \
     --port 443 \
     --remaining-days-check 30 \
     --lo "$LOCATION"
+```
+### Create DNS test
+```
+synctl create test -t 6 \
+    --label "DNS-test" \
+    --location $LOCATION \
+    --cname true \
+    --lookup www.ibm.com \
+    --lookup-server-name false  \
+    --query-type ANY \
+    --recursive-lookups true \
+    --server 8.8.8.8 \
+    --server-retries 1 \
+    --port 53  \
+    --transport UDP \
+    --query-time '{"key": "responseTime", "operator": "LESS_THAN", "value": 120}' \
+    --target-values '{"key": "CNAME", "operator": "NOT_MATCHES", "value": "test"}'
 ```
 
 ### Create Synthetic test with json payload example
