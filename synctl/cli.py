@@ -4493,6 +4493,87 @@ class PatchSyntheticTest(SyntheticTest):
         else:
             print("remaining days should not be none")
 
+    def patch_cname(self, cname):
+        cname_opions = ["true", "false"]
+        if cname is not None and cname.lower() in cname_opions:
+            payload["configuration"]["acceptCNAME"] = cname
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("cname days should not be none")
+
+    def patch_lookup(self, lookup):
+        payload = {"configuration": {"lookup": ""}}
+        if lookup is not None:
+            payload["configuration"]["lookup"] = lookup
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("lookup should not be None")
+
+    def patch_lookup_server_name(self, lookup_server_name):
+        lookup_server_options = ["true", "false"]
+        payload = {"configuration": {"lookupServerName": ""}}
+        if lookup_server_name is not None and lookup_server_name.lower() in lookup_server_options:
+            payload["configuration"]["lookupServerName"] = lookup_server_name
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("lookup server name should not be None")
+
+    def patch_query_time(self, query_time):
+        payload = {"configuration": {"queryTime": ""}}
+        if query_time is not None:
+            payload["configuration"]["queryTime"] = query_time
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("query time should not be None")
+
+    def patch_query_type(self, query_type):
+        payload = {"configuration": {"queryType": ""}}
+        if query_type is not None:
+            payload["configuration"]["queryType"] = query_type
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("query type should not be None")
+
+    def patch_recursive_lookups(self, recursive_lookups):
+        payload = {"configuration": {"recursiveLookups": ""}}
+        if recursive_lookups is not None:
+            payload["configuration"]["recursiveLookups"] = recursive_lookups
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("recursive lookups server should not be None")
+
+    def patch_server(self, server):
+        payload = {"configuration": {"server": ""}}
+        if server is not None:
+            payload["configuration"]["server"] = server
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("server should not be None")
+
+    def patch_server_retries(self, server_retries):
+        payload = {"configuration": {"serverRetries": ""}}
+        if server_retries is not None:
+            payload["configuration"]["serverRetries"] = server_retries
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("server retries should not be None")
+
+    def patch_target_values(self, target_values):
+        payload = {"configuration": {"targetValues": ""}}
+        if target_values is not None:
+            payload["configuration"]["targetValues"] = target_values
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("target values should not be None")
+
+    def patch_transport(self, transport):
+        payload = {"configuration": {"transport": ""}}
+        if transport is not None:
+            payload["configuration"]["transport"] = transport
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("transport should not be None")
+
 
 class SyntheticResult(Base):
 
@@ -5020,8 +5101,6 @@ class ParseParameter:
             '--lookup', type=str, help='set the name or IP address of the host')
         self.parser_create.add_argument(
             '--lookup-server-name', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
-        # self.parser_create.add_argument(
-        #     '--port', type=int, help='set port')
         self.parser_create.add_argument(
             '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
         self.parser_create.add_argument(
@@ -5201,6 +5280,28 @@ class ParseParameter:
             '--port', type=int, help='set port')
         patch_exclusive_group.add_argument(
             '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
+
+        # DNS
+        patch_exclusive_group.add_argument(
+            '--cname', type=str, choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
+        patch_exclusive_group.add_argument(
+            '--lookup', type=str, help='set the name or IP address of the host')
+        patch_exclusive_group.add_argument(
+            '--lookup-server-name', type=str, choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
+        patch_exclusive_group.add_argument(
+            '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
+        patch_exclusive_group.add_argument(
+            '--query-type', type=str, help='set DNS query type')
+        patch_exclusive_group.add_argument(
+            '--recursive-lookups', type=str, choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
+        patch_exclusive_group.add_argument(
+            '--server', type=str, help='set IP address of the DNS server')
+        patch_exclusive_group.add_argument(
+            '--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
+        patch_exclusive_group.add_argument(
+            '--target-values', type=str, help='set list of filters to be used to validate the test response')
+        patch_exclusive_group.add_argument(
+            '--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
 
         # Patch cred
         patch_exclusive_group.add_argument(
@@ -5978,6 +6079,28 @@ def main():
             patch_instance.patch_port(get_args.id, get_args.port)
         elif get_args.remaining_days_check is not None:
             patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days_check)
+        elif get_args.cname is not None:
+            patch_instance.patch_cname(get_args.cname)
+        elif get_args.lookup is not None:
+            patch_instance.patch_lookup(get_args.lookup)
+        elif get_args.lookup_server_name is not None:
+            patch_instance.patch_lookup_server_name(get_args.lookup_server_name)
+        elif get_args.query_time is not None:
+            query_time_json = json.loads(get_args.query_time)
+            patch_instance.patch_query_time(query_time_json)
+        elif get_args.query_type is not None:
+            patch_instance.patch_query_type(get_args.query_type)
+        elif get_args.recursive_lookups is not None:
+            patch_instance.patch_recursive_lookups(get_args.recursive_lookups)
+        elif get_args.server is not None:
+            patch_instance.patch_server(get_args.server)
+        elif get_args.server_retries is not None:
+            patch_instance.patch_server_retries(get_args.server_retries)
+        elif get_args.target_values is not None:
+            target_values_json = json.loads(get_args.target_values)
+            patch_instance.patch_target_values([target_values_json])
+        elif get_args.transport is not None:
+            patch_instance.patch_transport(get_args.transport)
         if get_args.syn_type == SYN_CRED:
             if get_args.applications is not None:
                 cred_instance.patch_applications(get_args.id, get_args.applications)
