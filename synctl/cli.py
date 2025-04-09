@@ -1899,7 +1899,6 @@ class SmartAlertConfiguration(Base):
             self.exit_synctl(ERROR_CODE, "grace period should not be none or invalid")
 
         grace_period_ms = self.covert_grace_period(grace_period)
-
         self.smart_alert_config["gracePeriod"] = grace_period_ms
 
     def loads_from_json_file(self, json_file_name):
@@ -5010,7 +5009,7 @@ class ParseParameter:
             '--test', type=str, nargs='+', metavar="<id>", help="test id, support multiple test id")
 
         self.parser_create.add_argument(
-            '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1,60]m, [1-24]h")
+            '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1-60]m, [1-24]h")
 
         self.parser_create.add_argument(
             '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
@@ -5028,7 +5027,7 @@ class ParseParameter:
             '--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
 
         self.parser_create.add_argument(
-            '--grace-period', type=str, metavar="<string>", help="The duration for which an alert remains open after conditions are no longer violated, with the alert auto-closing once the grace period expires.")
+            '--grace-period', type=str, metavar="<string>", help="The duration for which an alert remains open after conditions are no longer violated, The grace period must range between 1 minute and a maximum of 7 days")
 
         # set auth
         self.parser_create.add_argument(

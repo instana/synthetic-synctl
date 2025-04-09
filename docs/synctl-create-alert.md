@@ -62,7 +62,7 @@ synctl create alert --name "Smart-alert" \
 Create alert with grace period in min
 ```
 synctl create alert --name "Smart-alert" \
-       --alert-channel "VRq9Z08t$ALERT_CHANNELCntLjtqa" \
+       --alert-channel "$ALERT_CHANNEL" \
        --test "$SYNTHETIC_TEST" \
        --violation-count 3 \
        --grace-period 5m
@@ -70,7 +70,7 @@ synctl create alert --name "Smart-alert" \
 Create alert with grace period in days
 ```
 synctl create alert --name "Smart-alert" \
-       --alert-channel "VRq9Z08t$ALERT_CHANNELCntLjtqa" \
+       --alert-channel "$ALERT_CHANNEL" \
        --test "$SYNTHETIC_TEST" \
        --violation-count 3 \
        --grace-period 2d
