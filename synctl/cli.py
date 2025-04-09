@@ -3966,6 +3966,68 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             self.exit_synctl(ERROR_CODE, "remaining days should not be none")
 
+    def update_cname(self, cname):
+        cname_opions = ["true", "false"]
+        if cname is not None and cname.lower() in cname_opions:
+            self.update_config["configuration"]["acceptCNAME"] = cname
+        else:
+            print("cname days should not be none")
+
+    def update_lookup(self, lookup):
+        if lookup is not None:
+            self.update_config["configuration"]["lookup"] = lookup
+        else:
+            print("lookup should not be None")
+
+    def update_lookup_server_name(self, lookup_server_name):
+        lookup_server_options = ["true", "false"]
+        if lookup_server_name is not None and lookup_server_name.lower() in lookup_server_options:
+            self.update_config["configuration"]["lookupServerName"] = lookup_server_name
+        else:
+            print("lookup server name should not be None")
+
+    def update_query_time(self, query_time):
+        if query_time is not None:
+            self.update_config["configuration"]["queryTime"] = query_time
+        else:
+            print("query time should not be None")
+
+    def update_query_type(self, query_type):
+        if query_type is not None:
+            self.update_config["configuration"]["queryType"] = query_type
+        else:
+            print("query type should not be None")
+
+    def update_recursive_lookups(self, recursive_lookups):
+        if recursive_lookups is not None:
+            self.update_config["configuration"]["recursiveLookups"] = recursive_lookups
+        else:
+            print("recursive lookups server should not be None")
+
+    def update_server(self, server):
+        if server is not None:
+            self.update_config["configuration"]["server"] = server
+        else:
+            print("server should not be None")
+
+    def update_server_retries(self, server_retries):
+        if server_retries is not None:
+            self.update_config["configuration"]["serverRetries"] = server_retries
+        else:
+            print("server retries should not be None")
+
+    def update_target_values(self, target_values):
+        if target_values is not None:
+            self.update_config["configuration"]["targetValues"] = target_values
+        else:
+            print("target values should not be None")
+
+    def update_transport(self, transport):
+        if transport is not None:
+            self.update_config["configuration"]["transport"] = transport
+        else:
+            print("transport should not be None")
+
     def get_updated_test_config(self):
         """return payload as json"""
         result = json.dumps(self.update_config)
@@ -5409,6 +5471,28 @@ class ParseParameter:
         update_group.add_argument(
             '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
 
+        # DNS test
+        update_group.add_argument(
+            '--cname', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
+        update_group.add_argument(
+            '--lookup', type=str, help='set the name or IP address of the host')
+        update_group.add_argument(
+            '--lookup-server-name', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
+        update_group.add_argument(
+            '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
+        update_group.add_argument(
+            '--query-type', type=str, help='set DNS query type')
+        update_group.add_argument(
+            '--recursive-lookups', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
+        update_group.add_argument(
+            '--server', type=str, help='set IP address of the DNS server')
+        update_group.add_argument(
+            '--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
+        update_group.add_argument(
+            '--target-values', type=str, help='set list of filters to be used to validate the test response')
+        update_group.add_argument(
+            '--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
+
         # update alert
         update_group.add_argument(
             '--name', type=str, metavar="<string>", help='friendly name for smart alert')
@@ -6186,12 +6270,37 @@ def main():
                 if get_args.headers is not None:
                     split_string = get_args.headers.split(',')
                     syn_update_instance.update_headers(split_string)
+                # SSLCertificate test
                 if get_args.hostname is not None:
                     syn_update_instance.update_host(get_args.hostname)
                 if get_args.port is not None:
                     syn_update_instance.update_port(get_args.port)
                 if get_args.remaining_days_check is not None:
                     syn_update_instance.update_remaining_days(get_args.remaining_days_check)
+                # DNS test
+                if get_args.cname is not None:
+                    syn_update_instance.update_cname(get_args.cname)
+                if get_args.lookup is not None:
+                    syn_update_instance.update_lookup(get_args.lookup)
+                if get_args.lookup_server_name is not None:
+                    syn_update_instance.update_lookup_server_name(get_args.lookup_server_name)
+                if get_args.query_time is not None:
+                    query_time_json = json.loads(get_args.query_time)
+                    syn_update_instance.update_query_time(query_time_json)
+                if get_args.query_type is not None:
+                    syn_update_instance.update_query_type(get_args.query_type)
+                if get_args.recursive_lookups is not None:
+                    syn_update_instance.update_recursive_lookups(get_args.recursive_lookups)
+                if get_args.server is not None:
+                    syn_update_instance.update_server(get_args.server)
+                if get_args.server_retries is not None:
+                    syn_update_instance.update_server_retries(get_args.server_retries)
+                if get_args.target_values is not None:
+                    target_values_json = json.loads(get_args.target_values)
+                    syn_update_instance.update_target_values([target_values_json])
+                if get_args.transport is not None:
+                    syn_update_instance.update_transport(get_args.transport)
+
                 updated_payload = syn_update_instance.get_updated_test_config()
                 syn_update_instance.update_a_synthetic_test(get_args.id, updated_payload)
         if get_args.syn_type == SYN_ALERT:
