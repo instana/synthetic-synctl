@@ -18,6 +18,8 @@ synctl update alert <id> [options]
     --alert-channel <id>                alerting channel
     --violation-count <int>             the number of consecutive failures to trigger an alert
     --tag-filter-expression <json>      tag filter expression
+    --custom-payloads <json>            additional information in the alert notifications
+    --grace-period <str>                duration for which an alert remains open after conditions are no longer violated. support [1-60]m, [1-24]h, [1-7]d.
     --enable                            enable smart alert
     --disable                           disable smart alert
 
@@ -50,6 +52,18 @@ synctl update alert <alert-id> --from-file/-f alert.json
 Update a smart alert with `--tag-filter-expression` option
 ```
 synctl update alert <alert-id> --tag-filter-expression '{"type": "EXPRESSION", "logicalOperator": "AND", "elements": []}'
+```
+Update a smart alert with custom payloads
+```
+synctl update alert <alert-id> --custom-payloads '{"type": "staticString", "key": "test", "value": "12345"}'
+```
+Update a smart alert with grace period in hours
+```
+synctl update alert <alert-id> --grace-period 3h
+```
+Update a smart alert with grace period in days
+```
+synctl update alert <alert-id> --grace-period 5d
 ```
 
 Enable a smart alert
