@@ -4094,6 +4094,19 @@ class UpdateSmartAlert(SmartAlert):
         else:
             self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
 
+    def update_custom_payloads(self, custom_payload):
+        if custom_payload is not None:
+            self.update_config["customPayloadFields"] = [custom_payload]
+        else:
+            self.exit_synctl(ERROR_CODE, "custom payload fields should not be None")
+
+    def update_grace_period(self, grace_period):
+        if not grace_period or len(grace_period) < 2:
+            self.exit_synctl(ERROR_CODE, "grace period should not be none or invalid")
+
+        grace_period_ms = self.covert_grace_period(grace_period)
+        self.update_config["gracePeriod"] = grace_period_ms
+
     def get_updated_alert_config(self):
         """return payload as json"""
         result = json.dumps(self.update_config)
@@ -6046,6 +6059,11 @@ def main():
                 if get_args.tag_filter_expression is not None:
                     tag_filter_expression = json.loads(get_args.tag_filter_expression)
                     update_alert.update_tag_filter_expression(tag_filter_expression)
+                if get_args.custom_payloads is not None:
+                    custom_payloads_json = json.loads(get_args.custom_payloads)
+                    update_alert.update_custom_payloads(custom_payloads_json)
+                if get_args.grace_period is not None:
+                    update_alert.update_grace_period(get_args.grace_period)
                 updated_alert_config = update_alert.get_updated_alert_config()
                 update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
         if get_args.syn_type == SYN_CRED:
