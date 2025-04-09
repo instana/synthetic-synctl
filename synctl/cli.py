@@ -2499,7 +2499,6 @@ class SyntheticTest(Base):
             elif _status_is_429(create_res.status_code):
                 self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
             else:
-                print(test_payload)
                 print('create test failed, status code:', create_res.status_code)
                 if create_res.text:
                     print(create_res.text)
@@ -5158,17 +5157,17 @@ class ParseParameter:
 
         # DNS
         self.parser_create.add_argument(
-            '--cname', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
+            '--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
         self.parser_create.add_argument(
             '--lookup', type=str, help='set the name or IP address of the host')
         self.parser_create.add_argument(
-            '--lookup-server-name', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
+            '--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
         self.parser_create.add_argument(
             '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
         self.parser_create.add_argument(
             '--query-type', type=str, help='set DNS query type')
         self.parser_create.add_argument(
-            '--recursive-lookups', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
+            '--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
         self.parser_create.add_argument(
             '--server', type=str, help='set IP address of the DNS server')
         self.parser_create.add_argument(
@@ -5473,17 +5472,17 @@ class ParseParameter:
 
         # DNS test
         update_group.add_argument(
-            '--cname', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
+            '--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
         update_group.add_argument(
             '--lookup', type=str, help='set the name or IP address of the host')
         update_group.add_argument(
-            '--lookup-server-name', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
+            '--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
         update_group.add_argument(
             '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
         update_group.add_argument(
             '--query-type', type=str, help='set DNS query type')
         update_group.add_argument(
-            '--recursive-lookups', type=str, default='false', choices=['true', 'false'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
+            '--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
         update_group.add_argument(
             '--server', type=str, help='set IP address of the DNS server')
         update_group.add_argument(
