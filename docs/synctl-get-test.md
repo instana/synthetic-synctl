@@ -30,7 +30,7 @@ synctl get test
 
 ### Get test by Synthetic type
 
-There are four test type HTTPAction(0), HTTPScript(1), BrowserScript(2), WebpageScript(3), WebpageAction(4), SSLCertificate(5), DNS(5) are supported.
+There are seven test type HTTPAction(0), HTTPScript(1), BrowserScript(2), WebpageScript(3), WebpageAction(4), SSLCertificate(5), DNS(6) are supported.
 In the command, it uses a number to represent a type for simple. They are:
   - 0 is API Simple
   - 1 is API Script
