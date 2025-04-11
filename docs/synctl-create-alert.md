@@ -20,7 +20,7 @@ synctl create alert [options]
     --violation-count <int>           the number of consecutive failures to trigger an alert
     --tag-filter-expression <json>    tag filter expression
     --custom-payloads <json>          additional information in the alert notifications
-    --grace-period <str>              duration for which an alert remains open after conditions are no longer violated. support [1-60]m, [1-24]h, [1-7]d.
+    --grace-period <str>              duration for which an alert remains open after conditions are no longer violated. Support: [1-60]m, [1-24]h, [1-7]d.
     -f, --from-file <file>            Synthetic alert payload
 ```
 

@@ -1892,7 +1892,7 @@ class SmartAlertConfiguration(Base):
         if custom_payloads is not None:
             self.smart_alert_config["customPayloadFields"] = [custom_payloads]
         else:
-            self.exit_synctl(ERROR_CODE, "Custom payloads should not be None")
+            self.exit_synctl(ERROR_CODE, "Custom payloads is invalid")
 
     def set_grace_period(self, grace_period):
         if not grace_period or len(grace_period) < 2:
