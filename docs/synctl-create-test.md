@@ -14,7 +14,7 @@ synctl create test [options]
     --verify-tls                                verify tls certificate
 
 
-    -t <int>, --type <int>                      Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple, 5 SSLCertificate
+    -t <int>, --type <int>                      Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple, 5 SSLCertificate, 6 DNS
     --location id [id ...]                      location id, support multiple locations id
     --label <string>                            friendly name of the Synthetic test
     --description, -d <string>                  the description of Synthetic test
@@ -80,7 +80,20 @@ synctl create test [options]
     --port <int>                        set port, default is 443 
     --remaining-days-check <int>        set remaining days before expiration of SSL certificate
 ```
-
+### Options for DNS test
+```
+    --cname <boolean>                   enable the canonical name in the DNS response, false by default
+    --lookup <host>                     set the name or IP address of the host
+    --lookup-server-name <boolean>      enable recursive DNS lookups, false by default
+    --port <int>                        set port, default is 53
+    --query-time <string>               an object with name/value pairs used to validate the test response time
+    --query-type <string>               DNS query type: Value must be one of ALL, ALL_CONDITIONS, ANY, A, AAAA, CNAME, NS. Default value is A
+    --recursive-lookups <boolean>       enables recursive DNS lookups, false by default
+    --server <string>                   set IP address of the DNS server
+    --server-retries <int>              set number of times to try a timed-out DNS lookup before returning failure. Default is 1
+    --target-values <str>               set list of filters to be used to validate the test response
+    --transport <str>                   set protocol used to do DNS check. Only UDP is supported
+```
 ## Examples  
 
 ### Create API Simple test example
@@ -295,6 +308,23 @@ synctl create test -t 5 \
     --port 443 \
     --remaining-days-check 30 \
     --lo "$LOCATION"
+```
+### Create DNS test
+```
+synctl create test -t 6 \
+    --label "DNS-test" \
+    --location $LOCATION \
+    --cname true \
+    --lookup www.ibm.com \
+    --lookup-server-name false  \
+    --query-type ANY \
+    --recursive-lookups true \
+    --server 8.8.8.8 \
+    --server-retries 1 \
+    --port 53  \
+    --transport UDP \
+    --query-time '{"key": "responseTime", "operator": "LESS_THAN", "value": 120}' \
+    --target-values '{"key": "CNAME", "operator": "NOT_MATCHES", "value": "test"}'
 ```
 
 ### Create Synthetic test with json payload example
