@@ -375,6 +375,26 @@ class Base:
 
         return formatted_date_time
 
+    def covert_grace_period(self, grace_period):
+        """Convert grace period for smart alert to ms"""
+        time_to_ms = {
+            "m": 60 * 1000,
+            "h": 60 * 60 * 1000,
+            "d": 24 * 60 * 60 * 1000
+        }
+        unit = grace_period[-1]
+        time_str = grace_period[:-1]
+
+        if unit not in time_to_ms:
+            self.exit(ERROR_CODE, f"Unsupported unit '{unit}'. Use 'm', 'h', or 'd'.")
+
+        try:
+            time_int = int(time_str)
+        except ValueError:
+            self.exit(ERROR_CODE, f"Invalid number in grace period: '{time_str}'")
+
+        return time_int * time_to_ms[unit]
+
     def exit_synctl(self, error_code=-1, message=''):
         """exit synctl"""
         if message != '':
@@ -1866,6 +1886,20 @@ class SmartAlertConfiguration(Base):
             self.smart_alert_config["tagFilterExpression"] = tag_filter_json
         else:
             self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
+
+    def set_custom_payloads(self, custom_payloads):
+        """set custom payload fields"""
+        if custom_payloads is not None:
+            self.smart_alert_config["customPayloadFields"] = [custom_payloads]
+        else:
+            self.exit_synctl(ERROR_CODE, "Custom payloads is invalid")
+
+    def set_grace_period(self, grace_period):
+        if not grace_period or len(grace_period) < 2:
+            self.exit_synctl(ERROR_CODE, "grace period should not be none or invalid")
+
+        grace_period_ms = self.covert_grace_period(grace_period)
+        self.smart_alert_config["gracePeriod"] = grace_period_ms
 
     def loads_from_json_file(self, json_file_name):
         try:
@@ -4059,6 +4093,19 @@ class UpdateSmartAlert(SmartAlert):
         else:
             self.exit_synctl(ERROR_CODE, "Tag-filter expression should not be None")
 
+    def update_custom_payloads(self, custom_payload):
+        if custom_payload is not None:
+            self.update_config["customPayloadFields"] = [custom_payload]
+        else:
+            self.exit_synctl(ERROR_CODE, "custom payload fields should not be None")
+
+    def update_grace_period(self, grace_period):
+        if not grace_period or len(grace_period) < 2:
+            self.exit_synctl(ERROR_CODE, "grace period should not be none or invalid")
+
+        grace_period_ms = self.covert_grace_period(grace_period)
+        self.update_config["gracePeriod"] = grace_period_ms
+
     def get_updated_alert_config(self):
         """return payload as json"""
         result = json.dumps(self.update_config)
@@ -4962,7 +5009,7 @@ class ParseParameter:
             '--test', type=str, nargs='+', metavar="<id>", help="test id, support multiple test id")
 
         self.parser_create.add_argument(
-            '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1,60]m, [1-24]h")
+            '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1-60]m, [1-24]h")
 
         self.parser_create.add_argument(
             '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
@@ -4975,6 +5022,12 @@ class ParseParameter:
 
         self.parser_create.add_argument(
             '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
+
+        self.parser_create.add_argument(
+            '--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
+
+        self.parser_create.add_argument(
+            '--grace-period', type=str, metavar="<string>", help="The duration for which an alert remains open after conditions are no longer violated, The grace period must range between 1 minute and a maximum of 7 days")
 
         # set auth
         self.parser_create.add_argument(
@@ -5128,6 +5181,10 @@ class ParseParameter:
             '--websites', nargs="+", metavar="<id>", help="set websites")
         patch_exclusive_group.add_argument(
             '--mobile-apps', '--mobile-applications', nargs="+", metavar="<id>", help="set mobile applications")
+        patch_exclusive_group.add_argument(
+            '--grace-period', type=str, metavar="<json>", help="The duration for which an alert remains open after conditions are no longer violated, with the alert auto-closing once the grace period expires.")
+        patch_exclusive_group.add_argument(
+            '--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
 
 
         # parser_patch.add_mutually_exclusive_group
@@ -5238,6 +5295,10 @@ class ParseParameter:
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
         update_group.add_argument(
             '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
+        update_group.add_argument(
+            '--grace-period', type=str, metavar="<json>", help="The duration for which an alert remains open after conditions are no longer violated, with the alert auto-closing once the grace period expires.")
+        update_group.add_argument(
+            '--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
         # enable/disable smart alerts
         update_exclusive_group.add_argument(
             '--enable', action='store_true', help='enable smart alert')
@@ -5627,6 +5688,11 @@ def main():
                 tag_filter_expression = get_args.tag_filter_expression
                 tag_filter_expression_json = json.loads(tag_filter_expression)
                 alert_payload.set_tag_filter_expression(tag_filter_expression_json)
+            if get_args.custom_payloads is not None:
+                custom_payloads_json = json.loads(get_args.custom_payloads)
+                alert_payload.set_custom_payloads(custom_payloads_json)
+            if get_args.grace_period is not None:
+                alert_payload.set_grace_period(get_args.grace_period)
             alert_instance.set_alert_payload(alert_payload.get_json())
             alert_instance.create_synthetic_alert()
         elif get_args.syn_type == SYN_TEST:
@@ -5992,6 +6058,11 @@ def main():
                 if get_args.tag_filter_expression is not None:
                     tag_filter_expression = json.loads(get_args.tag_filter_expression)
                     update_alert.update_tag_filter_expression(tag_filter_expression)
+                if get_args.custom_payloads is not None:
+                    custom_payloads_json = json.loads(get_args.custom_payloads)
+                    update_alert.update_custom_payloads(custom_payloads_json)
+                if get_args.grace_period is not None:
+                    update_alert.update_grace_period(get_args.grace_period)
                 updated_alert_config = update_alert.get_updated_alert_config()
                 update_alert.update_a_smart_alert(get_args.id, updated_alert_config)
         if get_args.syn_type == SYN_CRED:
