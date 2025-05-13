@@ -140,6 +140,7 @@ def validate_args(args):
 COMMAND_CONFIG = 'config'
 COMMAND_CREATE = 'create'
 COMMAND_GET = 'get'
+COMMAND_RUN = 'run'
 COMMAND_DELETE = 'delete'
 COMMAND_PATCH = 'patch'
 COMMAND_UPDATE = 'update'
@@ -149,6 +150,11 @@ CONFIG_USAGE = """synctl config {set,list,use,remove} [options]
 examples:
 # set a default instana backend to connect
 synctl config set --host <host> --token <token> --name <name>"""
+
+RUN_USAGE = """synctl run --test <test-id> --lo <id>
+examples:
+
+"""
 
 CREATE_USAGE = """synctl create test/cred/alert [options]
 
@@ -5060,6 +5066,11 @@ class ParseParameter:
         self.parser_config._positionals.title = POSITION_PARAMS
         self.parser_config._optionals.title = OPTIONS_PARAMS
 
+        self.parser_runNow = sub_parsers.add_parser(
+            'run', help='run a synthetic test', usage=RUN_USAGE)
+        self.parser_runNow._positionals.title = POSITION_PARAMS
+        self.parser_runNow._optionals.title = OPTIONS_PARAMS
+
         self.parser_create = sub_parsers.add_parser(
             'create', help='create a Synthetic test, credential or alert', add_help=True, usage=CREATE_USAGE)
         self.parser_create._positionals.title = POSITION_PARAMS
@@ -5102,6 +5113,24 @@ class ParseParameter:
             '--env', '--name', type=str, metavar="<name>", help='specify which config to use')
         self.parser_config.add_argument(
             '--default', action="store_true", help='set as default')
+
+    def runNow_command_options(self):
+        self.parser_runNow.add_argument(
+            '--verify-tls', action="store_true", default=False, help="verify tls certificate")
+        self.parser_runNow.add_argument(
+            'run_type', type=str, choices=["test"], metavar="<id>", help="test")
+        self.parser_runNow.add_argument(
+            'id', metavar='<id>', help='test id')
+        self.parser_runNow.add_argument(
+            '--location', '--lo', type=str, required=True, metavar="<id>", help="location id")
+
+        host_token_group = self.parser_runNow.add_argument_group()
+        host_token_group.add_argument(
+            '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a specified config')
+        host_token_group.add_argument(
+            '--host', type=str,  metavar="<host>", help='set hostname')
+        host_token_group.add_argument(
+            '--token', type=str,  metavar="<token>", help='set token')
 
     def create_command_options(self):
         self.parser_create.add_argument(
@@ -5611,6 +5640,7 @@ class ParseParameter:
     def set_options(self):
         self.global_options()
         self.config_command_options()
+        self.runNow_command_options()
         self.create_command_options()
         self.get_command_options()
         self.patch_command_options()
