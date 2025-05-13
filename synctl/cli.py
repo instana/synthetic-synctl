@@ -5785,6 +5785,11 @@ def main():
             else:
                 auth_instance.remove_an_item_from_config(get_args.env)
 
+    elif COMMAND_RUN == get_args.sub_command:
+        if get_args.run_type == SYN_TEST:
+            if get_args.id and get_args.location is not None:
+                syn_instance.run_now_test(get_args.id, get_args.location)
+
     elif COMMAND_GET == get_args.sub_command:
         if get_args.op_type == SYN_TEST:
             # synctl_instanace.synctl_get()
