@@ -2510,6 +2510,49 @@ class SyntheticTest(Base):
     def get_synthetic_payload(self):
         return self.payload
 
+    def run_now_test(self, test, location):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        test_payload = self.retrieve_a_synthetic_test(test)
+        test_payload[0]["runType"] = "CI/CD"
+        json_string = json.dumps(test_payload)
+
+        print(test_payload)
+        run_now_url = f"{host}/api/synthetics/settings/tests/ci-cd"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        try:
+            run_now_result = requests.post(run_now_url,
+                                           headers=headers,
+                                           data=test_payload,
+                                           timeout=60,
+                                           verify=self.insecure)
+
+            print(run_now_result)
+
+            # if _status_is_201(run_now_result.status_code):
+            #     # extracting data in json format
+            #     data = create_res.json()
+            #     test_id = data["id"]
+            #     test_label = data["label"]
+            #     print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
+            # elif _status_is_429(create_res.status_code):
+            #     self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
+            # else:
+            #     print('create test failed, status code:', create_res.status_code)
+            #     if create_res.text:
+            #         print(create_res.text)
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
     def create_a_synthetic_test(self):
         """create a Synthetic test, test_payload is json"""
         test_payload = self.payload
