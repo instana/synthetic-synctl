@@ -2510,18 +2510,27 @@ class SyntheticTest(Base):
     def get_synthetic_payload(self):
         return self.payload
 
-    def run_now_test(self, test, location):
+    def run_now_test(self, test, location: list):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
 
-        test_payload = self.retrieve_a_synthetic_test(test)
-        test_payload[0]["runType"] = "CI/CD"
-        json_string = json.dumps(test_payload)
+        test_payload = [
+            {
+                "testId": test,
+                "runType": "CI/CD",
+                "customization": {
+                    "locations": location
+                },
+                "configuration": {
+                    "retries": "",
+                    "retryInterval": "",
+                    "timeout": ""
+                }
+            }
+        ]
 
-        print(test_payload)
         run_now_url = f"{host}/api/synthetics/settings/tests/ci-cd"
-
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"apiToken {token}"
@@ -2530,24 +2539,20 @@ class SyntheticTest(Base):
         try:
             run_now_result = requests.post(run_now_url,
                                            headers=headers,
-                                           data=test_payload,
+                                           data=json.dumps(test_payload),
                                            timeout=60,
                                            verify=self.insecure)
 
-            print(run_now_result)
-
-            # if _status_is_201(run_now_result.status_code):
-            #     # extracting data in json format
-            #     data = create_res.json()
-            #     test_id = data["id"]
-            #     test_label = data["label"]
-            #     print(f"test \"{test_label}\" created, id is \"{test_id}\"" )
-            # elif _status_is_429(create_res.status_code):
-            #     self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
-            # else:
-            #     print('create test failed, status code:', create_res.status_code)
-            #     if create_res.text:
-            #         print(create_res.text)
+            if _status_is_201(run_now_result.status_code):
+                # extracting data in json format
+                for item in run_now_result.json():
+                    test_name = item.get("testId")
+                    result_id = item.get("testResultId")
+                    print(f'Test "{test_name}" ran successfully, id is "{result_id}"')
+            else:
+                print('Run test failed, status code:', run_now_result.status_code)
+                if run_now_result.text:
+                    print(run_now_result.text)
         except requests.ConnectTimeout as timeout_error:
             self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
         except requests.ConnectionError as connect_error:
@@ -5165,7 +5170,7 @@ class ParseParameter:
         self.parser_runNow.add_argument(
             'id', metavar='<id>', help='test id')
         self.parser_runNow.add_argument(
-            '--location', '--lo', type=str, required=True, metavar="<id>", help="location id")
+            '--location', '--lo', type=str, nargs='+', required=True, metavar="<id>", help="location id")
 
         host_token_group = self.parser_runNow.add_argument_group()
         host_token_group.add_argument(
