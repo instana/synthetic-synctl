@@ -2645,13 +2645,16 @@ class SyntheticTest(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def retrieve_all_synthetic_tests(self, syn_type=None):
+    def retrieve_all_synthetic_tests(self, syn_type=None, CI_CD=False):
         # API doc: https://instana.github.io/openapi/#operation/getSyntheticTests
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
 
-        retrieve_url = f"{host}/api/synthetics/settings/tests/"
+        if CI_CD is True:
+            retrieve_url = f"{host}/api/synthetics/settings/tests/ci-cd"
+        else:
+            retrieve_url = f"{host}/api/synthetics/settings/tests/"
 
         headers = {
             'Content-Type': 'application/json',
@@ -5353,6 +5356,9 @@ class ParseParameter:
         self.parser_get.add_argument(
             '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1,60]m, [1-24]h"
         )
+        # CI-CD tests
+        self.parser_get.add_argument(
+            '--CI-CD', "--ci-cd", action="store_true", help='output all CI/CD type of tests')
 
         self.parser_get.add_argument(
             '--save-script', action="store_true", help='save script to local disk, default file name is <label>.[js|json|side]')
@@ -5851,15 +5857,21 @@ def main():
                     print("Synthetic type only support 0 1 2 3 4 5 6", syn_type_t)
 
             if get_args.id is None:
+                if get_args.CI_CD is True:
+                    out_list = syn_instance.retrieve_all_synthetic_tests(
+                        syn_type_t, CI_CD=True)
+                else:
+                    out_list = syn_instance.retrieve_all_synthetic_tests(
+                        syn_type_t)
                 if get_args.filter is not None:
                     split_string = get_args.filter.split('=')
                     filtered_payload = syn_instance.retrieve_synthetic_test_by_filter(split_string)
                     syn_instance.print_synthetic_test(out_list=filtered_payload)
                     sys.exit(ERROR_CODE)
 
-                out_list = syn_instance.retrieve_all_synthetic_tests(
-                    syn_type_t)
                 if get_args.show_result is True:
+                    out_list = syn_instance.retrieve_all_synthetic_tests(
+                        syn_type_t)
                     summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                        test_id=get_args.id)
                     syn_instance.print_synthetic_test(out_list=out_list,
