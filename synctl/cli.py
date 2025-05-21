@@ -3165,8 +3165,7 @@ class SyntheticTest(Base):
         label_len = 0
         if syn_list is not None and isinstance(syn_list, list):
             for syn in syn_list:
-                if syn is not None and label_len < len(syn["label"]):
-                    label_len = len(syn["label"])
+                label_len = max(label_len, len(syn.get("label", "")), len(syn.get("testLabel", "")))
         if label_len > 60:
             return 60
         else:
@@ -3316,6 +3315,29 @@ class SyntheticTest(Base):
                               "N/A")  # None URL => N/A
                         output_lists.append(t)
         print('total:', len(output_lists))
+
+    def print_runNow_tests(self, tests):
+        id_length = 40
+        max_label_length = self.__get_max_label_length(tests)
+        syn_type_length = 15
+        run_type_length = 10
+        completed_length = 10
+
+        print(self.fill_space("Result ID".upper(), id_length),
+              self.fill_space("Label".upper(), max_label_length),
+              self.fill_space("syntheticType".upper(), syn_type_length),
+              self.fill_space("RunType".upper(), run_type_length),
+              self.fill_space("Completed".upper(), completed_length),
+              self.fill_space("Locations".upper()))
+
+        for t in tests:
+                print(self.fill_space(t["testResultId"], id_length),
+                      self.fill_space(t["testLabel"], max_label_length),
+                      self.fill_space(t["testType"], syn_type_length),
+                      self.fill_space(t["runType"], run_type_length),
+                      self.fill_space(str(t["completed"]), completed_length),
+                      self.fill_space(t["locationLabel"]))
+
 
     def save_api_script_to_local(self, test):
         # save api script to local file
@@ -5860,6 +5882,8 @@ def main():
                 if get_args.CI_CD is True:
                     out_list = syn_instance.retrieve_all_synthetic_tests(
                         syn_type_t, CI_CD=True)
+                    syn_instance.print_runNow_tests(out_list)
+                    sys.exit(NORMAL_CODE)
                 else:
                     out_list = syn_instance.retrieve_all_synthetic_tests(
                         syn_type_t)
