@@ -153,7 +153,8 @@ synctl config set --host <host> --token <token> --name <name>"""
 
 RUN_USAGE = """synctl run --test <test-id> --lo <id>
 examples:
-
+# Run a CI-CD test
+synctl run test <test-id> --lo <loc-id> 
 """
 
 CREATE_USAGE = """synctl create test/cred/alert [options]
@@ -3425,6 +3426,7 @@ class SyntheticTest(Base):
 
     def print_runNow_tests(self):
         test_results = self.retrieve_all_synthetic_tests(CI_CD=True)
+        print(test_results)
         id_length = 40
         max_label_length = self.__get_max_label_length(test_results)
         syn_type_length = 15
