@@ -1870,6 +1870,66 @@ class SyntheticCredential(Base):
                 else:
                     print(self.fill_space(key, 30), value)
 
+class RunNowConfiguration(Base):
+    def __init__(self):
+        Base.__init__(self)
+        self.runNow_config = {
+            "testId": "",
+            "runType": "CI/CD",
+            "customization": {
+                "locations": [],
+                "configuration": {
+                    "retries": 0,
+                    "retryInterval": 1,
+                    "timeout": ""
+                },
+                "customProperties" : {}
+            }
+        }
+
+    def set_test(self, test):
+        if test is not None:
+            self.runNow_config["testId"] = test
+        else:
+            self.exit_synctl(ERROR_CODE, "No synthetic test specified")
+
+    def set_locations(self, locations: list):
+        """locations"""
+        if locations is not None:
+            self.runNow_config["customization"]["locations"] = locations
+
+    def set_retries(self, retry):
+        """retries"""
+        if retry >= 0 and retry <= 2:
+            self.runNow_config["customization"]["configuration"]["retries"] = retry
+        else:
+            raise ValueError("retry should be [0, 2]")
+
+    def set_retry_interval(self, interval: int):
+        """retryInterval"""
+        if interval is None:
+            interval = 1
+        if interval > 0 and interval < 10:
+            self.runNow_config["customization"]["configuration"]["retryInterval"] = interval
+
+    def set_timeout(self, timeout: int) -> None:
+        """timeout <number>(ms|s|m)"""
+        self.runNow_config["customization"]["configuration"]["timeout"] = timeout
+
+    def set_custom_properties(self, custom_prop):
+        """customProperties"""
+        if any(s == '' or s.isspace() for s in custom_prop):
+            self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
+
+        if custom_prop is not None:
+            self.runNow_config["customization"]["customProperties"] = custom_prop
+
+    def get_json(self):
+        """return payload as json"""
+        if len(self.runNow_config["customization"]["locations"]) == 0:
+            self.exit_synctl(ERROR_CODE, "Error: no synthetic location, set --lo <loc-id> at least a synthetic location")
+        return json.dumps([self.runNow_config])
+
 
 class SmartAlertConfiguration(Base):
     def __init__(self):
@@ -2510,25 +2570,10 @@ class SyntheticTest(Base):
     def get_synthetic_payload(self):
         return self.payload
 
-    def run_now_test(self, test, location: list):
+    def run_now_test(self, payload):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
-
-        test_payload = [
-            {
-                "testId": test,
-                "runType": "CI/CD",
-                "customization": {
-                    "locations": location
-                },
-                "configuration": {
-                    "retries": "",
-                    "retryInterval": "",
-                    "timeout": ""
-                }
-            }
-        ]
 
         run_now_url = f"{host}/api/synthetics/settings/tests/ci-cd"
         headers = {
@@ -2539,7 +2584,7 @@ class SyntheticTest(Base):
         try:
             run_now_result = requests.post(run_now_url,
                                            headers=headers,
-                                           data=json.dumps(test_payload),
+                                           data=payload,
                                            timeout=60,
                                            verify=self.insecure)
 
@@ -5258,7 +5303,16 @@ class ParseParameter:
         self.parser_runNow.add_argument(
             'id', metavar='<id>', help='test id')
         self.parser_runNow.add_argument(
-            '--location', '--lo', type=str, nargs='+', required=True, metavar="<id>", help="location id")
+            '--location', '--lo', type=str, nargs='+', metavar="<id>", help="location id")
+        self.parser_runNow.add_argument(
+            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
+        self.parser_runNow.add_argument(
+            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
+        self.parser_runNow.add_argument(
+            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+        self.parser_runNow.add_argument(
+            '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
+
 
         host_token_group = self.parser_runNow.add_argument_group()
         host_token_group.add_argument(
@@ -5925,9 +5979,42 @@ def main():
                 auth_instance.remove_an_item_from_config(get_args.env)
 
     elif COMMAND_RUN == get_args.sub_command:
+        runNow_payload = RunNowConfiguration()
+
         if get_args.run_type == SYN_TEST:
-            if get_args.id and get_args.location is not None:
-                syn_instance.run_now_test(get_args.id, get_args.location)
+            if get_args.id is not None:
+                runNow_payload.set_test(get_args.id)
+            if get_args.location is not None:
+                runNow_payload.set_locations(get_args.location)
+            if get_args.retries is not None:
+                runNow_payload.set_retries(get_args.retries)
+                # retryInterval [0, 10]
+            if get_args.retry_interval is not None:
+                runNow_payload.set_retry_interval(get_args.retry_interval)
+            if get_args.timeout is not None:
+                runNow_payload.set_timeout(get_args.timeout)
+            if get_args.custom_properties is not None:
+                try:
+                    custom_properties = json.loads(get_args.custom_properties)
+                    if isinstance(custom_properties, dict):
+                        print("Warning: The '{\"key1\":\"value1\"}' format will be deprecated soon. Please use 'key1=value1' instead.")
+                        runNow_payload.set_custom_properties(custom_properties)
+                    else:
+                        raise json.JSONDecodeError("Not a dict", get_args.custom_properties)
+                except json.JSONDecodeError:
+                    if "=" in get_args.custom_properties:
+                        try:
+                            dict_custom_properties = dict(
+                                pair.strip().split("=", 1) for pair in get_args.custom_properties.split(",")
+                            )
+                            runNow_payload.set_custom_properties(dict_custom_properties)
+                        except ValueError:
+                            print(runNow_payload.exit_synctl('Ensure key-value pairs are formatted as "key=value"'))
+                    else:
+                        print(runNow_payload.exit_synctl('Invalid format: Use JSON or "key=value,key2=value2"'))
+
+            payload = runNow_payload.get_json()
+            syn_instance.run_now_test(payload)
 
     elif COMMAND_GET == get_args.sub_command:
         if get_args.op_type == SYN_TEST:
