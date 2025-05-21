@@ -2698,6 +2698,48 @@ class SyntheticTest(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
+    def retrieve_a_runNow_result(self, testResultId):
+        # API Doc: https://instana.github.io/openapi/#operation/getSyntheticTestCICD
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+        if testResultId is None or testResultId == "":
+            print("test result id should not be empty")
+            return
+        else:
+            retrieve_url = f"{host}/api/synthetics/settings/tests/ci-cd/{testResultId}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        try:
+            result = requests.get(retrieve_url,
+                                  headers=headers,
+                                  timeout=60,
+                                  verify=self.insecure)
+
+            if _status_is_200(result.status_code):
+                # extracting data in json format
+                data = result.json()
+                return data
+            elif _status_is_403(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message='Insufficient access rights for resource')
+            elif _status_is_404(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message=f'result {testResultId} not found')
+            elif _status_is_429(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message=TOO_MANY_REQUEST_ERROR)
+            else:
+                self.exit_synctl(ERROR_CODE,
+                                 f'get Result {testResultId} failed, status code: {result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
     def retrieve_test_results(self, test_id, page=1, page_size=200, window_size=60*60*1000):
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
@@ -3001,6 +3043,26 @@ class SyntheticTest(Base):
                   self.fill_space(status, status_length),
                   self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
                   self.fill_space(str(formatted_response_size), response_size_length))
+
+    def print_a_runNow_result(self, testResultid):
+        test_result = self.retrieve_a_runNow_result(testResultid)
+
+        custom_details = None
+        print(self.fill_space("Name".upper(), 30), "Value".upper())
+        for key, value in test_result.items():
+            if key == "customization":
+                custom_details = value
+            else:
+                print(self.fill_space(key, 30), value)
+
+        print("---- Customization ----")
+        for key, value in custom_details.items():
+            if key == "syntheticType":
+                syn_type = self.map_synthetic_type_label(value)
+                print(self.fill_space(key, 30), syn_type)
+            else:
+                print(self.fill_space(key, 30), value)
+
 
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
         host = self.auth["host"]
@@ -3316,9 +3378,10 @@ class SyntheticTest(Base):
                         output_lists.append(t)
         print('total:', len(output_lists))
 
-    def print_runNow_tests(self, tests):
+    def print_runNow_tests(self):
+        test_results = self.retrieve_all_synthetic_tests(CI_CD=True)
         id_length = 40
-        max_label_length = self.__get_max_label_length(tests)
+        max_label_length = self.__get_max_label_length(test_results)
         syn_type_length = 15
         run_type_length = 10
         completed_length = 10
@@ -3330,7 +3393,7 @@ class SyntheticTest(Base):
               self.fill_space("Completed".upper(), completed_length),
               self.fill_space("Locations".upper()))
 
-        for t in tests:
+        for t in test_results:
                 print(self.fill_space(t["testResultId"], id_length),
                       self.fill_space(t["testLabel"], max_label_length),
                       self.fill_space(t["testType"], syn_type_length),
@@ -6004,6 +6067,11 @@ def main():
                     else:
                         a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test, get_args.har)
                     syn_instance.print_result_details(a_result_details, test_result["items"])
+            elif get_args.CI_CD is True:
+                if get_args.id is not None:
+                    syn_instance.print_a_runNow_result(get_args.id)
+                else:
+                    syn_instance.print_runNow_tests()
             else:
                 print('testid is required')
         elif get_args.op_type == SYN_METRIC:
