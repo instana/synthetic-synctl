@@ -14,7 +14,6 @@ synctl get result [id] [options]
     --test                   Synthetic test id
     --window-size <window>   set synthetic result window size, support [1,60]m, [1-24]h
     --har                    save HAR to local
-    --CI-CD, --ci-cd         lists CI-CD test results
 
     --use-env, -e <name>     use a specified config
     --host <host>            set hostname
@@ -36,15 +35,4 @@ synctl get result <id> --test <test-id> --window-size 6h
 Save HAR file to local
 ```
 synctl get result <id> --test <test-id> --har
-```
-
-Show all CI-CD test results
-```
-synctl get result --ci-cd
-```
-
-Show a CI-CD test result
-```
-synctl get result <id> --ci-cd
-
 ```
