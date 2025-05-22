@@ -5499,6 +5499,8 @@ class ParseParameter:
         # CI-CD tests
         self.parser_get.add_argument(
             '--CI-CD', "--ci-cd", action="store_true", help='output all CI/CD type of tests')
+        self.parser_get.add_argument(
+            '--result',  type=str, metavar="id", help="result id to get a ci-cd test ")
 
         self.parser_get.add_argument(
             '--save-script', action="store_true", help='save script to local disk, default file name is <label>.[js|json|side]')
@@ -6031,9 +6033,10 @@ def main():
 
             if get_args.id is None:
                 if get_args.CI_CD is True:
-                    # out_list = syn_instance.retrieve_all_synthetic_tests(
-                    #     syn_type_t, CI_CD=True)
-                    syn_instance.print_runNow_tests()
+                    if get_args.result is not None:
+                        syn_instance.print_a_runNow_test(get_args.result)
+                    else:
+                        syn_instance.print_runNow_tests()
                     sys.exit(NORMAL_CODE)
                 else:
                     out_list = syn_instance.retrieve_all_synthetic_tests(
