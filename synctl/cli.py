@@ -3426,23 +3426,22 @@ class SyntheticTest(Base):
 
     def print_runNow_tests(self):
         test_results = self.retrieve_all_synthetic_tests(CI_CD=True)
-        print(test_results)
         id_length = 40
         max_label_length = self.__get_max_label_length(test_results)
         syn_type_length = 15
         run_type_length = 10
         completed_length = 10
 
-        print(self.fill_space("Result ID".upper(), id_length),
-              self.fill_space("Label".upper(), max_label_length),
+        print(self.fill_space("Label".upper(), max_label_length),
+              self.fill_space("Result ID".upper(), id_length),
               self.fill_space("syntheticType".upper(), syn_type_length),
               self.fill_space("RunType".upper(), run_type_length),
               self.fill_space("Completed".upper(), completed_length),
               self.fill_space("Locations".upper()))
 
         for t in test_results:
-                print(self.fill_space(t["testResultId"], id_length),
-                      self.fill_space(t["testLabel"], max_label_length),
+                print(self.fill_space(t["testLabel"], max_label_length),
+                      self.fill_space(t["testResultId"], id_length),
                       self.fill_space(t["testType"], syn_type_length),
                       self.fill_space(t["runType"], run_type_length),
                       self.fill_space(str(t["completed"]), completed_length),
@@ -6032,9 +6031,9 @@ def main():
 
             if get_args.id is None:
                 if get_args.CI_CD is True:
-                    out_list = syn_instance.retrieve_all_synthetic_tests(
-                        syn_type_t, CI_CD=True)
-                    syn_instance.print_runNow_tests(out_list)
+                    # out_list = syn_instance.retrieve_all_synthetic_tests(
+                    #     syn_type_t, CI_CD=True)
+                    syn_instance.print_runNow_tests()
                     sys.exit(NORMAL_CODE)
                 else:
                     out_list = syn_instance.retrieve_all_synthetic_tests(
@@ -6055,6 +6054,11 @@ def main():
                     sys.exit(NORMAL_CODE)
                 syn_instance.print_synthetic_test(out_list=out_list)
             else:
+                if get_args.CI_CD is True:
+                    syn_instance.print_a_runNow_result(get_args.id)
+                else:
+                    syn_instance.print_runNow_tests()
+
                 summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                    test_id=get_args.id)
                 # if get_args.id is not None:
@@ -6156,11 +6160,11 @@ def main():
                     else:
                         a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test, get_args.har)
                     syn_instance.print_result_details(a_result_details, test_result["items"])
-            elif get_args.CI_CD is True:
-                if get_args.id is not None:
-                    syn_instance.print_a_runNow_result(get_args.id)
-                else:
-                    syn_instance.print_runNow_tests()
+            # elif get_args.CI_CD is True:
+            #     if get_args.id is not None:
+            #         syn_instance.print_a_runNow_result(get_args.id)
+            #     else:
+            #         syn_instance.print_runNow_tests()
             else:
                 print('testid is required')
         elif get_args.op_type == SYN_METRIC:
