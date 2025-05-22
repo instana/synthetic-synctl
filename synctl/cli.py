@@ -3090,7 +3090,7 @@ class SyntheticTest(Base):
                   self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
                   self.fill_space(str(formatted_response_size), response_size_length))
 
-    def print_a_runNow_result(self, testResultid):
+    def print_a_runNow_test(self, testResultid):
         test_result = self.retrieve_a_runNow_result(testResultid)
 
         custom_details = None
@@ -6055,7 +6055,7 @@ def main():
                 syn_instance.print_synthetic_test(out_list=out_list)
             else:
                 if get_args.CI_CD is True:
-                    syn_instance.print_a_runNow_result(get_args.id)
+                    syn_instance.print_a_runNow_test(get_args.id)
                 else:
                     syn_instance.print_runNow_tests()
 
