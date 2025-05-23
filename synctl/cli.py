@@ -140,6 +140,7 @@ def validate_args(args):
 COMMAND_CONFIG = 'config'
 COMMAND_CREATE = 'create'
 COMMAND_GET = 'get'
+COMMAND_RUN = 'run'
 COMMAND_DELETE = 'delete'
 COMMAND_PATCH = 'patch'
 COMMAND_UPDATE = 'update'
@@ -149,6 +150,12 @@ CONFIG_USAGE = """synctl config {set,list,use,remove} [options]
 examples:
 # set a default instana backend to connect
 synctl config set --host <host> --token <token> --name <name>"""
+
+RUN_USAGE = """synctl run --test <test-id> --lo <id>
+examples:
+# Run a CI-CD test
+synctl run test <test-id> --lo <loc-id> 
+"""
 
 CREATE_USAGE = """synctl create test/cred/alert [options]
 
@@ -1864,6 +1871,66 @@ class SyntheticCredential(Base):
                 else:
                     print(self.fill_space(key, 30), value)
 
+class RunNowConfiguration(Base):
+    def __init__(self):
+        Base.__init__(self)
+        self.runNow_config = {
+            "testId": "",
+            "runType": "CI/CD",
+            "customization": {
+                "locations": [],
+                "configuration": {
+                    "retries": 0,
+                    "retryInterval": 1,
+                    "timeout": ""
+                },
+                "customProperties" : {}
+            }
+        }
+
+    def set_test(self, test):
+        if test is not None:
+            self.runNow_config["testId"] = test
+        else:
+            self.exit_synctl(ERROR_CODE, "No synthetic test specified")
+
+    def set_locations(self, locations: list):
+        """locations"""
+        if locations is not None:
+            self.runNow_config["customization"]["locations"] = locations
+
+    def set_retries(self, retry):
+        """retries"""
+        if retry >= 0 and retry <= 2:
+            self.runNow_config["customization"]["configuration"]["retries"] = retry
+        else:
+            raise ValueError("retry should be [0, 2]")
+
+    def set_retry_interval(self, interval: int):
+        """retryInterval"""
+        if interval is None:
+            interval = 1
+        if interval > 0 and interval < 10:
+            self.runNow_config["customization"]["configuration"]["retryInterval"] = interval
+
+    def set_timeout(self, timeout: int) -> None:
+        """timeout <number>(ms|s|m)"""
+        self.runNow_config["customization"]["configuration"]["timeout"] = timeout
+
+    def set_custom_properties(self, custom_prop):
+        """customProperties"""
+        if any(s == '' or s.isspace() for s in custom_prop):
+            self.exit_synctl(ERROR_CODE, "Custom property should be <key>=<value>")
+
+        if custom_prop is not None:
+            self.runNow_config["customization"]["customProperties"] = custom_prop
+
+    def get_json(self):
+        """return payload as json"""
+        if len(self.runNow_config["customization"]["locations"]) == 0:
+            self.exit_synctl(ERROR_CODE, "Error: no synthetic location, set --lo <loc-id> at least a synthetic location")
+        return json.dumps([self.runNow_config])
+
 
 class SmartAlertConfiguration(Base):
     def __init__(self):
@@ -2504,6 +2571,39 @@ class SyntheticTest(Base):
     def get_synthetic_payload(self):
         return self.payload
 
+    def run_now_test(self, payload):
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+
+        run_now_url = f"{host}/api/synthetics/settings/tests/ci-cd"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"apiToken {token}"
+        }
+
+        try:
+            run_now_result = requests.post(run_now_url,
+                                           headers=headers,
+                                           data=payload,
+                                           timeout=60,
+                                           verify=self.insecure)
+
+            if _status_is_201(run_now_result.status_code):
+                # extracting data in json format
+                for item in run_now_result.json():
+                    test_name = item.get("testId")
+                    result_id = item.get("testResultId")
+                    print(f'Test "{test_name}" ran successfully, id is "{result_id}"')
+            else:
+                print('Run test failed, status code:', run_now_result.status_code)
+                if run_now_result.text:
+                    print(run_now_result.text)
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
     def create_a_synthetic_test(self):
         """create a Synthetic test, test_payload is json"""
         test_payload = self.payload
@@ -2591,13 +2691,16 @@ class SyntheticTest(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
-    def retrieve_all_synthetic_tests(self, syn_type=None):
+    def retrieve_all_synthetic_tests(self, syn_type=None, CI_CD=False):
         # API doc: https://instana.github.io/openapi/#operation/getSyntheticTests
         self.check_host_and_token(self.auth["host"], self.auth["token"])
         host = self.auth["host"]
         token = self.auth["token"]
 
-        retrieve_url = f"{host}/api/synthetics/settings/tests/"
+        if CI_CD is True:
+            retrieve_url = f"{host}/api/synthetics/settings/tests/ci-cd"
+        else:
+            retrieve_url = f"{host}/api/synthetics/settings/tests/"
 
         headers = {
             'Content-Type': 'application/json',
@@ -2636,6 +2739,48 @@ class SyntheticTest(Base):
                 self.exit_synctl(ERROR_CODE, TOO_MANY_REQUEST_ERROR)
             else:
                 self.exit_synctl(ERROR_CODE, f'get test failed, status code: {query_result.status_code}')
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+    def retrieve_a_runNow_result(self, testResultId):
+        # API Doc: https://instana.github.io/openapi/#operation/getSyntheticTestCICD
+        self.check_host_and_token(self.auth["host"], self.auth["token"])
+        host = self.auth["host"]
+        token = self.auth["token"]
+        if testResultId is None or testResultId == "":
+            print("test result id should not be empty")
+            return
+        else:
+            retrieve_url = f"{host}/api/synthetics/settings/tests/ci-cd/{testResultId}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        try:
+            result = requests.get(retrieve_url,
+                                  headers=headers,
+                                  timeout=60,
+                                  verify=self.insecure)
+
+            if _status_is_200(result.status_code):
+                # extracting data in json format
+                data = result.json()
+                return data
+            elif _status_is_403(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message='Insufficient access rights for resource')
+            elif _status_is_404(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message=f'result {testResultId} not found')
+            elif _status_is_429(result.status_code):
+                self.exit_synctl(error_code=ERROR_CODE,
+                                 message=TOO_MANY_REQUEST_ERROR)
+            else:
+                self.exit_synctl(ERROR_CODE,
+                                 f'get Result {testResultId} failed, status code: {result.status_code}')
         except requests.ConnectTimeout as timeout_error:
             self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
         except requests.ConnectionError as connect_error:
@@ -2945,6 +3090,26 @@ class SyntheticTest(Base):
                   self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
                   self.fill_space(str(formatted_response_size), response_size_length))
 
+    def print_a_runNow_test(self, testResultid):
+        test_result = self.retrieve_a_runNow_result(testResultid)
+
+        custom_details = None
+        print(self.fill_space("Name".upper(), 30), "Value".upper())
+        for key, value in test_result.items():
+            if key == "customization":
+                custom_details = value
+            else:
+                print(self.fill_space(key, 30), value)
+
+        print("---- Customization ----")
+        for key, value in custom_details.items():
+            if key == "syntheticType":
+                syn_type = self.map_synthetic_type_label(value)
+                print(self.fill_space(key, 30), syn_type)
+            else:
+                print(self.fill_space(key, 30), value)
+
+
     def retrieve_synthetic_test_by_filter(self, tag_filter, page=1, page_size=200, window_size=60*60*1000):
         host = self.auth["host"]
         token = self.auth["token"]
@@ -3108,8 +3273,7 @@ class SyntheticTest(Base):
         label_len = 0
         if syn_list is not None and isinstance(syn_list, list):
             for syn in syn_list:
-                if syn is not None and label_len < len(syn["label"]):
-                    label_len = len(syn["label"])
+                label_len = max(label_len, len(syn.get("label", "")), len(syn.get("testLabel", "")))
         if label_len > 60:
             return 60
         else:
@@ -3259,6 +3423,30 @@ class SyntheticTest(Base):
                               "N/A")  # None URL => N/A
                         output_lists.append(t)
         print('total:', len(output_lists))
+
+    def print_runNow_tests(self):
+        test_results = self.retrieve_all_synthetic_tests(CI_CD=True)
+        id_length = 40
+        max_label_length = self.__get_max_label_length(test_results)
+        syn_type_length = 15
+        run_type_length = 10
+        completed_length = 10
+
+        print(self.fill_space("Label".upper(), max_label_length),
+              self.fill_space("Result ID".upper(), id_length),
+              self.fill_space("syntheticType".upper(), syn_type_length),
+              self.fill_space("RunType".upper(), run_type_length),
+              self.fill_space("Completed".upper(), completed_length),
+              self.fill_space("Locations".upper()))
+
+        for t in test_results:
+                print(self.fill_space(t["testLabel"], max_label_length),
+                      self.fill_space(t["testResultId"], id_length),
+                      self.fill_space(t["testType"], syn_type_length),
+                      self.fill_space(t["runType"], run_type_length),
+                      self.fill_space(str(t["completed"]), completed_length),
+                      self.fill_space(t["locationLabel"]))
+
 
     def save_api_script_to_local(self, test):
         # save api script to local file
@@ -5060,6 +5248,11 @@ class ParseParameter:
         self.parser_config._positionals.title = POSITION_PARAMS
         self.parser_config._optionals.title = OPTIONS_PARAMS
 
+        self.parser_runNow = sub_parsers.add_parser(
+            'run', help='run a synthetic test', usage=RUN_USAGE)
+        self.parser_runNow._positionals.title = POSITION_PARAMS
+        self.parser_runNow._optionals.title = OPTIONS_PARAMS
+
         self.parser_create = sub_parsers.add_parser(
             'create', help='create a Synthetic test, credential or alert', add_help=True, usage=CREATE_USAGE)
         self.parser_create._positionals.title = POSITION_PARAMS
@@ -5102,6 +5295,33 @@ class ParseParameter:
             '--env', '--name', type=str, metavar="<name>", help='specify which config to use')
         self.parser_config.add_argument(
             '--default', action="store_true", help='set as default')
+
+    def runNow_command_options(self):
+        self.parser_runNow.add_argument(
+            '--verify-tls', action="store_true", default=False, help="verify tls certificate")
+        self.parser_runNow.add_argument(
+            'run_type', type=str, choices=["test"], metavar="<id>", help="test")
+        self.parser_runNow.add_argument(
+            'id', metavar='<id>', help='test id')
+        self.parser_runNow.add_argument(
+            '--location', '--lo', type=str, nargs='+', metavar="<id>", help="location id")
+        self.parser_runNow.add_argument(
+            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
+        self.parser_runNow.add_argument(
+            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
+        self.parser_runNow.add_argument(
+            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+        self.parser_runNow.add_argument(
+            '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
+
+
+        host_token_group = self.parser_runNow.add_argument_group()
+        host_token_group.add_argument(
+            '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a specified config')
+        host_token_group.add_argument(
+            '--host', type=str,  metavar="<host>", help='set hostname')
+        host_token_group.add_argument(
+            '--token', type=str,  metavar="<token>", help='set token')
 
     def create_command_options(self):
         self.parser_create.add_argument(
@@ -5276,6 +5496,11 @@ class ParseParameter:
         self.parser_get.add_argument(
             '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1,60]m, [1-24]h"
         )
+        # CI-CD tests
+        self.parser_get.add_argument(
+            '--CI-CD', "--ci-cd", action="store_true", help='output all CI/CD type of tests')
+        self.parser_get.add_argument(
+            '--result',  type=str, metavar="id", help="result id to get a ci-cd test ")
 
         self.parser_get.add_argument(
             '--save-script', action="store_true", help='save script to local disk, default file name is <label>.[js|json|side]')
@@ -5611,6 +5836,7 @@ class ParseParameter:
     def set_options(self):
         self.global_options()
         self.config_command_options()
+        self.runNow_command_options()
         self.create_command_options()
         self.get_command_options()
         self.patch_command_options()
@@ -5755,6 +5981,44 @@ def main():
             else:
                 auth_instance.remove_an_item_from_config(get_args.env)
 
+    elif COMMAND_RUN == get_args.sub_command:
+        runNow_payload = RunNowConfiguration()
+
+        if get_args.run_type == SYN_TEST:
+            if get_args.id is not None:
+                runNow_payload.set_test(get_args.id)
+            if get_args.location is not None:
+                runNow_payload.set_locations(get_args.location)
+            if get_args.retries is not None:
+                runNow_payload.set_retries(get_args.retries)
+                # retryInterval [0, 10]
+            if get_args.retry_interval is not None:
+                runNow_payload.set_retry_interval(get_args.retry_interval)
+            if get_args.timeout is not None:
+                runNow_payload.set_timeout(get_args.timeout)
+            if get_args.custom_properties is not None:
+                try:
+                    custom_properties = json.loads(get_args.custom_properties)
+                    if isinstance(custom_properties, dict):
+                        print("Warning: The '{\"key1\":\"value1\"}' format will be deprecated soon. Please use 'key1=value1' instead.")
+                        runNow_payload.set_custom_properties(custom_properties)
+                    else:
+                        raise json.JSONDecodeError("Not a dict", get_args.custom_properties)
+                except json.JSONDecodeError:
+                    if "=" in get_args.custom_properties:
+                        try:
+                            dict_custom_properties = dict(
+                                pair.strip().split("=", 1) for pair in get_args.custom_properties.split(",")
+                            )
+                            runNow_payload.set_custom_properties(dict_custom_properties)
+                        except ValueError:
+                            print(runNow_payload.exit_synctl('Ensure key-value pairs are formatted as "key=value"'))
+                    else:
+                        print(runNow_payload.exit_synctl('Invalid format: Use JSON or "key=value,key2=value2"'))
+
+            payload = runNow_payload.get_json()
+            syn_instance.run_now_test(payload)
+
     elif COMMAND_GET == get_args.sub_command:
         if get_args.op_type == SYN_TEST:
             # synctl_instanace.synctl_get()
@@ -5768,15 +6032,24 @@ def main():
                     print("Synthetic type only support 0 1 2 3 4 5 6", syn_type_t)
 
             if get_args.id is None:
+                if get_args.CI_CD is True:
+                    if get_args.result is not None:
+                        syn_instance.print_a_runNow_test(get_args.result)
+                    else:
+                        syn_instance.print_runNow_tests()
+                    sys.exit(NORMAL_CODE)
+                else:
+                    out_list = syn_instance.retrieve_all_synthetic_tests(
+                        syn_type_t)
                 if get_args.filter is not None:
                     split_string = get_args.filter.split('=')
                     filtered_payload = syn_instance.retrieve_synthetic_test_by_filter(split_string)
                     syn_instance.print_synthetic_test(out_list=filtered_payload)
                     sys.exit(ERROR_CODE)
 
-                out_list = syn_instance.retrieve_all_synthetic_tests(
-                    syn_type_t)
                 if get_args.show_result is True:
+                    out_list = syn_instance.retrieve_all_synthetic_tests(
+                        syn_type_t)
                     summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                        test_id=get_args.id)
                     syn_instance.print_synthetic_test(out_list=out_list,
@@ -5784,6 +6057,11 @@ def main():
                     sys.exit(NORMAL_CODE)
                 syn_instance.print_synthetic_test(out_list=out_list)
             else:
+                if get_args.CI_CD is True:
+                    syn_instance.print_a_runNow_test(get_args.id)
+                else:
+                    syn_instance.print_runNow_tests()
+
                 summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                    test_id=get_args.id)
                 # if get_args.id is not None:
@@ -5885,6 +6163,11 @@ def main():
                     else:
                         a_result_details = syn_instance.retrieve_test_result_details(get_args.id, get_args.test, get_args.har)
                     syn_instance.print_result_details(a_result_details, test_result["items"])
+            # elif get_args.CI_CD is True:
+            #     if get_args.id is not None:
+            #         syn_instance.print_a_runNow_result(get_args.id)
+            #     else:
+            #         syn_instance.print_runNow_tests()
             else:
                 print('testid is required')
         elif get_args.op_type == SYN_METRIC:
