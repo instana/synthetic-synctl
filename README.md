@@ -143,7 +143,7 @@ Synthetic credential management:
 - [synctl get/create/update/delete cred](docs/synctl-credential.md) - Manage credentials.
 
 Synthetic CI-CD test management:
-- [synctl run test](docs/synctl-run-test.md) - Run a CI-CD test
+- [synctl run test](docs/synctl-run-test.md) - Run a CI-CD test.
 
 Others:
 - [synctl get application](docs/synctl-get-app.md) - Display Instana application.
