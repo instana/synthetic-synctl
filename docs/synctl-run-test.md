@@ -13,7 +13,6 @@ synctl run test <id> [options]
     --retries <int>                             retry times, value is from [0, 2]
     --retry-interval <int>                      retry interval, range is [1, 10]
     --timeout <num>ms|s|m                       set timeout, accept <number>(ms|s|m)
-    -f, --from-file <file>                      load synthetic test payload from file (.json)
     --custom-properties <string>                An object with name/value pairs to provide additional information of the Synthetic test
 
     --use-env <name>, -e <name>                 use a specified configuration
