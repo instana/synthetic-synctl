@@ -6059,8 +6059,6 @@ def main():
             else:
                 if get_args.CI_CD is True:
                     syn_instance.print_a_runNow_test(get_args.id)
-                else:
-                    syn_instance.print_runNow_tests()
 
                 summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                    test_id=get_args.id)
