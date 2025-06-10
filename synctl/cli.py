@@ -4059,7 +4059,7 @@ class UpdateSyntheticTest(SyntheticTest):
     def update_application_id(self, app_id):
         """update application id"""
         if app_id is not None:
-            self.update_config["applicationId"] = app_id
+            self.update_config["applications"] = app_id
         else:
             self.exit_synctl(ERROR_CODE, "application id should not be none")
 
