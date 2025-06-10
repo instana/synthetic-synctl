@@ -1003,7 +1003,7 @@ class SyntheticConfiguration(Base):
             # Indicates if the Synthetic test is started or not. The default is true.
             "active": True,  # required
             # Unique identifier of the Application Perspective.
-            "applicationId": None,
+            "applications": None,
 
             # customProperties An object with name/value pairs to provide additional information of the Synthetic test.
             "customProperties": {},
