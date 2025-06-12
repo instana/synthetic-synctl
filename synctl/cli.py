@@ -1003,7 +1003,7 @@ class SyntheticConfiguration(Base):
             # Indicates if the Synthetic test is started or not. The default is true.
             "active": True,  # required
             # Unique identifier of the Application Perspective.
-            "applications": None,
+            "applicationId": None,
 
             # customProperties An object with name/value pairs to provide additional information of the Synthetic test.
             "customProperties": {},
@@ -4060,6 +4060,7 @@ class UpdateSyntheticTest(SyntheticTest):
         """update application id"""
         if app_id is not None:
             self.update_config["applications"] = app_id
+            self.update_config["applicationId"] = app_id[0]
         else:
             self.exit_synctl(ERROR_CODE, "application id should not be none")
 
@@ -6442,7 +6443,6 @@ def main():
 
                 syn_payload = payload.get_json()
                 syn_instance.set_synthetic_payload(payload=syn_payload)
-
                 syn_instance.create_a_synthetic_test()
 
             else:
