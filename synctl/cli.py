@@ -6443,6 +6443,7 @@ def main():
 
                 syn_payload = payload.get_json()
                 syn_instance.set_synthetic_payload(payload=syn_payload)
+
                 syn_instance.create_a_synthetic_test()
 
             else:
