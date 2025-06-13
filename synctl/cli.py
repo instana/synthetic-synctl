@@ -4059,7 +4059,8 @@ class UpdateSyntheticTest(SyntheticTest):
     def update_application_id(self, app_id):
         """update application id"""
         if app_id is not None:
-            self.update_config["applicationId"] = app_id
+            self.update_config["applications"] = app_id
+            self.update_config["applicationId"] = app_id[0]
         else:
             self.exit_synctl(ERROR_CODE, "application id should not be none")
 
@@ -6059,8 +6060,6 @@ def main():
             else:
                 if get_args.CI_CD is True:
                     syn_instance.print_a_runNow_test(get_args.id)
-                else:
-                    syn_instance.print_runNow_tests()
 
                 summary_result = summary_instance.get_summary_list(syn_window_size,
                                                                    test_id=get_args.id)
