@@ -5381,11 +5381,9 @@ class ParseParameter:
         httpScript_group.add_argument('--bundle-entry-file', type=str, metavar="<filename>", help='Synthetic bundle test entry file, e.g, myscript.js')
 
         # browser type
-        self.parser_create.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
-
-        self.parser_create.add_argument(
-            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        browser_group = self.parser_create.add_argument_group("Browser Script Options")
+        browser_group_create.add_argument('--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
+        browser_group.add_argument('--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
 
         # SSLCertificate
         ssl_group = self.parser_create.add_argument_group("SSLCertificate Options")
