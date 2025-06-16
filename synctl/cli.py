@@ -17,7 +17,7 @@ import sys
 import tarfile
 import getpass
 import math
-import textwrap
+# import textwrap
 import time
 from datetime import datetime
 
@@ -5405,12 +5405,10 @@ class ParseParameter:
             '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
 
         # SSLCertificate
-        self.parser_create.add_argument(
-            '--hostname', type=str, metavar="<url>", help='set host name')
-        self.parser_create.add_argument(
-            '--port', type=int, help='set port')
-        self.parser_create.add_argument(
-            '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
+        ssl_group = self.parser_create.add_argument_group("SSLCertificate Options")
+        ssl_group.add_argument('--hostname', type=str, metavar="<url>", help='set host name')
+        ssl_group.add_argument('--port', type=int, help='set port')
+        ssl_group.add_argument('--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
 
         self.parser_create.add_argument(
             '--key', type=str, metavar="<key>", help='set credential name')
