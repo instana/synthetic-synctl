@@ -5251,12 +5251,12 @@ class ParseParameter:
         self.subparsers = sub_parsers
 
         self.parser_config = sub_parsers.add_parser(
-            'config', help='Modify config file', usage=CONFIG_USAGE)
+            'config', help='Modify config file', usage=CONFIG_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_config._positionals.title = POSITION_PARAMS
         self.parser_config._optionals.title = OPTIONS_PARAMS
 
         self.parser_runNow = sub_parsers.add_parser(
-            'run', help='run a synthetic test', usage=RUN_USAGE)
+            'run', help='run a synthetic test', usage=RUN_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_runNow._positionals.title = POSITION_PARAMS
         self.parser_runNow._optionals.title = OPTIONS_PARAMS
 
@@ -5266,22 +5266,22 @@ class ParseParameter:
         self.parser_create._optionals.title = OPTIONS_PARAMS
 
         self.parser_get = sub_parsers.add_parser(
-            'get', help='get Synthetic test, location, credential, alert, pop-size or pop-cost', usage=GET_USAGE)
+            'get', help='get Synthetic test, location, credential, alert, pop-size or pop-cost', usage=GET_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_get._positionals.title = POSITION_PARAMS
         self.parser_get._optionals.title = OPTIONS_PARAMS
 
         self.parser_patch = sub_parsers.add_parser(
-            'patch', help='patch a Synthetic test', usage=PATCH_USAGE)
+            'patch', help='patch a Synthetic test', usage=PATCH_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_patch._positionals.title = POSITION_PARAMS
         self.parser_patch._optionals.title = OPTIONS_PARAMS
 
         self.parser_update = sub_parsers.add_parser(
-            'update', help='update a Synthetic test or alert', usage=UPDATE_USAGE)
+            'update', help='update a Synthetic test or alert', usage=UPDATE_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_update._positionals.title = POSITION_PARAMS
         self.parser_update._optionals.title = OPTIONS_PARAMS
 
         self.parser_delete = sub_parsers.add_parser(
-            'delete', help='delete a Synthetic test, location, credential or alert', usage=DELETE_USAGE)
+            'delete', help='delete a Synthetic test, location, credential or alert', usage=DELETE_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_delete._positionals.title = POSITION_PARAMS
         self.parser_delete._optionals.title = OPTIONS_PARAMS
 
