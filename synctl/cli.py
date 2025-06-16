@@ -5415,26 +5415,17 @@ class ParseParameter:
         cred_group.add_argument('--value', type=str, metavar="<value>", help='set credential value')
 
         # DNS
-        self.parser_create.add_argument(
-            '--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
-        self.parser_create.add_argument(
-            '--lookup', type=str, help='set the name or IP address of the host')
-        self.parser_create.add_argument(
-            '--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
-        self.parser_create.add_argument(
-            '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
-        self.parser_create.add_argument(
-            '--query-type', type=str, help='set DNS query type')
-        self.parser_create.add_argument(
-            '--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
-        self.parser_create.add_argument(
-            '--server', type=str, help='set IP address of the DNS server')
-        self.parser_create.add_argument(
-            '--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
-        self.parser_create.add_argument(
-            '--target-values', type=str, help='set list of filters to be used to validate the test response')
-        self.parser_create.add_argument(
-            '--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
+        dns_group = self.parser_create.add_argument_group("DNS test Options")
+        dns_group.add_argument('--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
+        dns_group.add_argument('--lookup', type=str, help='set the name or IP address of the host')
+        dns_group.add_argument('--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
+        dns_group.add_argument('--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
+        dns_group.add_argument('--query-type', type=str, help='set DNS query type')
+        dns_group.add_argument('--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
+        dns_group.add_argument('--server', type=str, help='set IP address of the DNS server')
+        dns_group.add_argument('--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
+        dns_group.add_argument('--target-values', type=str, help='set list of filters to be used to validate the test response')
+        dns_group.add_argument('--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
 
         # smart alerts
         self.parser_create.add_argument(
