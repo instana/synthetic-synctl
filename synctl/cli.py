@@ -5410,10 +5410,9 @@ class ParseParameter:
         ssl_group.add_argument('--port', type=int, help='set port')
         ssl_group.add_argument('--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
 
-        self.parser_create.add_argument(
-            '--key', type=str, metavar="<key>", help='set credential name')
-        self.parser_create.add_argument(
-            '--value', type=str, metavar="<value>", help='set credential value')
+        cred_group = self.parser_create.add_argument_group("Credential Options")
+        cred_group.add_argument('--key', type=str, metavar="<key>", help='set credential name')
+        cred_group.add_argument('--value', type=str, metavar="<value>", help='set credential value')
 
         # DNS
         self.parser_create.add_argument(
