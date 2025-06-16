@@ -17,7 +17,7 @@ import sys
 import tarfile
 import getpass
 import math
-# import textwrap
+import textwrap
 import time
 from datetime import datetime
 
@@ -5369,34 +5369,19 @@ class ParseParameter:
 
         # options for ping, url
         http_group = self.parser_create.add_argument_group("API Simple Options")
-        http_group.add_argument(
-            '--url', type=str, metavar="<url>", help='HTTP request URL')
-        http_group.add_argument(
-            '--operation', type=str, metavar="<method>", help='HTTP request methods, GET, POST, HEAD, PUT, etc')
-        http_group.add_argument(
-            '--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
-
-        http_group.add_argument(
-            '--headers', type=str, metavar="<json>", help="HTTP headers")
-
-        http_group.add_argument(
-            '--body', type=str, metavar="<string>", help='HTTP body')
+        http_group.add_argument('--url', type=str, metavar="<url>", help='HTTP request URL')
+        http_group.add_argument('--operation', type=str, metavar="<method>", help='HTTP request methods, GET, POST, HEAD, PUT, etc')
+        http_group.add_argument('--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
+        http_group.add_argument('--headers', type=str, metavar="<json>", help="HTTP headers")
+        http_group.add_argument('--body', type=str, metavar="<string>", help='HTTP body')
         # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
-        http_group.add_argument(
-            '--expect-status', type=int, metavar="<int>", help='Synthetic test will fail if response status is not equal to expected status code, default 200')
-        http_group.add_argument(
-            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
-        http_group.add_argument(
-            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
-        http_group.add_argument(
-            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
-        http_group.add_argument(
-            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
-        http_group.add_argument(
-            '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
-        http_group.add_argument(
-            '--validation-string', type=str, metavar="<string>", help='set validation-string')
-
+        http_group.add_argument('--expect-status', type=int, metavar="<int>", help='Synthetic test will fail if response status is not equal to expected status code, default 200')
+        http_group.add_argument('--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
+        http_group.add_argument('--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
+        http_group.add_argument('--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
+        http_group.add_argument('--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
+        http_group.add_argument('--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+        http_group.add_argument('--validation-string', type=str, metavar="<string>", help='set validation-string')
 
         # options for api script
         httpScript_group = self.parser_create.add_argument_group("API Script Options")
