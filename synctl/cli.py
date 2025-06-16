@@ -5351,12 +5351,6 @@ class ParseParameter:
             '--description', '-d', type=str, metavar="<string>", help="the description of Synthetic test")
         self.parser_create.add_argument(
             '--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
-        self.parser_create.add_argument(
-            '--apps', '--applications', '--app-id', '--application-id', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
-        self.parser_create.add_argument(
-            '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
-        self.parser_create.add_argument(
-            '--mobile-apps', '--mobile-applications' , type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
         # [0, 2]
         self.parser_create.add_argument(
             '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
@@ -5366,6 +5360,13 @@ class ParseParameter:
             '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
         self.parser_create.add_argument(
             '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
+        self.parser_create.add_argument(
+            '--apps', '--applications', '--app-id', '--application-id', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
+        self.parser_create.add_argument(
+            '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
+        self.parser_create.add_argument(
+        '--mobile-apps', '--mobile-applications' , type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
+
 
         # options for ping, url
         http_group = self.parser_create.add_argument_group("API Simple Options")
@@ -5437,15 +5438,13 @@ class ParseParameter:
         alert_group.add_argument('--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
         alert_group.add_argument('--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
         alert_group.add_argument('--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
-        alert_group.add_argument('--grace-period', type=str, metavar="<string>", help="The duration for which an alert remains open after conditions are no longer violated, The grace period must range between 1 minute and a maximum of 7 days")
+        alert_group.add_argument('--grace-period', type=str, metavar="<string>", help="The duration for which an alert remains open after conditions are no longer violated. Must range between 1 minute and a maximum of 7 days")
 
         # set auth
-        self.parser_create.add_argument(
-            '--use-env', '-e', type=str, default=None, metavar="<name>",help='use a specified configuration')
-        self.parser_create.add_argument(
-            '--host', type=str, metavar="<host>", help='set hostname')
-        self.parser_create.add_argument(
-            '--token', type=str, metavar="<token>", help='set token')
+        config_group = self.parser_create.add_argument_group("Config Options")
+        config_group.add_argument('--use-env', '-e', type=str, default=None, metavar="<name>",help='use a specified configuration')
+        config_group.add_argument('--host', type=str, metavar="<host>", help='set hostname')
+        config_group.add_argument('--token', type=str, metavar="<token>", help='set token')
 
 
     def get_command_options(self):
