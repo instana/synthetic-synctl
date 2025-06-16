@@ -5229,11 +5229,17 @@ class Synctl:
         pass
 
 
+class CustomHelpFormatter(argparse.RawTextHelpFormatter):
+    def __init__(self, *args, **kwargs):
+        kwargs['max_help_position'] = 40
+        kwargs['width'] = 100
+        super().__init__(*args, **kwargs)
+
 class ParseParameter:
 
     def __init__(self) -> None:
         self.parser = argparse.ArgumentParser(
-            prog='synctl', epilog='Use "synctl [command] --help" for more information about a command.')
+            prog='synctl', epilog='Use "synctl [command] --help" for more information about a command.', formatter_class=CustomHelpFormatter)
         self.parser._positionals.title = 'commands'
         self.parser._optionals.title = 'options'
 
@@ -5255,7 +5261,7 @@ class ParseParameter:
         self.parser_runNow._optionals.title = OPTIONS_PARAMS
 
         self.parser_create = sub_parsers.add_parser(
-            'create', help='create a Synthetic test, credential or alert', add_help=True, usage=CREATE_USAGE)
+            'create', help='create a Synthetic test, credential or alert', add_help=True, usage=CREATE_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_create._positionals.title = POSITION_PARAMS
         self.parser_create._optionals.title = OPTIONS_PARAMS
 
