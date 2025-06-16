@@ -5343,30 +5343,18 @@ class ParseParameter:
         # support multiple locations
         # --location location_id_1 location_id_2 location_id_3
         # location cannot set required to True, due to --from-json can support location from json file
-        self.parser_create.add_argument(
-            '--location', type=str, nargs='+', required=False, metavar="id", help="location id, support multiple locations id")
-        self.parser_create.add_argument(
-            '--label', type=str, metavar="<string>", help="friendly name of the Synthetic test")
-        self.parser_create.add_argument(
-            '--description', '-d', type=str, metavar="<string>", help="the description of Synthetic test")
-        self.parser_create.add_argument(
-            '--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
+        self.parser_create.add_argument('--location', type=str, nargs='+', required=False, metavar="id", help="location id, support multiple locations id")
+        self.parser_create.add_argument('--label', type=str, metavar="<string>", help="friendly name of the Synthetic test")
+        self.parser_create.add_argument('--description', '-d', type=str, metavar="<string>", help="the description of Synthetic test")
+        self.parser_create.add_argument('--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
         # [0, 2]
-        self.parser_create.add_argument(
-            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
-        self.parser_create.add_argument(
-            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
-        self.parser_create.add_argument(
-            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
-        self.parser_create.add_argument(
-            '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
-        self.parser_create.add_argument(
-            '--apps', '--applications', '--app-id', '--application-id', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
-        self.parser_create.add_argument(
-            '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
-        self.parser_create.add_argument(
-        '--mobile-apps', '--mobile-applications' , type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
-
+        self.parser_create.add_argument('--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
+        self.parser_create.add_argument('--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
+        self.parser_create.add_argument('--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+        self.parser_create.add_argument('--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
+        self.parser_create.add_argument('--apps', '--applications', '--app-id', '--application-id', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
+        self.parser_create.add_argument('--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
+        self.parser_create.add_argument('--mobile-apps', '--mobile-applications' , type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
 
         # options for ping, url
         http_group = self.parser_create.add_argument_group("API Simple Options")
