@@ -5347,7 +5347,8 @@ class ParseParameter:
         self.parser_create.add_argument('--label', type=str, metavar="<string>", help="friendly name of the Synthetic test")
         self.parser_create.add_argument('--description', '-d', type=str, metavar="<string>", help="the description of Synthetic test")
         self.parser_create.add_argument('--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
-        # [0, 2]
+        self.parser_create.add_argument('-f', '--from-file', type=str, metavar="<file>", help='Synthetic payload from (.json) file')
+    # [0, 2]
         self.parser_create.add_argument('--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
         self.parser_create.add_argument('--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
         self.parser_create.add_argument('--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
@@ -5373,18 +5374,11 @@ class ParseParameter:
         http_group.add_argument('--validation-string', type=str, metavar="<string>", help='set validation-string')
 
         # options for api script
-        httpScript_group = self.parser_create.add_argument_group("API Script Options")
-        httpScript_group.add_argument(
-            '-f', '--from-file', type=str, metavar="<file>", help='Synthetic payload from (.json) file')
-        httpScript_group.add_argument(
-            '--script', type=str, metavar="<file>", help='load script (.js/.side) from file')
-
+        httpScript_group = self.parser_create.add_argument_group("API Script/Browser Script Options")
+        httpScript_group.add_argument('--script', type=str, metavar="<file>", help='load script (.js/.side) from file')
         # options for bundle script
-        httpScript_group.add_argument(
-            '--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
-        httpScript_group.add_argument(
-            '--bundle-entry-file', type=str, metavar="<filename>", help='Synthetic bundle test entry file, e.g, myscript.js')
-
+        httpScript_group.add_argument('--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
+        httpScript_group.add_argument('--bundle-entry-file', type=str, metavar="<filename>", help='Synthetic bundle test entry file, e.g, myscript.js')
 
         # browser type
         self.parser_create.add_argument(
