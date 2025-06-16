@@ -5619,6 +5619,7 @@ class ParseParameter:
         self.parser_update.add_argument(
             'id', type=str, help="Synthetic test id")
 
+        update_exclusive_group = self.parser_update.add_mutually_exclusive_group()
         update_group = self.parser_update.add_argument_group()
         # common options
         update_group.add_argument(
@@ -5680,44 +5681,28 @@ class ParseParameter:
 
         # DNS test
         dns_group = self.parser_update.add_argument_group("DNS test options")
-        dns_group.add_argument(
-            '--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
-        dns_group.add_argument(
-            '--lookup', type=str, help='set the name or IP address of the host')
-        dns_group.add_argument(
-            '--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
-        dns_group.add_argument(
-            '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
-        dns_group.add_argument(
-            '--query-type', type=str, help='set DNS query type')
-        dns_group.add_argument(
-            '--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
-        dns_group.add_argument(
-            '--server', type=str, help='set IP address of the DNS server')
-        dns_group.add_argument(
-            '--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
-        dns_group.add_argument(
-            '--target-values', type=str, help='set list of filters to be used to validate the test response')
-        dns_group.add_argument(
-            '--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
+        dns_group.add_argument('--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
+        dns_group.add_argument('--lookup', type=str, help='set the name or IP address of the host')
+        dns_group.add_argument('--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
+        dns_group.add_argument('--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
+        dns_group.add_argument('--query-type', type=str, help='set DNS query type')
+        dns_group.add_argument('--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
+        dns_group.add_argument('--server', type=str, help='set IP address of the DNS server')
+        dns_group.add_argument('--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
+        dns_group.add_argument('--target-values', type=str, help='set list of filters to be used to validate the test response')
+        dns_group.add_argument('--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
 
         # update alert
-        update_group.add_argument(
-            '--name', type=str, metavar="<string>", help='friendly name for smart alert')
-        update_group.add_argument(
-            '--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
-        update_group.add_argument(
-            '--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
-        update_group.add_argument(
-            '--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
-        update_group.add_argument(
-            '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
-        update_group.add_argument(
-            '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
-        update_group.add_argument(
-            '--grace-period', type=str, metavar="<json>", help="The duration for which an alert remains open after conditions are no longer violated, with the alert auto-closing once the grace period expires.")
-        update_group.add_argument(
-            '--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
+        alert_group = elf.parser_update.add_argument_group("Alert options")
+        alert_group.add_argument('--name', type=str, metavar="<string>", help='friendly name for smart alert')
+        alert_group.add_argument('--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
+        alert_group.add_argument('--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
+        alert_group.add_argument('--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
+        alert_group.add_argument('--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
+        alert_group.add_argument('--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
+        alert_group.add_argument('--grace-period', type=str, metavar="<json>", help="The duration for which an alert remains open after conditions are no longer violated, with the alert auto-closing once the grace period expires.")
+        alert_group.add_argument('--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
+
         # enable/disable smart alerts
         update_exclusive_group.add_argument(
             '--enable', action='store_true', help='enable smart alert')
