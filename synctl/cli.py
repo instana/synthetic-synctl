@@ -5428,31 +5428,32 @@ class ParseParameter:
         dns_group.add_argument('--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
 
         # smart alerts
-        self.parser_create.add_argument(
+        alert_group = self.parser_create.add_argument_group("Smart Alert Options")
+        alert_group.add_argument(
             '--name', type=str, metavar="<string>", help='friendly name for smart alert')
 
-        self.parser_create.add_argument(
+        alert_group.add_argument(
             '--test', type=str, nargs='+', metavar="<id>", help="test id, support multiple test id")
 
-        self.parser_create.add_argument(
+        alert_group.add_argument(
             '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1-60]m, [1-24]h")
 
-        self.parser_create.add_argument(
+        alert_group.add_argument(
             '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
 
-        self.parser_create.add_argument(
+        alert_group.add_argument(
             '--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
 
-        self.parser_create.add_argument(
+        alert_group.add_argument(
             '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
 
-        self.parser_create.add_argument(
+        alert_group.add_argument(
             '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
 
-        self.parser_create.add_argument(
+        alert_group.add_argument(
             '--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
 
-        self.parser_create.add_argument(
+        alert_group.add_argument(
             '--grace-period', type=str, metavar="<string>", help="The duration for which an alert remains open after conditions are no longer violated, The grace period must range between 1 minute and a maximum of 7 days")
 
         # set auth
