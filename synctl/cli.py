@@ -17,7 +17,7 @@ import sys
 import tarfile
 import getpass
 import math
-# import textwrap
+import textwrap
 import time
 from datetime import datetime
 
@@ -5619,7 +5619,6 @@ class ParseParameter:
         self.parser_update.add_argument(
             'id', type=str, help="Synthetic test id")
 
-        update_exclusive_group = self.parser_update.add_mutually_exclusive_group()
         update_group = self.parser_update.add_argument_group()
         # common options
         update_group.add_argument(
@@ -5649,75 +5648,57 @@ class ParseParameter:
 
 
         # API Simple
-        update_group.add_argument(
-            '--headers', type=str, metavar="<json>", help="HTTP headers")
-        update_group.add_argument(
-            '--body', type=str, metavar="<string>", help='HTTP body')
-        update_group.add_argument(
-            '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
-        update_group.add_argument(
-            '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
-        update_group.add_argument(
-            '--validation-string', type=str, metavar="<string>", help='set validation-string')
-        update_group.add_argument(
-            '--url', type=str, metavar="<url>", help="HTTP URL")
-        update_group.add_argument(
-            '--follow-redirect', type=str, metavar="<boolean>", help='set follow-redirect')
-        update_group.add_argument(
-            '--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
-        update_group.add_argument(
-            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
-        update_group.add_argument(
-            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
-        update_group.add_argument(
-            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
-        update_group.add_argument(
-            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
-        update_group.add_argument(
-            '--allow-insecure', type=str, choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+        api_group = self.parser_update.add_argument_group("API Simple options")
+        api_group.add_argument('--headers', type=str, metavar="<json>", help="HTTP headers")
+        api_group.add_argument('--body', type=str, metavar="<string>", help='HTTP body')
+        api_group.add_argument('--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
+        api_group.add_argument('--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
+        api_group.add_argument('--validation-string', type=str, metavar="<string>", help='set validation-string')
+        api_group.add_argument('--url', type=str, metavar="<url>", help="HTTP URL")
+        api_group.add_argument('--follow-redirect', type=str, metavar="<boolean>", help='set follow-redirect')
+        api_group.add_argument('--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
+        api_group.add_argument('--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
+        api_group.add_argument('--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
+        api_group.add_argument('--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
+        api_group.add_argument('--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
+        api_group.add_argument('--allow-insecure', type=str, choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
 
         # API Script / Browser test
-        update_group.add_argument(
-            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
-        update_group.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
-        update_group.add_argument(
-            '-f', '--from-file', type=str, metavar="<filename>", help="Synthetic payload from (.json) file")
-        update_group.add_argument(
-            '--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
-        update_group.add_argument(
-            '--bundle', type=str, metavar="<bundle>", help='set bundle')
-        update_group.add_argument(
-            '--bundle-entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
+        script_group = self.parser_update.add_argument_group("API Script/Browser test options")
+        script_group.add_argument('--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        script_group.add_argument('--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
+        script_group.add_argument('-f', '--from-file', type=str, metavar="<filename>", help="Synthetic payload from (.json) file")
+        script_group.add_argument('--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
+        script_group.add_argument('--bundle', type=str, metavar="<bundle>", help='set bundle')
+        script_group.add_argument('--bundle-entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
 
         # SSL Certificate
-        update_group.add_argument(
-            '--hostname', type=str, metavar="<url>", help='set host name')
-        update_group.add_argument(
-            '--port', type=int, help='set port')
-        update_group.add_argument(
-            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
+        ssl_group = self.parser_update.add_argument_group("SSL test options")
+        ssl_group.add_argument('--hostname', type=str, metavar="<url>", help='set host name')
+        ssl_group.add_argument('--port', type=int, help='set port')
+        ssl_group.add_argument('--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
 
         # DNS test
-        update_group.add_argument(
+        dns_group = self.parser_update.add_argument_group("DNS test options")
+        dns_group.add_argument(
             '--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
-        update_group.add_argument(
+        dns_group.add_argument(
             '--lookup', type=str, help='set the name or IP address of the host')
-        update_group.add_argument(
+        dns_group.add_argument(
             '--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
-        update_group.add_argument(
+        dns_group.add_argument(
             '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
-        update_group.add_argument(
+        dns_group.add_argument(
             '--query-type', type=str, help='set DNS query type')
-        update_group.add_argument(
+        dns_group.add_argument(
             '--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
-        update_group.add_argument(
+        dns_group.add_argument(
             '--server', type=str, help='set IP address of the DNS server')
-        update_group.add_argument(
+        dns_group.add_argument(
             '--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
-        update_group.add_argument(
+        dns_group.add_argument(
             '--target-values', type=str, help='set list of filters to be used to validate the test response')
-        update_group.add_argument(
+        dns_group.add_argument(
             '--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
 
         # update alert
