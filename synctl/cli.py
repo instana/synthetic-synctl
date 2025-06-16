@@ -5362,46 +5362,49 @@ class ParseParameter:
             '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
 
         # options for ping, url
-        self.parser_create.add_argument(
+        http_group = self.parser_create.add_argument_group("API Simple Options")
+        http_group.add_argument(
             '--url', type=str, metavar="<url>", help='HTTP request URL')
-        self.parser_create.add_argument(
+        http_group.add_argument(
             '--operation', type=str, metavar="<method>", help='HTTP request methods, GET, POST, HEAD, PUT, etc')
-        self.parser_create.add_argument(
+        http_group.add_argument(
             '--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
 
-        self.parser_create.add_argument(
+        http_group.add_argument(
             '--headers', type=str, metavar="<json>", help="HTTP headers")
 
-        self.parser_create.add_argument(
+        http_group.add_argument(
             '--body', type=str, metavar="<string>", help='HTTP body')
+        # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
+        http_group.add_argument(
+            '--expect-status', type=int, metavar="<int>", help='Synthetic test will fail if response status is not equal to expected status code, default 200')
+        http_group.add_argument(
+            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
+        http_group.add_argument(
+            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
+        http_group.add_argument(
+            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
+        http_group.add_argument(
+            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
+        http_group.add_argument(
+            '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+        http_group.add_argument(
+            '--validation-string', type=str, metavar="<string>", help='set validation-string')
+
 
         # options for api script
-        self.parser_create.add_argument(
+        httpScript_group = self.parser_create.add_argument_group("API Script Options")
+        httpScript_group.add_argument(
             '-f', '--from-file', type=str, metavar="<file>", help='Synthetic payload from (.json) file')
-        self.parser_create.add_argument(
+        httpScript_group.add_argument(
             '--script', type=str, metavar="<file>", help='load script (.js/.side) from file')
 
         # options for bundle script
-        self.parser_create.add_argument(
+        httpScript_group.add_argument(
             '--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
-        self.parser_create.add_argument(
+        httpScript_group.add_argument(
             '--bundle-entry-file', type=str, metavar="<filename>", help='Synthetic bundle test entry file, e.g, myscript.js')
 
-        # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
-        self.parser_create.add_argument(
-            '--expect-status', type=int, metavar="<int>", help='Synthetic test will fail if response status is not equal to expected status code, default 200')
-        self.parser_create.add_argument(
-            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
-        self.parser_create.add_argument(
-            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
-        self.parser_create.add_argument(
-            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
-        self.parser_create.add_argument(
-            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
-        self.parser_create.add_argument(
-            '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
-        self.parser_create.add_argument(
-            '--validation-string', type=str, metavar="<string>", help='set validation-string')
 
         # browser type
         self.parser_create.add_argument(
