@@ -5391,10 +5391,6 @@ class ParseParameter:
         ssl_group.add_argument('--port', type=int, help='set port')
         ssl_group.add_argument('--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
 
-        cred_group = self.parser_create.add_argument_group("Credential Options")
-        cred_group.add_argument('--key', type=str, metavar="<key>", help='set credential name')
-        cred_group.add_argument('--value', type=str, metavar="<value>", help='set credential value')
-
         # DNS
         dns_group = self.parser_create.add_argument_group("DNS test Options")
         dns_group.add_argument('--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
@@ -5419,6 +5415,11 @@ class ParseParameter:
         alert_group.add_argument('--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
         alert_group.add_argument('--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
         alert_group.add_argument('--grace-period', type=str, metavar="<string>", help="The duration for which an alert remains open after conditions are no longer violated. Must range between 1 minute and a maximum of 7 days")
+
+        # cred
+        cred_group = self.parser_create.add_argument_group("Credential Options")
+        cred_group.add_argument('--key', type=str, metavar="<key>", help='set credential name')
+        cred_group.add_argument('--value', type=str, metavar="<value>", help='set credential value')
 
         # set auth
         config_group = self.parser_create.add_argument_group("Config Options")
