@@ -17,7 +17,7 @@ import sys
 import tarfile
 import getpass
 import math
-# import textwrap
+import textwrap
 import time
 from datetime import datetime
 
@@ -5229,11 +5229,17 @@ class Synctl:
         pass
 
 
+class CustomHelpFormatter(argparse.RawTextHelpFormatter):
+    def __init__(self, *args, **kwargs):
+        kwargs['max_help_position'] = 40
+        kwargs['width'] = 100
+        super().__init__(*args, **kwargs)
+
 class ParseParameter:
 
     def __init__(self) -> None:
         self.parser = argparse.ArgumentParser(
-            prog='synctl', epilog='Use "synctl [command] --help" for more information about a command.')
+            prog='synctl', epilog='Use "synctl [command] --help" for more information about a command.', formatter_class=CustomHelpFormatter)
         self.parser._positionals.title = 'commands'
         self.parser._optionals.title = 'options'
 
@@ -5245,37 +5251,37 @@ class ParseParameter:
         self.subparsers = sub_parsers
 
         self.parser_config = sub_parsers.add_parser(
-            'config', help='Modify config file', usage=CONFIG_USAGE)
+            'config', help='Modify config file', usage=CONFIG_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_config._positionals.title = POSITION_PARAMS
         self.parser_config._optionals.title = OPTIONS_PARAMS
 
         self.parser_runNow = sub_parsers.add_parser(
-            'run', help='run a synthetic test', usage=RUN_USAGE)
+            'run', help='run a synthetic test', usage=RUN_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_runNow._positionals.title = POSITION_PARAMS
         self.parser_runNow._optionals.title = OPTIONS_PARAMS
 
         self.parser_create = sub_parsers.add_parser(
-            'create', help='create a Synthetic test, credential or alert', add_help=True, usage=CREATE_USAGE)
+            'create', help='create a Synthetic test, credential or alert', add_help=True, usage=CREATE_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_create._positionals.title = POSITION_PARAMS
         self.parser_create._optionals.title = OPTIONS_PARAMS
 
         self.parser_get = sub_parsers.add_parser(
-            'get', help='get Synthetic test, location, credential, alert, pop-size or pop-cost', usage=GET_USAGE)
+            'get', help='get Synthetic test, location, credential, alert, pop-size or pop-cost', usage=GET_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_get._positionals.title = POSITION_PARAMS
         self.parser_get._optionals.title = OPTIONS_PARAMS
 
         self.parser_patch = sub_parsers.add_parser(
-            'patch', help='patch a Synthetic test', usage=PATCH_USAGE)
+            'patch', help='patch a Synthetic test', usage=PATCH_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_patch._positionals.title = POSITION_PARAMS
         self.parser_patch._optionals.title = OPTIONS_PARAMS
 
         self.parser_update = sub_parsers.add_parser(
-            'update', help='update a Synthetic test or alert', usage=UPDATE_USAGE)
+            'update', help='update a Synthetic test or alert', usage=UPDATE_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_update._positionals.title = POSITION_PARAMS
         self.parser_update._optionals.title = OPTIONS_PARAMS
 
         self.parser_delete = sub_parsers.add_parser(
-            'delete', help='delete a Synthetic test, location, credential or alert', usage=DELETE_USAGE)
+            'delete', help='delete a Synthetic test, location, credential or alert', usage=DELETE_USAGE, formatter_class=CustomHelpFormatter)
         self.parser_delete._positionals.title = POSITION_PARAMS
         self.parser_delete._optionals.title = OPTIONS_PARAMS
 
@@ -5337,149 +5343,89 @@ class ParseParameter:
         # support multiple locations
         # --location location_id_1 location_id_2 location_id_3
         # location cannot set required to True, due to --from-json can support location from json file
-        self.parser_create.add_argument(
-            '--location', type=str, nargs='+', required=False, metavar="id", help="location id, support multiple locations id")
-        self.parser_create.add_argument(
-            '--label', type=str, metavar="<string>", help="friendly name of the Synthetic test")
-        self.parser_create.add_argument(
-            '--description', '-d', type=str, metavar="<string>", help="the description of Synthetic test")
-        self.parser_create.add_argument(
-            '--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
-        self.parser_create.add_argument(
-            '--apps', '--applications', '--app-id', '--application-id', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
-        self.parser_create.add_argument(
-            '--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
-        self.parser_create.add_argument(
-            '--mobile-apps', '--mobile-applications' , type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
-        # [0, 2]
-        self.parser_create.add_argument(
-            '--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
-        self.parser_create.add_argument(
-            '--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
-        self.parser_create.add_argument(
-            '--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
-        self.parser_create.add_argument(
-            '--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
+        self.parser_create.add_argument('--location', type=str, nargs='+', required=False, metavar="id", help="location id, support multiple locations id")
+        self.parser_create.add_argument('--label', type=str, metavar="<string>", help="friendly name of the Synthetic test")
+        self.parser_create.add_argument('--description', '-d', type=str, metavar="<string>", help="the description of Synthetic test")
+        self.parser_create.add_argument('--frequency', type=int, metavar="<int>", help="the range is from 1 to 120 minute, default is 15. For SSLCertificate test, the default is 1440")
+        self.parser_create.add_argument('-f', '--from-file', type=str, metavar="<file>", help='Synthetic payload from (.json) file')
+    # [0, 2]
+        self.parser_create.add_argument('--retries', type=int, choices=range(0, 3), metavar="<int>", help='retry times, value is [0, 2]')
+        self.parser_create.add_argument('--retry-interval', type=int, default=1, choices=range(1, 11), metavar="<int>", help="retry interval, range is [1, 10]")
+        self.parser_create.add_argument('--timeout', type=str, metavar="<num>ms|s|m", help='set timeout, accept <number>(ms|s|m)')
+        self.parser_create.add_argument('--custom-properties', type=str, metavar="<string>", help="An object with name/value pairs to provide additional information of the Synthetic test")
+        self.parser_create.add_argument('--apps', '--applications', '--app-id', '--application-id', type=str, nargs='+', metavar="<application-id>", help="application id, support multiple applications")
+        self.parser_create.add_argument('--websites', type=str, nargs='+', metavar="<website-id>", help="website id, support multiple websites")
+        self.parser_create.add_argument('--mobile-apps', '--mobile-applications' , type=str, nargs='+', metavar="<mobile-app-id>", help="mobile app id, support multiple mobile applications")
 
         # options for ping, url
-        self.parser_create.add_argument(
-            '--url', type=str, metavar="<url>", help='HTTP request URL')
-        self.parser_create.add_argument(
-            '--operation', type=str, metavar="<method>", help='HTTP request methods, GET, POST, HEAD, PUT, etc')
-        self.parser_create.add_argument(
-            '--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
-
-        self.parser_create.add_argument(
-            '--headers', type=str, metavar="<json>", help="HTTP headers")
-
-        self.parser_create.add_argument(
-            '--body', type=str, metavar="<string>", help='HTTP body')
+        http_group = self.parser_create.add_argument_group("API Simple Options")
+        http_group.add_argument('--url', type=str, metavar="<url>", help='HTTP request URL')
+        http_group.add_argument('--operation', type=str, metavar="<method>", help='HTTP request methods, GET, POST, HEAD, PUT, etc')
+        http_group.add_argument('--follow-redirect', type=str, default="true", choices=["true", "false"], metavar="<boolean>", help='to allow redirect, true by default')
+        http_group.add_argument('--headers', type=str, metavar="<json>", help="HTTP headers")
+        http_group.add_argument('--body', type=str, metavar="<string>", help='HTTP body')
+        # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
+        http_group.add_argument('--expect-status', type=int, metavar="<int>", help='Synthetic test will fail if response status is not equal to expected status code, default 200')
+        http_group.add_argument('--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
+        http_group.add_argument('--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
+        http_group.add_argument('--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
+        http_group.add_argument('--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
+        http_group.add_argument('--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+        http_group.add_argument('--validation-string', type=str, metavar="<string>", help='set validation-string')
 
         # options for api script
-        self.parser_create.add_argument(
-            '-f', '--from-file', type=str, metavar="<file>", help='Synthetic payload from (.json) file')
-        self.parser_create.add_argument(
-            '--script', type=str, metavar="<file>", help='load script (.js/.side) from file')
-
+        httpScript_group = self.parser_create.add_argument_group("API Script/Browser Script Options")
+        httpScript_group.add_argument('--script', type=str, metavar="<file>", help='load script (.js/.side) from file')
         # options for bundle script
-        self.parser_create.add_argument(
-            '--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
-        self.parser_create.add_argument(
-            '--bundle-entry-file', type=str, metavar="<filename>", help='Synthetic bundle test entry file, e.g, myscript.js')
-
-        # expectStatus, expectJson, expectMatch, expectExists, expectNotEmpty
-        self.parser_create.add_argument(
-            '--expect-status', type=int, metavar="<int>", help='Synthetic test will fail if response status is not equal to expected status code, default 200')
-        self.parser_create.add_argument(
-            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
-        self.parser_create.add_argument(
-            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
-        self.parser_create.add_argument(
-            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
-        self.parser_create.add_argument(
-            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
-        self.parser_create.add_argument(
-            '--allow-insecure', type=str, default='true', choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
-        self.parser_create.add_argument(
-            '--validation-string', type=str, metavar="<string>", help='set validation-string')
+        httpScript_group.add_argument('--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
+        httpScript_group.add_argument('--bundle-entry-file', type=str, metavar="<filename>", help='Synthetic bundle test entry file, e.g, myscript.js')
 
         # browser type
-        self.parser_create.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
-
-        self.parser_create.add_argument(
-            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        browser_group = self.parser_create.add_argument_group("Browser Script Options")
+        browser_group.add_argument('--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
+        browser_group.add_argument('--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
 
         # SSLCertificate
-        self.parser_create.add_argument(
-            '--hostname', type=str, metavar="<url>", help='set host name')
-        self.parser_create.add_argument(
-            '--port', type=int, help='set port')
-        self.parser_create.add_argument(
-            '--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
-
-        self.parser_create.add_argument(
-            '--key', type=str, metavar="<key>", help='set credential name')
-        self.parser_create.add_argument(
-            '--value', type=str, metavar="<value>", help='set credential value')
+        ssl_group = self.parser_create.add_argument_group("SSLCertificate Options")
+        ssl_group.add_argument('--hostname', type=str, metavar="<url>", help='set host name')
+        ssl_group.add_argument('--port', type=int, help='set port')
+        ssl_group.add_argument('--remaining-days-check', type=int, metavar="<int>", help='check remaining days for expiration of SSL certificate')
 
         # DNS
-        self.parser_create.add_argument(
-            '--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
-        self.parser_create.add_argument(
-            '--lookup', type=str, help='set the name or IP address of the host')
-        self.parser_create.add_argument(
-            '--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
-        self.parser_create.add_argument(
-            '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
-        self.parser_create.add_argument(
-            '--query-type', type=str, help='set DNS query type')
-        self.parser_create.add_argument(
-            '--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
-        self.parser_create.add_argument(
-            '--server', type=str, help='set IP address of the DNS server')
-        self.parser_create.add_argument(
-            '--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
-        self.parser_create.add_argument(
-            '--target-values', type=str, help='set list of filters to be used to validate the test response')
-        self.parser_create.add_argument(
-            '--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
+        dns_group = self.parser_create.add_argument_group("DNS test Options")
+        dns_group.add_argument('--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
+        dns_group.add_argument('--lookup', type=str, help='set the name or IP address of the host')
+        dns_group.add_argument('--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
+        dns_group.add_argument('--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
+        dns_group.add_argument('--query-type', type=str, help='set DNS query type')
+        dns_group.add_argument('--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
+        dns_group.add_argument('--server', type=str, help='set IP address of the DNS server')
+        dns_group.add_argument('--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
+        dns_group.add_argument('--target-values', type=str, help='set list of filters to be used to validate the test response')
+        dns_group.add_argument('--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
 
         # smart alerts
-        self.parser_create.add_argument(
-            '--name', type=str, metavar="<string>", help='friendly name for smart alert')
+        alert_group = self.parser_create.add_argument_group("Smart Alert Options")
+        alert_group.add_argument('--name', type=str, metavar="<string>", help='friendly name for smart alert')
+        alert_group.add_argument('--test', type=str, nargs='+', metavar="<id>", help="test id, support multiple test id")
+        alert_group.add_argument('--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1-60]m, [1-24]h")
+        alert_group.add_argument('--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
+        alert_group.add_argument('--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
+        alert_group.add_argument('--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
+        alert_group.add_argument('--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
+        alert_group.add_argument('--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
+        alert_group.add_argument('--grace-period', type=str, metavar="<string>", help="The duration for which an alert remains open after conditions are no longer violated. Must range between 1 minute and a maximum of 7 days")
 
-        self.parser_create.add_argument(
-            '--test', type=str, nargs='+', metavar="<id>", help="test id, support multiple test id")
-
-        self.parser_create.add_argument(
-            '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1-60]m, [1-24]h")
-
-        self.parser_create.add_argument(
-            '--alert-channel', type=str, nargs='+', metavar="<id>", help="alert channel id, support multiple alert channel id")
-
-        self.parser_create.add_argument(
-            '--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
-
-        self.parser_create.add_argument(
-            '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
-
-        self.parser_create.add_argument(
-            '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
-
-        self.parser_create.add_argument(
-            '--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
-
-        self.parser_create.add_argument(
-            '--grace-period', type=str, metavar="<string>", help="The duration for which an alert remains open after conditions are no longer violated, The grace period must range between 1 minute and a maximum of 7 days")
+        # cred
+        cred_group = self.parser_create.add_argument_group("Credential Options")
+        cred_group.add_argument('--key', type=str, metavar="<key>", help='set credential name')
+        cred_group.add_argument('--value', type=str, metavar="<value>", help='set credential value')
 
         # set auth
-        self.parser_create.add_argument(
-            '--use-env', '-e', type=str, default=None, metavar="<name>",help='use a specified configuration')
-        self.parser_create.add_argument(
-            '--host', type=str, metavar="<host>", help='set hostname')
-        self.parser_create.add_argument(
-            '--token', type=str, metavar="<token>", help='set token')
+        config_group = self.parser_create.add_argument_group("Config Options")
+        config_group.add_argument('--use-env', '-e', type=str, default=None, metavar="<name>",help='use a specified configuration')
+        config_group.add_argument('--host', type=str, metavar="<host>", help='set hostname')
+        config_group.add_argument('--token', type=str, metavar="<token>", help='set token')
 
 
     def get_command_options(self):
@@ -5704,94 +5650,60 @@ class ParseParameter:
 
 
         # API Simple
-        update_group.add_argument(
-            '--headers', type=str, metavar="<json>", help="HTTP headers")
-        update_group.add_argument(
-            '--body', type=str, metavar="<string>", help='HTTP body')
-        update_group.add_argument(
-            '--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
-        update_group.add_argument(
-            '--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
-        update_group.add_argument(
-            '--validation-string', type=str, metavar="<string>", help='set validation-string')
-        update_group.add_argument(
-            '--url', type=str, metavar="<url>", help="HTTP URL")
-        update_group.add_argument(
-            '--follow-redirect', type=str, metavar="<boolean>", help='set follow-redirect')
-        update_group.add_argument(
-            '--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
-        update_group.add_argument(
-            '--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
-        update_group.add_argument(
-            '--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
-        update_group.add_argument(
-            '--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
-        update_group.add_argument(
-            '--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
-        update_group.add_argument(
-            '--allow-insecure', type=str, choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
+        api_group = self.parser_update.add_argument_group("API Simple options")
+        api_group.add_argument('--headers', type=str, metavar="<json>", help="HTTP headers")
+        api_group.add_argument('--body', type=str, metavar="<string>", help='HTTP body')
+        api_group.add_argument('--operation', type=str, metavar="<method>", help="HTTP request methods, GET, POST, HEAD, PUT, etc.")
+        api_group.add_argument('--mark-synthetic-call', type=str, metavar="<boolean>", help='set markSyntheticCall')
+        api_group.add_argument('--validation-string', type=str, metavar="<string>", help='set validation-string')
+        api_group.add_argument('--url', type=str, metavar="<url>", help="HTTP URL")
+        api_group.add_argument('--follow-redirect', type=str, metavar="<boolean>", help='set follow-redirect')
+        api_group.add_argument('--expect-status', type=int, metavar="<int>", help='set expected HTTP status code')
+        api_group.add_argument('--expect-json', type=str, metavar="<string>", help='An optional object to be used to check against the test response object')
+        api_group.add_argument('--expect-match', type=str, metavar="<string>", help='An optional regular expression string to be used to check the test response')
+        api_group.add_argument('--expect-exists', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object')
+        api_group.add_argument('--expect-not-empty', type=str, metavar="<string>", help='An optional list of property labels used to check if they are present in the test response object with a non-empty value')
+        api_group.add_argument('--allow-insecure', type=str, choices=['false', 'true'], metavar="<boolean>", help='if set to true then allow insecure certificates')
 
         # API Script / Browser test
-        update_group.add_argument(
-            '--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
-        update_group.add_argument(
-            '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
-        update_group.add_argument(
-            '-f', '--from-file', type=str, metavar="<filename>", help="Synthetic payload from (.json) file")
-        update_group.add_argument(
-            '--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
-        update_group.add_argument(
-            '--bundle', type=str, metavar="<bundle>", help='set bundle')
-        update_group.add_argument(
-            '--bundle-entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
+        script_group = self.parser_update.add_argument_group("API Script/Browser test options")
+        script_group.add_argument('--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
+        script_group.add_argument('--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
+        script_group.add_argument('-f', '--from-file', type=str, metavar="<filename>", help="Synthetic payload from (.json) file")
+        script_group.add_argument('--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
+        script_group.add_argument('--bundle', type=str, metavar="<bundle>", help='set bundle')
+        script_group.add_argument('--bundle-entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
 
         # SSL Certificate
-        update_group.add_argument(
-            '--hostname', type=str, metavar="<url>", help='set host name')
-        update_group.add_argument(
-            '--port', type=int, help='set port')
-        update_group.add_argument(
-            '--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
+        ssl_group = self.parser_update.add_argument_group("SSL test options")
+        ssl_group.add_argument('--hostname', type=str, metavar="<url>", help='set host name')
+        ssl_group.add_argument('--port', type=int, help='set port')
+        ssl_group.add_argument('--remaining-days-check', type=int, help='check remaining days for expiration of SSL certificate')
 
         # DNS test
-        update_group.add_argument(
-            '--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
-        update_group.add_argument(
-            '--lookup', type=str, help='set the name or IP address of the host')
-        update_group.add_argument(
-            '--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
-        update_group.add_argument(
-            '--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
-        update_group.add_argument(
-            '--query-type', type=str, help='set DNS query type')
-        update_group.add_argument(
-            '--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
-        update_group.add_argument(
-            '--server', type=str, help='set IP address of the DNS server')
-        update_group.add_argument(
-            '--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
-        update_group.add_argument(
-            '--target-values', type=str, help='set list of filters to be used to validate the test response')
-        update_group.add_argument(
-            '--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
+        dns_group = self.parser_update.add_argument_group("DNS test options")
+        dns_group.add_argument('--cname', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable the canonical name in the DNS response, false by default')
+        dns_group.add_argument('--lookup', type=str, help='set the name or IP address of the host')
+        dns_group.add_argument('--lookup-server-name', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='set recursive DNS lookups, false by default')
+        dns_group.add_argument('--query-time', type=str, help='an object with name/value pairs used to validate the test response time')
+        dns_group.add_argument('--query-type', type=str, help='set DNS query type')
+        dns_group.add_argument('--recursive-lookups', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enables recursive DNS lookups, false by default')
+        dns_group.add_argument('--server', type=str, help='set IP address of the DNS server')
+        dns_group.add_argument('--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
+        dns_group.add_argument('--target-values', type=str, help='set list of filters to be used to validate the test response')
+        dns_group.add_argument('--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
 
         # update alert
-        update_group.add_argument(
-            '--name', type=str, metavar="<string>", help='friendly name for smart alert')
-        update_group.add_argument(
-            '--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
-        update_group.add_argument(
-            '--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
-        update_group.add_argument(
-            '--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
-        update_group.add_argument(
-            '--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
-        update_group.add_argument(
-            '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
-        update_group.add_argument(
-            '--grace-period', type=str, metavar="<json>", help="The duration for which an alert remains open after conditions are no longer violated, with the alert auto-closing once the grace period expires.")
-        update_group.add_argument(
-            '--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
+        alert_group = self.parser_update.add_argument_group("Alert options")
+        alert_group.add_argument('--name', type=str, metavar="<string>", help='friendly name for smart alert')
+        alert_group.add_argument('--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
+        alert_group.add_argument('--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
+        alert_group.add_argument('--severity', type=str, metavar="<string>", choices=["warning", "critical"], help="severity of alert")
+        alert_group.add_argument('--violation-count', type=int, metavar="<int>", help="the range is from 1 to 12 failures")
+        alert_group.add_argument('--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
+        alert_group.add_argument('--grace-period', type=str, metavar="<json>", help="The duration for which an alert remains open after conditions are no longer violated, with the alert auto-closing once the grace period expires.")
+        alert_group.add_argument('--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
+
         # enable/disable smart alerts
         update_exclusive_group.add_argument(
             '--enable', action='store_true', help='enable smart alert')
