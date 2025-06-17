@@ -5693,7 +5693,7 @@ class ParseParameter:
         dns_group.add_argument('--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
 
         # update alert
-        alert_group = elf.parser_update.add_argument_group("Alert options")
+        alert_group = self.parser_update.add_argument_group("Alert options")
         alert_group.add_argument('--name', type=str, metavar="<string>", help='friendly name for smart alert')
         alert_group.add_argument('--test', type=str, nargs='+', metavar="id", help="test id, support multiple test id")
         alert_group.add_argument('--alert-channel', type=str, nargs='+', metavar="id", help="alert channel id, support multiple alert channel id")
