@@ -506,15 +506,27 @@ class PopConfiguration(Base):
 
     def get_ssl_test(self):
         ssl_test = {}
-        ssl_test["testCount"] = int(self.ask_question("How many ISM tests (SSLCertificate) do you want to create? (0 if no) "))
+        ssl_test["testCount"] = int(self.ask_question("How many SSL tests do you want to create? (0 if no) "))
         if ssl_test["testCount"] > 0:
             while True:
-                ssl_test["frequency"] = int(self.ask_question("What is the test frequency for ISM tests (SSLCertificate)? (1-1440) "))
+                ssl_test["frequency"] = int(self.ask_question("What is the test frequency for SSL tests? (1-1440) "))
                 if ssl_test["frequency"] > 0 and ssl_test["frequency"] <= 1440:
                     break
                 else:
                     print("frequency is not valid, it should be in [1,1440]")
         return ssl_test
+
+    def get_dns_test(self):
+        dns_test = {}
+        dns_test["testCount"] = int(self.ask_question("How many DNS tests do you want to create? (0 if no) "))
+        if dns_test["testCount"] > 0:
+            while True:
+                dns_test["frequency"] = int(self.ask_question("What is the test frequency for DNS tests? (1-120) "))
+                if dns_test["frequency"] > 0 and dns_test["frequency"] <= 120:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,120]")
+        return dns_test
 
     def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
         pod_estimate = int(user_tests * default_frequency) / int(user_frequency * default_tests)
@@ -570,6 +582,17 @@ class PopConfiguration(Base):
                     print("Invalid input")
                 else:
                     pop_estimate_size["ism_pod_count"] = int(self.size_estimate(pop_estimate_size["ssl"]["testCount"], self.ism["frequency"], pop_estimate_size["ssl"]["frequency"], self.ism["testCount"]))
+                    break
+
+            while True:
+                pop_estimate_size["DNS"] = self.get_dns_test()
+                if pop_estimate_size["DNS"]["testCount"] == 0:
+                    pop_estimate_size["dns_pod_count"] = 0
+                    break
+                elif pop_estimate_size["DNS"]["testCount"] < 0:
+                    print("Invalid input")
+                else:
+                    pop_estimate_size["dns_pod_count"] = int(self.size_estimate(pop_estimate_size["DNS"]["testCount"], self.ism["frequency"], pop_estimate_size["DNS"]["frequency"], self.ism["testCount"]))
                     break
 
             pop_estimate_size["agent"] = self.ask_question("Do you want to install the Instana-agent to monitor your PoP? (Y/N) ", options=["Y", "N", "y", "n"])
@@ -729,6 +752,10 @@ class PopConfiguration(Base):
             print(f'{fixed_spaces1}ISM      Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["ssl"]["frequency"]}min')
         else:
             print(f'{fixed_spaces1}ISM      Test: {pop_estimate_size["ssl"]["testCount"]:<{max_label_length}}')
+        if pop_estimate_size["DNS"]["testCount"] > 0:
+            print(f'{fixed_spaces1}DNS      Test: {pop_estimate_size["DNS"]["testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["ssl"]["frequency"]}min')
+        else:
+            print(f'{fixed_spaces1}DNS      Test: {pop_estimate_size["DNS"]["testCount"]:<{max_label_length}}')
 
         agent_yes = "Yes" if pop_estimate_size["agent"] in ["y", "Y"] else "No"
         if pop_estimate_size["agent"].upper() == "Y":
@@ -745,7 +772,8 @@ class PopConfiguration(Base):
         print(f'{fixed_spaces1}http           playback engines: {pop_estimate_size["http_pod_count"]}')
         print(f'{fixed_spaces1}javascript     playback engines: {pop_estimate_size["javascript_pod_count"]}')
         print(f'{fixed_spaces1}browserscript  playback engines: {pop_estimate_size["browserscript_pod_count"]}')
-        print(f'{fixed_spaces1}ISM            playback engines: {pop_estimate_size["ism_pod_count"]}')
+        print(f'{fixed_spaces1}SSL            playback engines: {pop_estimate_size["ism_pod_count"]}')
+        print(f'{fixed_spaces1}DNS            playback engines: {pop_estimate_size["ism_pod_count"]}')
 
     def print_estimated_cost(self):
 
@@ -753,7 +781,8 @@ class PopConfiguration(Base):
         print(f'\nThe total executions per month:\n    API   Simple executions: {cost_estimate["api_simple_test_exec"]:,}')
         print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]:,}')
         print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]:,}')
-        print(f'    ISM     Test executions: {cost_estimate["ssl_test_exec"]:,}\n')
+        print(f'    SSL     Test executions: {cost_estimate["ssl_test_exec"]:,}\n')
+        print(f'    DNS     Test executions: {cost_estimate["dns_test_exec"]:,}\n')
 
         print(f'The total cost estimated:\n    Cost per month is: ${cost_estimate["total_cost"]:,}')
         print(f'    Number of part numbers per month is: {cost_estimate["total_parts"]:,}')
