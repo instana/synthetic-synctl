@@ -457,7 +457,8 @@ class PopConfiguration(Base):
             "browserTest": 1,
             "APIScript": 0.042,
             "APISimple": 0.025,
-            "SSLTest": 0.025
+            "SSLTest": 0.025,
+            "DNSTest": 0.025
         }
 
     def ask_question(self,question, options=None):
@@ -641,7 +642,8 @@ class PopConfiguration(Base):
         print("List price for 1 unit(part number) is $12/month and 1 part number entitles 1000 Resource Units (RU) per month.")
         print("The relationship between RU and test executions are:\n"
         "   ● 1 API Simple test executed = 0.025 RU \n"
-        "   ● 1 ISM        test executed = 0.025 RU \n"
+        "   ● 1 SSL        test executed = 0.025 RU \n"
+        "   ● 1 DNS        test executed = 0.025 RU \n"
         "   ● 1 API Script test executed = 0.042 RU \n"
         "   ● 1 Browser    test executed = 1 RU \n")
         print("The minimum quantity per month is 30 part numbers, priced at $360.")
@@ -702,6 +704,19 @@ class PopConfiguration(Base):
                         else:
                             cost_estimate["ssl_test_exec"] = self.test_exec_estimate(cost_estimate["ssl_test"]["testCount"], cost_estimate["ssl_test"]["frequency"], cost_estimate["locations"])
                             cost_estimate["ssl_test_res"] = cost_estimate["ssl_test_exec"] * self.factors["SSLTest"]
+                            break
+
+                    while True:
+                        cost_estimate["dns_test"] = self.get_dns_test()
+                        if cost_estimate["dns_test"]["testCount"] == 0:
+                            cost_estimate["dns_test_exec"] = 0
+                            cost_estimate["dns_test_res"] = 0
+                            break
+                        elif cost_estimate["dns_test"]["testCount"] < 0:
+                            print("Invalid input")
+                        else:
+                            cost_estimate["dns_test_exec"] = self.test_exec_estimate(cost_estimate["dns_test"]["testCount"], cost_estimate["dns_test"]["frequency"], cost_estimate["locations"])
+                            cost_estimate["dns_test_res"] = cost_estimate["dns_test_exec"] * self.factors["DNSTest"]
                             break
 
                     # Total resource units per month
@@ -781,7 +796,7 @@ class PopConfiguration(Base):
         print(f'\nThe total executions per month:\n    API   Simple executions: {cost_estimate["api_simple_test_exec"]:,}')
         print(f'    API   Script executions: {cost_estimate["api_script_test_exec"]:,}')
         print(f'    Browser Test executions: {cost_estimate["browserscript_test_exec"]:,}')
-        print(f'    SSL     Test executions: {cost_estimate["ssl_test_exec"]:,}\n')
+        print(f'    SSL     Test executions: {cost_estimate["ssl_test_exec"]:,}')
         print(f'    DNS     Test executions: {cost_estimate["dns_test_exec"]:,}\n')
 
         print(f'The total cost estimated:\n    Cost per month is: ${cost_estimate["total_cost"]:,}')
