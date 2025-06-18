@@ -788,7 +788,7 @@ class PopConfiguration(Base):
         print(f'{fixed_spaces1}javascript     playback engines: {pop_estimate_size["javascript_pod_count"]}')
         print(f'{fixed_spaces1}browserscript  playback engines: {pop_estimate_size["browserscript_pod_count"]}')
         print(f'{fixed_spaces1}SSL            playback engines: {pop_estimate_size["ism_pod_count"]}')
-        print(f'{fixed_spaces1}DNS            playback engines: {pop_estimate_size["ism_pod_count"]}')
+        print(f'{fixed_spaces1}DNS            playback engines: {pop_estimate_size["dns_pod_count"]}')
 
     def print_estimated_cost(self):
 
