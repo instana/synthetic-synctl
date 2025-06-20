@@ -506,14 +506,24 @@ class PopConfiguration(Base):
 
     def get_ism_test(self):
         ism_test = {}
-        ism_test["testCount"] = int(self.ask_question("How many ISM tests (SSLCertificate and DNS) do you want to create? (0 if no) "))
-        if ism_test["testCount"] > 0:
+        ism_test["ssl_testCount"] = int(self.ask_question("How many ISM tests (SSLCertificate) do you want to create? (0 if no) "))
+        if ism_test["ssl_testCount"] > 0:
             while True:
-                ism_test["frequency"] = int(self.ask_question("What is the test frequency for ISM tests? (SSLCertificate: 1-1440 and DNS: 1-120) "))
-                if ism_test["frequency"] > 0 and ism_test["frequency"] <= 1440:
+                ism_test["ssl_frequency"] = int(self.ask_question("What is the test frequency for SSLCertificate tests? (1-1440) "))
+                if ism_test["ssl_frequency"] > 0 and ism_test["ssl_frequency"] <= 1440:
                     break
                 else:
                     print("frequency is not valid, it should be in [1,1440]")
+            ism_test["dns_testCount"] = int(self.ask_question("How many ISM tests (DNS) do you want to create? (0 if no) "))
+        if ism_test["dns_testCount"] > 0:
+            while True:
+                ism_test["dns_frequency"] = int(self.ask_question("What is the test frequency for DNS tests? (1-120) "))
+                if ism_test["dns_frequency"] > 0 and ism_test["dns_frequency"] <= 120:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,120]")
+            ism_test["testCount"] = ism_test["dns_frequency"] + ism_test["ssl_testCount"]
+            ism_test["frequency"] = min(ism_test["dns_frequency"], ism_test["dns_frequency"])
         return ism_test
 
     def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
@@ -726,10 +736,15 @@ class PopConfiguration(Base):
             print(f'{fixed_spaces1}Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["browser_script"]["frequency"]}min')
         else:
             print(f'{fixed_spaces1}Browser  Test: {pop_estimate_size["browser_script"]["testCount"]:<{max_label_length}}')
-        if pop_estimate_size["ism"]["testCount"] > 0:
-            print(f'{fixed_spaces1}ISM      Test: {pop_estimate_size["ism"]["testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["ism"]["frequency"]}min')
+        if pop_estimate_size["ism"]["ssl_testCount"] > 0:
+            print(f'{fixed_spaces1}SSL      Test: {pop_estimate_size["ism"]["ssl_testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["ism"]["ssl_frequency"]}min')
         else:
-            print(f'{fixed_spaces1}ISM      Test: {pop_estimate_size["ism"]["testCount"]:<{max_label_length}}')
+            print(f'{fixed_spaces1}SSL      Test: {pop_estimate_size["ism"]["ssl_testCount"]:<{max_label_length}}')
+        if pop_estimate_size["ism"]["dns_testCount"] > 0:
+            print(f'{fixed_spaces1}DNS      Test: {pop_estimate_size["ism"]["dns_testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["ism"]["dns_frequency"]}min')
+        else:
+            print(f'{fixed_spaces1}DNS      Test: {pop_estimate_size["ism"]["dns_testCount"]:<{max_label_length}}')
+
 
         agent_yes = "Yes" if pop_estimate_size["agent"] in ["y", "Y"] else "No"
         if pop_estimate_size["agent"].upper() == "Y":
