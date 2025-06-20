@@ -506,6 +506,9 @@ class PopConfiguration(Base):
 
     def get_ism_test(self):
         ism_test = {}
+        ism_test["ssl_frequency"] = 0
+        ism_test["dns_frequency"] = 0
+
         ism_test["ssl_testCount"] = int(self.ask_question("How many ISM tests (SSLCertificate) do you want to create? (0 if no) "))
         if ism_test["ssl_testCount"] > 0:
             while True:
@@ -514,7 +517,7 @@ class PopConfiguration(Base):
                     break
                 else:
                     print("frequency is not valid, it should be in [1,1440]")
-            ism_test["dns_testCount"] = int(self.ask_question("How many ISM tests (DNS) do you want to create? (0 if no) "))
+        ism_test["dns_testCount"] = int(self.ask_question("How many ISM tests (DNS) do you want to create? (0 if no) "))
         if ism_test["dns_testCount"] > 0:
             while True:
                 ism_test["dns_frequency"] = int(self.ask_question("What is the test frequency for DNS tests? (1-120) "))
@@ -522,8 +525,9 @@ class PopConfiguration(Base):
                     break
                 else:
                     print("frequency is not valid, it should be in [1,120]")
-            ism_test["testCount"] = ism_test["dns_frequency"] + ism_test["ssl_testCount"]
-            ism_test["frequency"] = min(ism_test["dns_frequency"], ism_test["dns_frequency"])
+
+        ism_test["testCount"] = ism_test["dns_frequency"] + ism_test["ssl_testCount"]
+        ism_test["frequency"] = min([f for f in [ism_test["ssl_frequency"], ism_test["dns_frequency"]] if f > 0], default=0)
         return ism_test
 
     def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
