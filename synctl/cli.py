@@ -4764,6 +4764,14 @@ class PatchSyntheticTest(SyntheticTest):
             payload["customProperties"][key] = value
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
+    def patch_application_id(self, apps):
+        payload = {"configuration": {"applications": ""}}
+        if apps is None or apps == "":
+            print("app is should not be none")
+        else:
+            payload["applications"] = apps
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
     def patch_host(self, test_id, host):
         """update host for SSL test"""
         payload = {"configuration": {"hostname": ""}}
@@ -5593,7 +5601,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--value', type=str, metavar="<string>", help='set credential value')
         patch_exclusive_group.add_argument(
-            '--applications', '--apps', nargs="+", metavar="<id>", help="set applications")
+            '--apps','--applications', nargs="+", metavar="<id>", help="set applications")
         patch_exclusive_group.add_argument(
             '--websites', nargs="+", metavar="<id>", help="set websites")
         patch_exclusive_group.add_argument(
@@ -6416,6 +6424,8 @@ def main():
         elif get_args.custom_properties is not None:
             split_string = get_args.custom_properties.split(',')
             patch_instance.patch_custom_properties(get_args.id, split_string)
+        elif get_args.apps is not None:
+            patch_instance.patch_application_id(get_args.apps)
         elif get_args.hostname is not None:
             patch_instance.patch_host(get_args.id, get_args.hostname)
         elif get_args.port is not None:
