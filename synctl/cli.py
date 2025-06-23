@@ -5601,7 +5601,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--value', type=str, metavar="<string>", help='set credential value')
         patch_exclusive_group.add_argument(
-            '--apps','--applications', nargs="+", metavar="<id>", help="set applications")
+            '--apps','--applications', type=str, nargs="+", metavar="<id>", help="set applications")
         patch_exclusive_group.add_argument(
             '--websites', nargs="+", metavar="<id>", help="set websites")
         patch_exclusive_group.add_argument(
