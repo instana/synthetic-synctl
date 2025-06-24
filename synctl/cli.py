@@ -6512,7 +6512,8 @@ def main():
                     syn_update_instance.update_follow_redirect(get_args.follow_redirect)
                 if get_args.apps is not None:
                     print("Warning: --app-id/--application-id will be deprecated soon. Use --apps/--applications")
-                    app_ids = [id for item in get_args.apps for id in item.split(',')]
+                    print("Note: If any app ID starts with '-', use --apps=\"<id1>,<id2>\"\n")
+                    app_ids = [id.strip() for item in get_args.apps for id in item.split(',') if id.strip()]
                     syn_update_instance.update_application_id(app_ids)
                 if get_args.websites is not None:
                     syn_update_instance.update_websites(get_args.websites)
