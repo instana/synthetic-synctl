@@ -4767,7 +4767,7 @@ class PatchSyntheticTest(SyntheticTest):
     def patch_application_id(self, apps):
         payload = {"configuration": {"applications": ""}}
         if apps is None or apps == "":
-            print("app id should not be none")
+            print("app id should not be empty")
         else:
             payload["applications"] = apps
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
