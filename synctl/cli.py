@@ -4784,6 +4784,14 @@ class PatchSyntheticTest(SyntheticTest):
             payload["customProperties"][key] = value
         self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
+    def patch_application_id(self, apps):
+        payload = {"configuration": {"applications": ""}}
+        if apps is None or apps == "":
+            print("app id should not be empty")
+        else:
+            payload["applications"] = apps
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+
     def patch_host(self, test_id, host):
         """update host for SSL test"""
         payload = {"configuration": {"hostname": ""}}
@@ -5613,7 +5621,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--value', type=str, metavar="<string>", help='set credential value')
         patch_exclusive_group.add_argument(
-            '--applications', '--apps', nargs="+", metavar="<id>", help="set applications")
+            '--apps','--applications', type=str, dest='apps', nargs=argparse.REMAINDER, metavar="<id>", help="set applications")
         patch_exclusive_group.add_argument(
             '--websites', nargs="+", metavar="<id>", help="set websites")
         patch_exclusive_group.add_argument(
@@ -6436,6 +6444,8 @@ def main():
         elif get_args.custom_properties is not None:
             split_string = get_args.custom_properties.split(',')
             patch_instance.patch_custom_properties(get_args.id, split_string)
+        elif get_args.apps is not None:
+            patch_instance.patch_application_id(get_args.apps)
         elif get_args.hostname is not None:
             patch_instance.patch_host(get_args.id, get_args.hostname)
         elif get_args.port is not None:
@@ -6522,7 +6532,9 @@ def main():
                     syn_update_instance.update_follow_redirect(get_args.follow_redirect)
                 if get_args.apps is not None:
                     print("Warning: --app-id/--application-id will be deprecated soon. Use --apps/--applications")
-                    syn_update_instance.update_application_id(get_args.apps)
+                    print("Note: If any app ID starts with '-', use --apps=\"<id1>,<id2>\"\n")
+                    app_ids = [id.strip() for item in get_args.apps for id in item.split(',') if id.strip()]
+                    syn_update_instance.update_application_id(app_ids)
                 if get_args.websites is not None:
                     syn_update_instance.update_websites(get_args.websites)
                 if get_args.mobile_apps is not None:
