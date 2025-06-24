@@ -5601,7 +5601,7 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--value', type=str, metavar="<string>", help='set credential value')
         patch_exclusive_group.add_argument(
-            '--apps','--applications', type=str, nargs="+", metavar="<id>", help="set applications")
+            '--apps','--applications', type=str, dest='apps', nargs=argparse.REMAINDER, metavar="<id>", help="set applications")
         patch_exclusive_group.add_argument(
             '--websites', nargs="+", metavar="<id>", help="set websites")
         patch_exclusive_group.add_argument(
@@ -6512,7 +6512,8 @@ def main():
                     syn_update_instance.update_follow_redirect(get_args.follow_redirect)
                 if get_args.apps is not None:
                     print("Warning: --app-id/--application-id will be deprecated soon. Use --apps/--applications")
-                    syn_update_instance.update_application_id(get_args.apps)
+                    app_ids = [id for item in get_args.apps for id in item.split(',')]
+                    syn_update_instance.update_application_id(app_ids)
                 if get_args.websites is not None:
                     syn_update_instance.update_websites(get_args.websites)
                 if get_args.mobile_apps is not None:
