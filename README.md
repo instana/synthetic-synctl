@@ -140,7 +140,11 @@ Synthetic smart alert management:
 - [synctl delete alert](docs/synctl-delete-alert.md) - Delete smart alert.
 
 Synthetic credential management:
-- [synctl get/create/update/delete cred](docs/synctl-credential.md) - Manage credentials.
+- [synctl get cred](docs/synctl-get-credential.md) - Display credentials
+- [synctl create cred](docs/synctl-create-credential.md) - create credential
+- [synctl patch cred](docs/synctl-patch-credential.md) - Patch credential
+- [synctl update cred](docs/synctl-update-credential.md) - Update credential
+- [synctl delete cred](docs/synctl-delete-credential.md) - Delete credential
 
 Synthetic CI-CD test management:
 - [synctl run test](docs/synctl-run-test.md) - Run a CI-CD test.
