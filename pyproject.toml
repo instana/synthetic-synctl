@@ -1,3 +1,50 @@
 [tool.black]
 line-length = 88
 target-version = ['py37', 'py38', 'py39', 'py310']
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "synctl.__version__.__version__"}
+
+[project]
+name = "synctl"
+dynamic = ["version"]
+description = "Instana Synthetic CLI"
+readme = "DESCRIPTION.md"
+requires-python = ">=3.6"
+license = {text = "MIT"}
+authors = [
+    {name = "Rong Zhu Shang" ,email = "shangrz@cn.ibm.com"},
+    {name = "Swetha Lohith"  ,email = "Swetha.Lohith@ibm.com"},
+    {name = "Esteban Diaz"   ,email = "ediazgallego@ibm.com"}
+]
+keywords = ["Instana", "Synthetic", "CLI"]
+classifiers = [
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.12",
+    "Environment :: Console",
+]
+
+dependencies = [
+    "requests>=2.27.0",
+]
+
+[project.urls]
+"Bug Reports" = "https://github.com/instana/synthetic-synctl/issues"
+"Source" = "https://github.com/instana/synthetic-synctl"
+"Documentation" = "https://github.com/instana/synthetic-synctl#readme"
+
+[project.scripts]
+synctl = "synctl.cli:main"
+
+[tool.setuptools]
+packages = ["synctl"]
+zip-safe = false
