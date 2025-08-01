@@ -549,7 +549,12 @@ class PopConfiguration(Base):
 
     def pop_size_estimate(self):
         pop_estimate_size = {}
-        print("Please answer below questions for estimating the self-hosted PoP hardware size:\n")
+        print("Assume you need to create tests with below configurations:\n\n "
+              "API Simple test :                  duration is ~200ms\n "
+              "API Script test :                  duration is ~800ms and 5 HTTP calls are issued\n "
+              "Browser script test:               duration is ~20 seconds and 2 Web pages are opened\n "
+              "ISM test (SSLCertificate and DNS): duration is ~240ms\n\n "
+              "Please answer below questions for estimating the self-hosted PoP hardware size:\n")
         try:
             while True:
                 pop_estimate_size["api_simple"] = self.get_api_simple_test()
