@@ -2206,7 +2206,8 @@ class SyntheticLocation(Base):
     def print_a_location_details(self, location_id, single_location, show_details=False, show_json=False):
         """show a Synthetic location details data"""
         if single_location is None or len(single_location) == 0 or location_id is None:
-            print("no Synthetic location")
+            print("Detailed data is only available for a specific location. Use: synctl get location <location-id> "
+                  "--show-details or synctl get location <location-id> --show-json")
             return
         if show_details is True:
             a_single_location = single_location[0]
