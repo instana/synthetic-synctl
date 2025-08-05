@@ -13,6 +13,7 @@ synctl get location|lo [id] [options]
     --verify-tls          verify tls certificate
 
     --show-details        output location details to console
+    --show-json           output location json to terminal
 ```
 
 ## Examples
@@ -25,4 +26,8 @@ synctl get location
 Show Synthetic location details
 ```
 synctl get location <location-id> --show-details
+```
+Show location configuration in json format
+```
+synctl get location <location-id> --show-json
 ```

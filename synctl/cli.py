@@ -549,7 +549,12 @@ class PopConfiguration(Base):
 
     def pop_size_estimate(self):
         pop_estimate_size = {}
-        print("Please answer below questions for estimating the self-hosted PoP hardware size:\n")
+        print("Assume you need to create tests with below configurations:\n\n "
+              "API Simple test :                  duration is ~200ms\n "
+              "API Script test :                  duration is ~800ms and 5 HTTP calls are issued\n "
+              "Browser script test:               duration is ~20 seconds and 2 Web pages are opened\n "
+              "ISM test (SSLCertificate and DNS): duration is ~240ms\n\n "
+              "Please answer below questions for estimating the self-hosted PoP hardware size:\n")
         try:
             while True:
                 pop_estimate_size["api_simple"] = self.get_api_simple_test()
@@ -2198,10 +2203,11 @@ class SyntheticLocation(Base):
         max_result["max_display_label"] = display_label_len if display_label_len < 60 else 60
         return max_result
 
-    def print_a_location_details(self, location_id, single_location, show_details=False):
+    def print_a_location_details(self, location_id, single_location, show_details=False, show_json=False):
         """show a Synthetic location details data"""
         if single_location is None or len(single_location) == 0 or location_id is None:
-            print("no Synthetic location")
+            print("Detailed data is only available for a specific location. Use: synctl get location <location-id> "
+                  "--show-details or synctl get location <location-id> --show-json")
             return
         if show_details is True:
             a_single_location = single_location[0]
@@ -2211,6 +2217,8 @@ class SyntheticLocation(Base):
                     print(self.fill_space(key, 30), self.format_time(value))
                 else:
                     print(self.fill_space(key, 30), value)
+        if show_json is True:
+            print(json.dumps(single_location[0]))
 
     def delete_a_synthetic_pop(self, pop_id=""):
         if pop_id != "":
@@ -6025,11 +6033,15 @@ def main():
         elif get_args.op_type in (SYN_LOCATION, SYN_LO):
             # deal pop
             pop_locations_json = []
+            pop_location = pop_instance.retrieve_synthetic_locations(
+                get_args.id)
             if get_args.show_details is True:
-                pop_location = pop_instance.retrieve_synthetic_locations(
-                    get_args.id)
                 pop_instance.print_a_location_details(
                     get_args.id, pop_location, show_details=True)
+                syn_instance.exit_synctl(ERROR_CODE)
+            if get_args.show_json is True:
+                pop_instance.print_a_location_details(
+                    get_args.id, pop_location, show_json=True)
                 syn_instance.exit_synctl(ERROR_CODE)
             if get_args.id is None:
                 pop_locations_json = pop_instance.retrieve_synthetic_locations()
