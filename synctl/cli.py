@@ -17,7 +17,7 @@ import sys
 import tarfile
 import getpass
 import math
-import textwrap
+
 import time
 from datetime import datetime
 
@@ -3166,6 +3166,78 @@ class SyntheticTest(Base):
         except requests.ConnectionError as connect_error:
             self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
 
+    def retrieve_synthetic_tests_by_analytics(self, analytics, metrics, tagfilter, order, window_size=60*60*1000):
+        """curl --location \
+        --request POST '<host>/api/synthetics/results/list' \
+        --header 'Authorization: apiToken <token>' \
+        --header 'Content-Type: application/json' \
+        --data-raw '{
+          "syntheticMetrics":["synthetic.metricsResponseSize","synthetic.metricsResponseTime"],
+          "analyticFunction": "LAST_VALUE",
+          "order":{
+            "by":"synthetic.startTime",
+            "direction":"DESC"
+          },
+          "tagFilterExpression": {
+            "type":"EXPRESSION",
+            "logicalOperator":"AND",
+            "elements":[{
+              "stringValue":"All",
+              "name":"synthetic.runType",
+              "operator":"EQUALS"
+            }]
+          },"tagFilters":[{
+            "numberValue": 0,
+            "name":"synthetic.metricsStatus",
+            "operator":"EQUALS"
+          }],
+          "timeFrame": {
+            "to": 0,
+            "windowSize": 300000
+          }
+        }'"""
+        host = self.auth["host"]
+        token = self.auth["token"]
+        self.check_host_and_token(host, token)
+
+        retrieve_url = f"{host}/api/synthetics/results/analytic"
+
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": f"apiToken {token}"
+        }
+        summary_config = { "syntheticMetrics": [s.strip().strip('"') for s in metrics.strip('{}').split(',')],
+                           "analyticFunction": analytics,
+                           "order":{
+                               "by":"synthetic.startTime",
+                               "direction":"DESC"
+                           },
+                           "tagFilterExpression": json.loads(tagfilter),
+                           "timeFrame": {
+                               "to": 0,
+                               "windowSize": window_size
+                                }
+                           }
+        try:
+            result = requests.post(retrieve_url,
+                                   headers=headers,
+                                   data=json.dumps(summary_config),
+                                   timeout=60,
+                                   verify=self.insecure)
+            print(json.dumps(summary_config))
+            if _status_is_200(result.status_code):
+                data = result.json()
+                return data
+            else:
+                self.exit_synctl(ERROR_CODE,
+                                 f'retrieve test result list failed, status code:: {result.status_code}')
+                return None
+        except requests.ConnectTimeout as timeout_error:
+            self.exit_synctl(f"Connection to {host} timed out, error is {timeout_error}")
+        except requests.ConnectionError as connect_error:
+            self.exit_synctl(f"Connection to {host} failed, error is {connect_error}")
+
+
 
     def delete_a_synthetic_test(self, test_id=""):
         """delete a Synthetic by id"""
@@ -5471,6 +5543,9 @@ class ParseParameter:
         self.parser_get.add_argument(
             '--window-size', type=str, default="1h", metavar="<window>", help="set Synthetic result window size, support [1,60]m, [1-24]h"
         )
+        self.parser_get.add_argument(
+            '--order', type=str, metavar="<json>", help="set order either ascending or descending"
+        )
         # CI-CD tests
         self.parser_get.add_argument(
             '--CI-CD', "--ci-cd", action="store_true", help='output all CI/CD type of tests')
@@ -5510,6 +5585,11 @@ class ParseParameter:
             '--metric', type=str, metavar="<json>", help="set metric")
         self.parser_get.add_argument(
             '--tag-filter-expression', type=str, metavar="<json>", help="tag filter")
+
+        # analytics
+        self.parser_get.add_argument(
+            '--analytics', type=str,  metavar="<string>", help="get test by analytics")
+
 
 
         host_token_group = self.parser_get.add_argument_group()
@@ -5973,6 +6053,11 @@ def main():
                     print("Synthetic type only support 0 1 2 3 4 5 6", syn_type_t)
 
             if get_args.id is None:
+                if get_args.analytics is not None:
+                    if get_args.metric is None:
+                        print("Synthetic metrics shouldn't be none")
+                    if any(v is not None for v in (get_args.tag_filter_expression, get_args.order, get_args.window_size)):
+                        syn_instance.retrieve_synthetic_tests_by_analytics(get_args.analytics, get_args.metric, get_args.tag_filter_expression, get_args.order, get_args.window_size)
                 if get_args.CI_CD is True:
                     if get_args.result is not None:
                         syn_instance.print_a_runNow_test(get_args.result)
