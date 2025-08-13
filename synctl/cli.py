@@ -3199,6 +3199,8 @@ class SyntheticTest(Base):
         host = self.auth["host"]
         token = self.auth["token"]
         self.check_host_and_token(host, token)
+        result_instance = SyntheticResult()
+        window_size_ms = result_instance.get_window_size(window_size)
 
         retrieve_url = f"{host}/api/synthetics/results/analytic"
 
@@ -3215,7 +3217,7 @@ class SyntheticTest(Base):
                            "tagFilterExpression": json.loads(tagfilter),
                            "timeFrame": {
                                "to": 0,
-                               "windowSize": window_size
+                               "windowSize": window_size_ms
                                 }
                            }
         try:
@@ -3224,7 +3226,7 @@ class SyntheticTest(Base):
                                    data=json.dumps(summary_config),
                                    timeout=60,
                                    verify=self.insecure)
-            print(json.dumps(summary_config))
+
             if _status_is_200(result.status_code):
                 data = result.json()
                 return data
