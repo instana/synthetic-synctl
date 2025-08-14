@@ -20,6 +20,8 @@ synctl get test [id] [options]
     --show-result           output latency and success rate
     --filter <filter>       filter test by application id or location id
     --CI-CD, --ci-cd        lists CI-CD tests
+    --order <json>          order items, either ascending or descending
+    --analytic-function     analytics function, Valid values: FIRST_VALUE and LAST_VALUE (default: LAST_VALUE)
 ```
 
 ## Examples
@@ -84,7 +86,7 @@ synctl get test <id> --save-script
 synctl get test --filter=locationid=<locationId>
 ```
 
-### Filer tests based on application id
+### Filter tests based on application id
 ```
 synctl get test --filter=applicationid=<applicationId>
 ```
@@ -97,4 +99,17 @@ synctl get test --ci-cd
 ### Show a CI-CD test by a given test result id
 ```
 synctl get test --result <result-id> --ci-cd
+```
+### Show tests based upon the specified analytic function
+```
+synctl get test --metric '{"synthetic.metricsRedirectCount","synthetic.metricsResponseTime", synthetic.metricsResponseSize"}' \
+--tag-filter-expression '{"type":"EXPRESSION", "logicalOperator":"AND",
+    "elements":[{
+      "stringValue":"All",
+      "name":"synthetic.runType",
+      "operator":"EQUALS"
+    }]
+  }' \
+  --analytic "FIRST_VALUE" \
+  --order '{"by":"synthetic.startTime","direction":"ASC"}'
 ```
