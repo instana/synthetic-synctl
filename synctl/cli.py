@@ -3110,6 +3110,43 @@ class SyntheticTest(Base):
                   self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
                   self.fill_space(str(formatted_response_size), response_size_length))
 
+    def max_len(key, default_length=10):
+        max_val = max(len(str(result["testResultCommonProperties"].get(key, ""))) for result in sorted_result)
+        return max(max_val + 2, default_length)
+
+    def print_analytic_result_list(self, result_list):
+        id_length = 38
+        label_length = 30
+        loc_length = 30
+        status_length = 15
+        response_size_length = 8
+        response_time_length = 18
+        sorted_result = self.__sort_test_result(result_list)
+
+        all_metrics = sorted({metric for result in sorted_result for metric in result["metrics"].keys()})
+
+        for result in sorted_result:
+            props = result["testResultCommonProperties"]
+
+            row_data = [
+                self.fill_space(props["id"], id_length),
+                self.fill_space(props["testId"], loc_length),
+                self.fill_space(props["testName"], loc_length),
+                self.fill_space(props["locationId"], loc_length),
+            ]
+
+            for metric in all_metrics:
+                value = "-"
+                if metric in result["metrics"]:
+                    metric_data = result["metrics"][metric]
+                    if metric_data and isinstance(metric_data, list) and metric_data[0]:
+                        value = str(metric_data[0][1])
+                row_data.append(self.fill_space(value, loc_length))
+
+            print("".join(row_data), end="\n")
+
+
+
     def print_a_runNow_test(self, testResultid):
         test_result = self.retrieve_a_runNow_result(testResultid)
 
@@ -6059,7 +6096,9 @@ def main():
                     if get_args.metric is None:
                         print("Synthetic metrics shouldn't be none")
                     if any(v is not None for v in (get_args.tag_filter_expression, get_args.order, get_args.window_size)):
-                        syn_instance.retrieve_synthetic_tests_by_analytics(get_args.analytics, get_args.metric, get_args.tag_filter_expression, get_args.order, get_args.window_size)
+                        test_result = syn_instance.retrieve_synthetic_tests_by_analytics(get_args.analytics, get_args.metric, get_args.tag_filter_expression, get_args.order, get_args.window_size)
+                        syn_instance.print_analytic_result_list(test_result["items"])
+                        sys.exit(NORMAL_CODE)
                 if get_args.CI_CD is True:
                     if get_args.result is not None:
                         syn_instance.print_a_runNow_test(get_args.result)
