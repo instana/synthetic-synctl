@@ -3252,10 +3252,7 @@ class SyntheticTest(Base):
         }
         summary_config = { "syntheticMetrics": [s.strip().strip('"') for s in metrics.strip('{}').split(',')],
                            "analyticFunction": analytics,
-                           "order":{
-                               "by":"synthetic.startTime",
-                               "direction":"DESC"
-                           },
+                           "order": json.loads(order),
                            "tagFilterExpression": json.loads(tagfilter),
                            "timeFrame": {
                                "to": 0,
