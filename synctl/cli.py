@@ -3110,9 +3110,6 @@ class SyntheticTest(Base):
                   self.fill_space(str(self.convert_milliseconds(result["metrics"]["response_time"][0][1])), response_time_length),
                   self.fill_space(str(formatted_response_size), response_size_length))
 
-    def max_len(key, default_length=10):
-        max_val = max(len(str(result["testResultCommonProperties"].get(key, ""))) for result in sorted_result)
-        return max(max_val + 2, default_length)
 
     def print_analytic_result_list(self, result_list):
         id_length = 38
@@ -3125,25 +3122,33 @@ class SyntheticTest(Base):
 
         all_metrics = sorted({metric for result in sorted_result for metric in result["metrics"].keys()})
 
+        def max_len(key, default_length=10):
+            max_val = max(len(str(result["testResultCommonProperties"].get(key, ""))) for result in sorted_result)
+            return max(max_val + 2, default_length)
+
+        id_length = max_len("id", 36)
+        testid_length = max_len("testId", 20)
+        testname_length = max_len("testName", 30)
+        location_length = max_len("locationId", 20)
+        metric_lengths = {metric: max(
+            max(len(str(result["metrics"].get(metric, [["-"]])[0][1])) if result["metrics"].get(metric) else 1
+                for result in sorted_result),
+            len(metric)) + 2 for metric in all_metrics}
+
+        print(self.fill_space("ID", id_length) +
+              self.fill_space("Test ID", testid_length) +
+              self.fill_space("Test Name", testname_length) +
+              self.fill_space("Location ID", location_length) +
+              "".join(self.fill_space(metric, metric_lengths[metric]) for metric in all_metrics))
+
         for result in sorted_result:
-            props = result["testResultCommonProperties"]
-
-            row_data = [
-                self.fill_space(props["id"], id_length),
-                self.fill_space(props["testId"], loc_length),
-                self.fill_space(props["testName"], loc_length),
-                self.fill_space(props["locationId"], loc_length),
-            ]
-
-            for metric in all_metrics:
-                value = "-"
-                if metric in result["metrics"]:
-                    metric_data = result["metrics"][metric]
-                    if metric_data and isinstance(metric_data, list) and metric_data[0]:
-                        value = str(metric_data[0][1])
-                row_data.append(self.fill_space(value, loc_length))
-
-            print("".join(row_data), end="\n")
+            print(self.fill_space(result["testResultCommonProperties"]["id"], id_length) +
+                  self.fill_space(result["testResultCommonProperties"]["testId"], testid_length) +
+                  self.fill_space(result["testResultCommonProperties"]["testName"], testname_length) +
+                  self.fill_space(result["testResultCommonProperties"]["locationId"], location_length) +
+                  "".join(self.fill_space(
+                      str(result["metrics"].get(metric, [["-"]])[0][1]) if result["metrics"].get(metric) else "-",
+                      metric_lengths[metric]) for metric in all_metrics))
 
 
 
