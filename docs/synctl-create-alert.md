@@ -57,7 +57,17 @@ synctl create alert --name "Smart-alert" \
        --alert-channel "$ALERT_CHANNEL" \
        --test "$SYNTHETIC_TEST" \
        --violation-count 3 \
-       --custom-payloads '{"type": "staticString", "key": "test", "value": "123456789"}'
+       --custom-payloads '[{"type": "staticString", "key": "test", "value": "123456789"}]'
+       
+```
+Create alert with multiple custom payloads
+```
+synctl create alert --name "Smart-alert" \
+       --alert-channel "$ALERT_CHANNEL" \
+       --test "$SYNTHETIC_TEST" \
+       --violation-count 3 \
+        --custom-payloads '[{"type": "staticString", "key": "key1", "value": "value1"},{"type": "staticString", 
+        "key": "key2", "value": "value2"}]'
 ```
 Create alert with grace period in min
 ```

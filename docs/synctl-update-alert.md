@@ -55,7 +55,11 @@ synctl update alert <alert-id> --tag-filter-expression '{"type": "EXPRESSION", "
 ```
 Update a smart alert with custom payloads
 ```
-synctl update alert <alert-id> --custom-payloads '{"type": "staticString", "key": "test", "value": "12345"}'
+synctl update alert <alert-id> --custom-payloads '[{"type": "staticString", "key": "test", "value": "12345"}]'
+```
+Update a smart alert with multiple custom payloads
+```
+synctl update alert <alert-id> --custom-payloads '[{"type": "staticString", "key": "key1", "value": "value1"},{"type": "staticString", "key": "key2", "value": "value2"}]'
 ```
 Update a smart alert with grace period in hours
 ```

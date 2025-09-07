@@ -2037,7 +2037,7 @@ class SmartAlertConfiguration(Base):
     def set_custom_payloads(self, custom_payloads):
         """set custom payload fields"""
         if custom_payloads is not None:
-            self.smart_alert_config["customPayloadFields"] = [custom_payloads]
+            self.smart_alert_config["customPayloadFields"] = custom_payloads
         else:
             self.exit_synctl(ERROR_CODE, "Custom payloads is invalid")
 
@@ -4545,7 +4545,7 @@ class UpdateSmartAlert(SmartAlert):
 
     def update_custom_payloads(self, custom_payload):
         if custom_payload is not None:
-            self.update_config["customPayloadFields"] = [custom_payload]
+            self.update_config["customPayloadFields"] = custom_payload
         else:
             self.exit_synctl(ERROR_CODE, "custom payload fields should not be None")
 
