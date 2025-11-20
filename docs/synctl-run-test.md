@@ -1,6 +1,6 @@
 # synctl run test
 
-Run a CI-CD test
+Run a test on-demand
 
 ## Syntax
 ```
