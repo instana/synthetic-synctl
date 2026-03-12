@@ -18,6 +18,7 @@ synctl get test [id] [options]
     --show-details          output test script details to terminal
     --show-json             output test json to terminal
     --show-result           output latency and success rate
+    --no-locations          lists tests with no locations
     --filter <filter>       filter test by application id or location id
     --CI-CD, --ci-cd        lists CI-CD tests
     --order <json>          order items, either ascending or descending
@@ -89,6 +90,11 @@ synctl get test --filter=locationid=<locationId>
 ### Filter tests based on application id
 ```
 synctl get test --filter=applicationid=<applicationId>
+```
+
+### List tests with no location associated
+```
+synctl get test --no-locations
 ```
 
 ### Show all CI-CD tests

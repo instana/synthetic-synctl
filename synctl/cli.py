@@ -3565,6 +3565,22 @@ class SyntheticTest(Base):
                         output_lists.append(t)
         print('total:', len(output_lists))
 
+    def print_tests_without_locations(self):
+        show_syn_id_lists = []
+        full_syn_tests = self.retrieve_all_synthetic_tests()
+        for syn in full_syn_tests:
+            label = syn["label"]
+            syn_locations = syn["locations"]
+            if len(syn_locations) == 0:
+                print(f"test \"{label}\"")
+                show_syn_id_lists.append(syn["id"])
+        if len(show_syn_id_lists) > 0:
+            print('Total tests:', len(show_syn_id_lists))
+        else:
+            print('No tests found without locations')
+        self.exit_synctl()
+
+
     def print_runNow_tests(self):
         test_results = self.retrieve_all_synthetic_tests(CI_CD=True)
         id_length = 40
@@ -5595,6 +5611,8 @@ class ParseParameter:
         self.parser_get.add_argument(
             '--order', type=str, metavar="<json>", help="set order either ascending or descending"
         )
+        self.parser_get.add_argument(
+            '--no-locations', action="store_true", help="get tests with no locations")
         # CI-CD tests
         self.parser_get.add_argument(
             '--CI-CD', "--ci-cd", action="store_true", help='output all CI/CD type of tests')
@@ -6132,6 +6150,11 @@ def main():
                     syn_instance.print_synthetic_test(out_list=out_list,
                                                       summary_list=summary_result)
                     sys.exit(NORMAL_CODE)
+
+                # print all tests with no location
+                if get_args.no_locations is True:
+                    syn_instance.print_tests_without_locations()
+
                 syn_instance.print_synthetic_test(out_list=out_list)
             else:
                 if get_args.CI_CD is True:
