@@ -43,6 +43,7 @@ WebpageScript_TYPE  = "WebpageScript"
 WebpageAction_TYPE  = "WebpageAction"
 SSLCertificate_TYPE = "SSLCertificate"
 DNSAction_TYPE      = "DNS"
+ICMPAction_TYPE     = "ICMP"
 
 # supported Synthetic type
 synthetic_type = (
@@ -53,6 +54,7 @@ synthetic_type = (
     WebpageAction_TYPE,  # 4
     SSLCertificate_TYPE, # 5
     DNSAction_TYPE       # 6
+    ICMPAction_TYPE      # 7
 )
 
 SYN_TEST = "test"
@@ -1183,6 +1185,11 @@ class SyntheticConfiguration(Base):
             "serverRetries": 1,
             "queryType": "A"
         }
+        # syntheticType ICMP
+        self.ICMP_conf = {
+            "syntheticType": "ICMP",
+            "targetHost": ""
+        }
 
         self.script_type = [HTTPScript_TYPE, BrowserScript_TYPE]
         if syn_type in [HTTPAction_TYPE, HTTPScript_TYPE, BrowserScript_TYPE, WebpageScript_TYPE, WebpageAction_TYPE]:
@@ -1481,6 +1488,40 @@ class SyntheticConfiguration(Base):
     def set_transport(self, transport):
         if transport is not None:
             self.syn_test_config["configuration"]["transport"] = transport
+
+    # ICMP
+    def set_target_host(self, target_host):
+        if target_host is not None:
+            self.syn_test_config["configuration"]["targetHost"] = target_host
+
+    def set_packet_count(self, packet_count):
+        if packet_count is not None:
+            self.syn_test_config["configuration"]["packetCount"] = packet_count
+
+    def set_packet_size(self, packet_size):
+        if packet_size is not None:
+            self.syn_test_config["configuration"]["packetSize"] = packet_size
+
+    def set_packet_timeout(self, packet_timeout):
+        if packet_timeout is not None:
+            self.syn_test_config["configuration"]["packetTimeout"] = packet_timeout
+
+    def set_packet_interval(self, packet_interval):
+        if packet_interval is not None:
+            self.syn_test_config["configuration"]["packetInterval"] = packet_interval
+
+    def set_use_ipv6(self, use_ipv6):
+        if use_ipv6 is not None:
+            self.syn_test_config["configuration"]["useIPv6"] = use_ipv6
+
+    def set_use_dns(self, use_dns):
+        if use_dns is not None:
+            self.syn_test_config["configuration"]["useDNS"] = use_dns
+
+    def set_validation_rules(self, validation_rules):
+        if validation_rules is not None:
+            self.syn_test_config["configuration"]["validationRules"] = validation_rules
+            
 
     def read_js_file(self, file_name: str) -> str:
         """read javascript file"""
@@ -3435,6 +3476,8 @@ class SyntheticTest(Base):
             syn_type = "SSLCertificate"
         elif syn_type == DNSAction_TYPE:
             syn_type = "DNS"
+        elif syn_type == ICMPAction_TYPE:
+            syn_type = "ICMP"
 
         return syn_type
 
@@ -3466,7 +3509,7 @@ class SyntheticTest(Base):
                 syn_type = self.map_synthetic_type_label(syn_type)
 
                 current_type = t['configuration']['syntheticType']
-                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE, SSLCertificate_TYPE):
+                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE, SSLCertificate_TYPE, ICMPAction_TYPE):
                     if len(t['locations']) > 0:
                         # locations,
                         location_str = ','.join(t['locationDisplayLabels'])
@@ -3526,7 +3569,7 @@ class SyntheticTest(Base):
                 syn_type = self.map_synthetic_type_label(syn_type)
 
                 current_type = t['configuration']['syntheticType']
-                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE, SSLCertificate_TYPE):
+                if current_type in (HTTPAction_TYPE, WebpageAction_TYPE, SSLCertificate_TYPE, ICMPAction_TYPE):
                     if len(t['locations']) > 0:
                         # locations,
                         location_str = ','.join(t['locationDisplayLabels'])
@@ -4406,6 +4449,57 @@ class UpdateSyntheticTest(SyntheticTest):
             self.update_config["configuration"]["transport"] = transport
         else:
             print("transport should not be None")
+    # ICMP update methods
+    def update_target_host(self, target_host):
+        if target_host is not None:
+            self.update_config["configuration"]["targetHost"] = target_host
+        else:
+            print("target host should not be None")
+
+    def update_packet_count(self, packet_count):
+        if packet_count is not None:
+            self.update_config["configuration"]["packetCount"] = packet_count
+        else:
+            print("packet count should not be None")
+
+    def update_packet_size(self, packet_size):
+        if packet_size is not None:
+            self.update_config["configuration"]["packetSize"] = packet_size
+        else:
+            print("packet size should not be None")
+
+    def update_packet_timeout(self, packet_timeout):
+        if packet_timeout is not None:
+            self.update_config["configuration"]["packetTimeout"] = packet_timeout
+        else:
+            print("packet timeout should not be None")
+
+    def update_packet_interval(self, packet_interval):
+        if packet_interval is not None:
+            self.update_config["configuration"]["packetInterval"] = packet_interval
+        else:
+            print("packet interval should not be None")
+
+    def update_use_ipv6(self, use_ipv6):
+        ipv6_options = ["true", "false"]
+        if use_ipv6 is not None and use_ipv6.lower() in ipv6_options:
+            self.update_config["configuration"]["useIPv6"] = use_ipv6.lower() == "true"
+        else:
+            print("use ipv6 should be true or false")
+
+    def update_use_dns(self, use_dns):
+        dns_options = ["true", "false"]
+        if use_dns is not None and use_dns.lower() in dns_options:
+            self.update_config["configuration"]["useDNS"] = use_dns.lower() == "true"
+        else:
+            print("use dns should be true or false")
+
+    def update_validation_rules(self, validation_rules):
+        if validation_rules is not None:
+            self.update_config["configuration"]["validationRules"] = validation_rules
+        else:
+            print("validation rules should not be None")
+
 
     def get_updated_test_config(self):
         """return payload as json"""
@@ -5035,6 +5129,73 @@ class PatchSyntheticTest(SyntheticTest):
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
             print("transport should not be None")
+    # ICMP patch methods
+    def patch_target_host(self, target_host):
+        payload = {"configuration": {"targetHost": ""}}
+        if target_host is not None:
+            payload["configuration"]["targetHost"] = target_host
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("target host should not be None")
+
+    def patch_packet_count(self, packet_count):
+        payload = {"configuration": {"packetCount": ""}}
+        if packet_count is not None:
+            payload["configuration"]["packetCount"] = packet_count
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("packet count should not be None")
+
+    def patch_packet_size(self, packet_size):
+        payload = {"configuration": {"packetSize": ""}}
+        if packet_size is not None:
+            payload["configuration"]["packetSize"] = packet_size
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("packet size should not be None")
+
+    def patch_packet_timeout(self, packet_timeout):
+        payload = {"configuration": {"packetTimeout": ""}}
+        if packet_timeout is not None:
+            payload["configuration"]["packetTimeout"] = packet_timeout
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("packet timeout should not be None")
+
+    def patch_packet_interval(self, packet_interval):
+        payload = {"configuration": {"packetInterval": ""}}
+        if packet_interval is not None:
+            payload["configuration"]["packetInterval"] = packet_interval
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("packet interval should not be None")
+
+    def patch_use_ipv6(self, use_ipv6):
+        ipv6_options = ["true", "false"]
+        payload = {"configuration": {"useIPv6": ""}}
+        if use_ipv6 is not None and use_ipv6.lower() in ipv6_options:
+            payload["configuration"]["useIPv6"] = use_ipv6.lower() == "true"
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("use ipv6 should be true or false")
+
+    def patch_use_dns(self, use_dns):
+        dns_options = ["true", "false"]
+        payload = {"configuration": {"useDNS": ""}}
+        if use_dns is not None and use_dns.lower() in dns_options:
+            payload["configuration"]["useDNS"] = use_dns.lower() == "true"
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("use dns should be true or false")
+
+    def patch_validation_rules(self, validation_rules):
+        payload = {"configuration": {"validationRules": ""}}
+        if validation_rules is not None:
+            payload["configuration"]["validationRules"] = validation_rules
+            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
+        else:
+            print("validation rules should not be None")
+
 
 
 class SyntheticResult(Base):
@@ -5502,7 +5663,7 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred", "alert"], metavar="test/cred/alert", help="specify test/cred/alert")
 
         self.parser_create.add_argument(
-            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5, 6], required=False, metavar="<int>",
+            '-t', '--type', type=int, choices=[0, 1, 2, 3, 4, 5, 6, 7], required=False, metavar="<int>",
             help="Synthetic type: HTTPAction[0], HTTPScript[1], BrowserScript[2], WebpageScript[3], WebpageAction[4], SSLCertificate[5]")
 
         # support multiple locations
@@ -5568,6 +5729,17 @@ class ParseParameter:
         dns_group.add_argument('--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
         dns_group.add_argument('--target-values', type=str, help='set list of filters to be used to validate the test response')
         dns_group.add_argument('--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
+        # ICMP
+        icmp_group = self.parser_create.add_argument_group("ICMP test Options")
+        icmp_group.add_argument('--target-host', type=str, help='set the target host for ICMP ping test')
+        icmp_group.add_argument('--packet-count', type=int, help='set number of packets to send, default is 5')
+        icmp_group.add_argument('--packet-size', type=int, help='set packet size in bytes, default is 56')
+        icmp_group.add_argument('--packet-timeout', type=str, help='set per-packet timeout (e.g., "3s"), default is "3s"')
+        icmp_group.add_argument('--packet-interval', type=str, help='set rate limiting between packets (e.g., "1s"), default is "1s"')
+        icmp_group.add_argument('--use-ipv6', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='use IPv6 instead of IPv4, false by default')
+        icmp_group.add_argument('--use-dns', type=str, default='true', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable DNS resolution, true by default')
+        icmp_group.add_argument('--validation-rules', type=str, help='set list of validation rules for ICMP test response')
+
 
         # smart alerts
         alert_group = self.parser_create.add_argument_group("Smart Alert Options")
@@ -5602,7 +5774,7 @@ class ParseParameter:
         # parser_get.add_argument('type_id', type=str,
         #                         required=False, help='test id or location id')
         self.parser_get.add_argument(
-            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4, 5, 6], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction, 5 SSLCertificate, 6 DNS')
+            '--type', '-t', type=int, choices=[0, 1, 2, 3, 4, 5, 6], metavar='<int>', help='Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction, 5 SSLCertificate, 6 DNS, 7 ICMP')
         self.parser_get.add_argument(
             'id', type=str, nargs="?", help='Synthetic test id')
         self.parser_get.add_argument(
@@ -5763,6 +5935,24 @@ class ParseParameter:
             '--target-values', type=str, help='set list of filters to be used to validate the test response')
         patch_exclusive_group.add_argument(
             '--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
+        # ICMP
+        patch_exclusive_group.add_argument(
+            '--target-host', type=str, help='set the target host for ICMP ping test')
+        patch_exclusive_group.add_argument(
+            '--packet-count', type=int, help='set number of packets to send')
+        patch_exclusive_group.add_argument(
+            '--packet-size', type=int, help='set packet size in bytes')
+        patch_exclusive_group.add_argument(
+            '--packet-timeout', type=str, help='set per-packet timeout (e.g., "3s")')
+        patch_exclusive_group.add_argument(
+            '--packet-interval', type=str, help='set rate limiting between packets (e.g., "1s")')
+        patch_exclusive_group.add_argument(
+            '--use-ipv6', type=str, choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='use IPv6 instead of IPv4')
+        patch_exclusive_group.add_argument(
+            '--use-dns', type=str, choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable DNS resolution')
+        patch_exclusive_group.add_argument(
+            '--validation-rules', type=str, help='set list of validation rules for ICMP test response')
+
 
         # Patch cred
         patch_exclusive_group.add_argument(
@@ -5867,6 +6057,17 @@ class ParseParameter:
         dns_group.add_argument('--server-retries', type=int, help='set number of times to try a timed-out DNS lookup before returning failure, default is 1')
         dns_group.add_argument('--target-values', type=str, help='set list of filters to be used to validate the test response')
         dns_group.add_argument('--transport', type=str, help='set protocol used to do DNS check. Only UDP is supported.')
+        # ICMP test
+        icmp_group = self.parser_update.add_argument_group("ICMP test options")
+        icmp_group.add_argument('--target-host', type=str, help='set the target host for ICMP ping test')
+        icmp_group.add_argument('--packet-count', type=int, help='set number of packets to send')
+        icmp_group.add_argument('--packet-size', type=int, help='set packet size in bytes')
+        icmp_group.add_argument('--packet-timeout', type=str, help='set per-packet timeout (e.g., "3s")')
+        icmp_group.add_argument('--packet-interval', type=str, help='set rate limiting between packets (e.g., "1s")')
+        icmp_group.add_argument('--use-ipv6', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='use IPv6 instead of IPv4')
+        icmp_group.add_argument('--use-dns', type=str, default='true', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable DNS resolution')
+        icmp_group.add_argument('--validation-rules', type=str, help='set list of validation rules for ICMP test response')
+
 
         # update alert
         alert_group = self.parser_update.add_argument_group("Alert options")
@@ -6117,7 +6318,7 @@ def main():
                 try:
                     syn_type_t = synthetic_type[get_args.type]
                 except IndexError:
-                    print("Synthetic type only support 0 1 2 3 4 5 6", syn_type_t)
+                    print("Synthetic type only support 0 1 2 3 4 5 6 7", syn_type_t)
 
             if get_args.id is None:
                 if get_args.analytics is not None:
@@ -6348,7 +6549,7 @@ def main():
             alert_instance.set_alert_payload(alert_payload.get_json())
             alert_instance.create_synthetic_alert()
         elif get_args.syn_type == SYN_TEST:
-            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4, 5, 6]:
+            if get_args.type is not None and get_args.type in [0, 1, 2, 3, 4, 5, 6, 7]:
                 syn_type_t = synthetic_type[get_args.type]
                 payload = SyntheticConfiguration(syn_type_t)
 
@@ -6496,6 +6697,26 @@ def main():
                         payload.set_target_values([target_values_json])
                     if get_args.transport is not None:
                         payload.set_transport(get_args.transport)
+                # ICMP
+                if get_args.type == 7:
+                    if get_args.target_host is not None:
+                        payload.set_target_host(get_args.target_host)
+                    if get_args.packet_count is not None:
+                        payload.set_packet_count(get_args.packet_count)
+                    if get_args.packet_size is not None:
+                        payload.set_packet_size(get_args.packet_size)
+                    if get_args.packet_timeout is not None:
+                        payload.set_packet_timeout(get_args.packet_timeout)
+                    if get_args.packet_interval is not None:
+                        payload.set_packet_interval(get_args.packet_interval)
+                    if get_args.use_ipv6 is not None:
+                        payload.set_use_ipv6(get_args.use_ipv6)
+                    if get_args.use_dns is not None:
+                        payload.set_use_dns(get_args.use_dns)
+                    if get_args.validation_rules is not None:
+                        validation_rules_json = json.loads(get_args.validation_rules)
+                        payload.set_validation_rules(validation_rules_json)
+
 
                 # global operation, add label, location, description, frequency, etc.
                 if get_args.label is not None:
@@ -6637,6 +6858,23 @@ def main():
             patch_instance.patch_target_values([target_values_json])
         elif get_args.transport is not None:
             patch_instance.patch_transport(get_args.transport)
+        elif get_args.target_host is not None:
+            patch_instance.patch_target_host(get_args.target_host)
+        elif get_args.packet_count is not None:
+            patch_instance.patch_packet_count(get_args.packet_count)
+        elif get_args.packet_size is not None:
+            patch_instance.patch_packet_size(get_args.packet_size)
+        elif get_args.packet_timeout is not None:
+            patch_instance.patch_packet_timeout(get_args.packet_timeout)
+        elif get_args.packet_interval is not None:
+            patch_instance.patch_packet_interval(get_args.packet_interval)
+        elif get_args.use_ipv6 is not None:
+            patch_instance.patch_use_ipv6(get_args.use_ipv6)
+        elif get_args.use_dns is not None:
+            patch_instance.patch_use_dns(get_args.use_dns)
+        elif get_args.validation_rules is not None:
+            validation_rules_json = json.loads(get_args.validation_rules)
+            patch_instance.patch_validation_rules(validation_rules_json)
         if get_args.syn_type == SYN_CRED:
             if get_args.applications is not None:
                 cred_instance.patch_applications(get_args.id, get_args.applications)
@@ -6754,6 +6992,24 @@ def main():
                     syn_update_instance.update_target_values([target_values_json])
                 if get_args.transport is not None:
                     syn_update_instance.update_transport(get_args.transport)
+                # ICMP test
+                if get_args.target_host is not None:
+                    syn_update_instance.update_target_host(get_args.target_host)
+                if get_args.packet_count is not None:
+                    syn_update_instance.update_packet_count(get_args.packet_count)
+                if get_args.packet_size is not None:
+                    syn_update_instance.update_packet_size(get_args.packet_size)
+                if get_args.packet_timeout is not None:
+                    syn_update_instance.update_packet_timeout(get_args.packet_timeout)
+                if get_args.packet_interval is not None:
+                    syn_update_instance.update_packet_interval(get_args.packet_interval)
+                if get_args.use_ipv6 is not None:
+                    syn_update_instance.update_use_ipv6(get_args.use_ipv6)
+                if get_args.use_dns is not None:
+                    syn_update_instance.update_use_dns(get_args.use_dns)
+                if get_args.validation_rules is not None:
+                    validation_rules_json = json.loads(get_args.validation_rules)
+                    syn_update_instance.update_validation_rules(validation_rules_json)
 
                 updated_payload = syn_update_instance.get_updated_test_config()
                 syn_update_instance.update_a_synthetic_test(get_args.id, updated_payload)
