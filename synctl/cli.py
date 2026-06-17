@@ -53,7 +53,7 @@ synthetic_type = (
     WebpageScript_TYPE,  # 3
     WebpageAction_TYPE,  # 4
     SSLCertificate_TYPE, # 5
-    DNSAction_TYPE       # 6
+    DNSAction_TYPE,       # 6
     ICMPAction_TYPE      # 7
 )
 
@@ -1505,10 +1505,6 @@ class SyntheticConfiguration(Base):
     def set_packet_timeout(self, packet_timeout):
         if packet_timeout is not None:
             self.syn_test_config["configuration"]["packetTimeout"] = packet_timeout
-
-    def set_packet_interval(self, packet_interval):
-        if packet_interval is not None:
-            self.syn_test_config["configuration"]["packetInterval"] = packet_interval
 
     def set_use_ipv6(self, use_ipv6):
         if use_ipv6 is not None:
@@ -4474,12 +4470,6 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             print("packet timeout should not be None")
 
-    def update_packet_interval(self, packet_interval):
-        if packet_interval is not None:
-            self.update_config["configuration"]["packetInterval"] = packet_interval
-        else:
-            print("packet interval should not be None")
-
     def update_use_ipv6(self, use_ipv6):
         ipv6_options = ["true", "false"]
         if use_ipv6 is not None and use_ipv6.lower() in ipv6_options:
@@ -5162,14 +5152,6 @@ class PatchSyntheticTest(SyntheticTest):
         else:
             print("packet timeout should not be None")
 
-    def patch_packet_interval(self, packet_interval):
-        payload = {"configuration": {"packetInterval": ""}}
-        if packet_interval is not None:
-            payload["configuration"]["packetInterval"] = packet_interval
-            self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
-        else:
-            print("packet interval should not be None")
-
     def patch_use_ipv6(self, use_ipv6):
         ipv6_options = ["true", "false"]
         payload = {"configuration": {"useIPv6": ""}}
@@ -5735,7 +5717,6 @@ class ParseParameter:
         icmp_group.add_argument('--packet-count', type=int, help='set number of packets to send, default is 5')
         icmp_group.add_argument('--packet-size', type=int, help='set packet size in bytes, default is 56')
         icmp_group.add_argument('--packet-timeout', type=str, help='set per-packet timeout (e.g., "3s"), default is "3s"')
-        icmp_group.add_argument('--packet-interval', type=str, help='set rate limiting between packets (e.g., "1s"), default is "1s"')
         icmp_group.add_argument('--use-ipv6', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='use IPv6 instead of IPv4, false by default')
         icmp_group.add_argument('--use-dns', type=str, default='true', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable DNS resolution, true by default')
         icmp_group.add_argument('--validation-rules', type=str, help='set list of validation rules for ICMP test response')
@@ -5945,8 +5926,6 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--packet-timeout', type=str, help='set per-packet timeout (e.g., "3s")')
         patch_exclusive_group.add_argument(
-            '--packet-interval', type=str, help='set rate limiting between packets (e.g., "1s")')
-        patch_exclusive_group.add_argument(
             '--use-ipv6', type=str, choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='use IPv6 instead of IPv4')
         patch_exclusive_group.add_argument(
             '--use-dns', type=str, choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable DNS resolution')
@@ -6063,7 +6042,6 @@ class ParseParameter:
         icmp_group.add_argument('--packet-count', type=int, help='set number of packets to send')
         icmp_group.add_argument('--packet-size', type=int, help='set packet size in bytes')
         icmp_group.add_argument('--packet-timeout', type=str, help='set per-packet timeout (e.g., "3s")')
-        icmp_group.add_argument('--packet-interval', type=str, help='set rate limiting between packets (e.g., "1s")')
         icmp_group.add_argument('--use-ipv6', type=str, default='false', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='use IPv6 instead of IPv4')
         icmp_group.add_argument('--use-dns', type=str, default='true', choices=['true', 'false', 'True', 'False'], metavar="<boolean>", help='enable DNS resolution')
         icmp_group.add_argument('--validation-rules', type=str, help='set list of validation rules for ICMP test response')
@@ -6707,8 +6685,6 @@ def main():
                         payload.set_packet_size(get_args.packet_size)
                     if get_args.packet_timeout is not None:
                         payload.set_packet_timeout(get_args.packet_timeout)
-                    if get_args.packet_interval is not None:
-                        payload.set_packet_interval(get_args.packet_interval)
                     if get_args.use_ipv6 is not None:
                         payload.set_use_ipv6(get_args.use_ipv6)
                     if get_args.use_dns is not None:
@@ -6866,8 +6842,6 @@ def main():
             patch_instance.patch_packet_size(get_args.packet_size)
         elif get_args.packet_timeout is not None:
             patch_instance.patch_packet_timeout(get_args.packet_timeout)
-        elif get_args.packet_interval is not None:
-            patch_instance.patch_packet_interval(get_args.packet_interval)
         elif get_args.use_ipv6 is not None:
             patch_instance.patch_use_ipv6(get_args.use_ipv6)
         elif get_args.use_dns is not None:
@@ -7001,8 +6975,6 @@ def main():
                     syn_update_instance.update_packet_size(get_args.packet_size)
                 if get_args.packet_timeout is not None:
                     syn_update_instance.update_packet_timeout(get_args.packet_timeout)
-                if get_args.packet_interval is not None:
-                    syn_update_instance.update_packet_interval(get_args.packet_interval)
                 if get_args.use_ipv6 is not None:
                     syn_update_instance.update_use_ipv6(get_args.use_ipv6)
                 if get_args.use_dns is not None:
