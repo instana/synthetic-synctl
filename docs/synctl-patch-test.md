@@ -102,6 +102,18 @@ synctl patch test id [options]
     --transport <str>                   set protocol used to do DNS check. Only UDP is supported.
 ```
 
+### Options for ICMP test
+```
+    --target-host <string>              set the target host for ICMP ping test
+    --packet-count <int>                set number of packets to send
+    --packet-size <int>                 set packet size in bytes
+    --packet-timeout <string>           set per-packet timeout 
+    --use-ipv6 <boolean>                use IPv6 instead of IPv4
+    --use-dns <boolean>                 enable DNS resolution
+    --validation-rules <string>         set list of validation rules for ICMP test response
+```
+
+
 ## Examples
 ### Common Examples for All tests
 
@@ -234,3 +246,26 @@ synctl patch test <synthetic-id> --server 8.8.8.8
 synctl patch test <synthetic-id> --query-time  '{"key": "responseTime", "operator": "LESS_THAN", "value": 120}'
 ```
 
+### Examples for ICMP test
+```
+# Set target host of an ICMP test
+synctl patch test <synthetic-id> --target-host 8.8.8.8
+
+# Set packet count of ICMP test
+synctl patch test <synthetic-id> --packet-count 10
+
+# Set packet size of ICMP test
+synctl patch test <synthetic-id> --packet-size 128
+
+# Set packet timeout of ICMP test
+synctl patch test <synthetic-id> --packet-timeout "5s"
+
+# Enable IPv6 for ICMP test
+synctl patch test <synthetic-id> --use-ipv6 true
+
+# Disable DNS resolution for ICMP test
+synctl patch test <synthetic-id> --use-dns false
+
+# Set validation rules of ICMP test
+synctl patch test <synthetic-id> --validation-rules '[{"key": "packetLoss", "operator": "LESS_THAN", "value": 10}]'
+```

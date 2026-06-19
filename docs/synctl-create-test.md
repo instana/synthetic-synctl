@@ -14,7 +14,7 @@ synctl create test [options]
     --verify-tls                                verify tls certificate
 
 
-    -t <int>, --type <int>                      Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple, 5 SSLCertificate, 6 DNS
+    -t <int>, --type <int>                      Synthetic type: 0 API Simple, 1 API Script, 2 Browser Script, 3 Webpage Script, 4 Webpage Simple, 5 SSLCertificate, 6 DNS, 7 ICMP
     --location id [id ...]                      location id, support multiple locations id
     --label <string>                            friendly name of the Synthetic test
     --description, -d <string>                  the description of Synthetic test
@@ -93,6 +93,16 @@ synctl create test [options]
     --server-retries <int>              set number of times to try a timed-out DNS lookup before returning failure. Default is 1
     --target-values <str>               set list of filters to be used to validate the test response
     --transport <str>                   set protocol used to do DNS check. Only UDP is supported
+### Options for ICMP test
+```
+    --target-host <string>              set the target host for ICMP ping test
+    --packet-count <int>                set number of packets to send, default is 5
+    --packet-size <int>                 set packet size in bytes
+    --packet-timeout <string>           set per-packet timeout 
+    --use-ipv6 <boolean>                use IPv6 instead of IPv4, false by default
+    --use-dns <boolean>                 enable DNS resolution, true by default
+    --validation-rules <string>         set list of validation rules for ICMP test response
+```
 ```
 ## Examples  
 
@@ -326,6 +336,20 @@ synctl create test -t 6 \
     --query-time '{"key": "responseTime", "operator": "LESS_THAN", "value": 120}' \
     --target-values '{"key": "CNAME", "operator": "NOT_MATCHES", "value": "test"}'
 ```
+### Create ICMP test
+```
+synctl create test -t 7 \
+    --label "ICMP-ping-test" \
+    --location $LOCATION \
+    --target-host "8.8.8.8" \
+    --packet-count 10 \
+    --packet-size 128 \
+    --packet-timeout "5s" \
+    --use-ipv6 false \
+    --use-dns true \
+    --validation-rules '[{"key": "packetLoss", "operator": "LESS_THAN", "value": 10}]'
+```
+
 
 ### Create Synthetic test with json payload example
 
@@ -335,5 +359,3 @@ synctl create test -t <type> -f payload/api-script.json
 
 
 **Note:** Support specify application id when create synthetic test, get an application id through command `synctl get app`.
-
-

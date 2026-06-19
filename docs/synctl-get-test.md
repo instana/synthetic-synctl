@@ -11,7 +11,7 @@ synctl get test [id] [options]
     -h, --help              show this help message and exit
     --verify-tls            verify tls certificate
 
-    --type, -t <int>        Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction, 5 SSLCertificate, 6 DNS
+    --type, -t <int>        Synthetic type, 0 HTTPAction, 1 HTTPScript, 2 BrowserScript, 3 WebpageScript, 4 WebpageAction, 5 SSLCertificate, 6 DNS, 7 ICMP
     --window-size <window>  set synthetic result window size, support [1,60]m, [1-24]h
     --save-script           save script to local, default is test label
     --show-script           output test script to terminal
@@ -34,7 +34,7 @@ synctl get test
 
 ### Get test by Synthetic type
 
-There are seven test type HTTPAction(0), HTTPScript(1), BrowserScript(2), WebpageScript(3), WebpageAction(4), SSLCertificate(5), and DNS(6) are supported.
+There are eight test type HTTPAction(0), HTTPScript(1), BrowserScript(2), WebpageScript(3), WebpageAction(4), SSLCertificate(5), DNS(6) and ICMP(7) are supported.
 In the command, it uses a number to represent a type for simple. They are:
   - 0 is API Simple
   - 1 is API Script
@@ -43,6 +43,7 @@ In the command, it uses a number to represent a type for simple. They are:
   - 4 is WebpageAction type
   - 5 is SSLCertificate type
   - 6 is DNS type
+  - 7 is ICMP type
 
 To get all API Simple test, specify the type 0:
 ```
