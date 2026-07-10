@@ -519,6 +519,7 @@ class PopConfiguration(Base):
         ism_test = {}
         ism_test["ssl_frequency"] = 0
         ism_test["dns_frequency"] = 0
+        ism_test["icmp_frequency"] = 0
 
         ism_test["ssl_testCount"] = int(self.ask_question("How many ISM tests (SSLCertificate) do you want to create? (0 if no) "))
         if ism_test["ssl_testCount"] > 0:
@@ -536,9 +537,17 @@ class PopConfiguration(Base):
                     break
                 else:
                     print("frequency is not valid, it should be in [1,120]")
+        ism_test["icmp_testCount"] = int(self.ask_question("How many ISM tests (ICMP) do you want to create? (0 if no) "))
+        if ism_test["icmp_testCount"] > 0:
+            while True:
+                ism_test["icmp_frequency"] = int(self.ask_question("What is the test frequency for ICMP tests? (1-120) "))
+                if ism_test["icmp_frequency"] > 0 and ism_test["icmp_frequency"] <= 120:
+                    break
+                else:
+                    print("frequency is not valid, it should be in [1,120]")
 
-        ism_test["testCount"] = ism_test["dns_frequency"] + ism_test["ssl_testCount"]
-        ism_test["frequency"] = min([f for f in [ism_test["ssl_frequency"], ism_test["dns_frequency"]] if f > 0], default=0)
+        ism_test["testCount"] = ism_test["dns_testCount"] + ism_test["ssl_testCount"] + ism_test["icmp_testCount"]
+        ism_test["frequency"] = min([f for f in [ism_test["ssl_frequency"], ism_test["dns_frequency"], ism_test["icmp_frequency"]] if f > 0], default=0)
         return ism_test
 
     def size_estimate(self, user_tests, default_frequency, user_frequency, default_tests):
@@ -552,10 +561,10 @@ class PopConfiguration(Base):
     def pop_size_estimate(self):
         pop_estimate_size = {}
         print("Assume you need to create tests with below configurations:\n\n "
-              "API Simple test :                  duration is ~200ms\n "
-              "API Script test :                  duration is ~800ms and 5 HTTP calls are issued\n "
-              "Browser script test:               duration is ~20 seconds and 2 Web pages are opened\n "
-              "ISM test (SSLCertificate and DNS): duration is ~240ms\n\n "
+              "API Simple test :                         duration is ~200ms\n "
+              "API Script test :                         duration is ~800ms and 5 HTTP calls are issued\n "
+              "Browser script test:                      duration is ~20 seconds and 2 Web pages are opened\n "
+              "ISM test (SSLCertificate, DNS, and ICMP): duration is ~240ms\n\n "
               "Please answer below questions for estimating the self-hosted PoP hardware size:\n")
         try:
             while True:
@@ -650,6 +659,7 @@ class PopConfiguration(Base):
         "   ● 1 API Simple test executed = 0.025 RU \n"
         "   ● 1 SSL        test executed = 0.025 RU \n"
         "   ● 1 DNS        test executed = 0.025 RU \n"
+        "   ● 1 ICMP       test executed = 0.025 RU \n"
         "   ● 1 API Script test executed = 0.042 RU \n"
         "   ● 1 Browser    test executed = 1 RU \n")
         print("The minimum quantity per month is 30 part numbers, priced at $360.")
@@ -764,6 +774,10 @@ class PopConfiguration(Base):
             print(f'{fixed_spaces1}DNS      Test: {pop_estimate_size["ism"]["dns_testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["ism"]["dns_frequency"]}min')
         else:
             print(f'{fixed_spaces1}DNS      Test: {pop_estimate_size["ism"]["dns_testCount"]:<{max_label_length}}')
+        if pop_estimate_size["ism"]["icmp_testCount"] > 0:
+            print(f'{fixed_spaces1}ICMP     Test: {pop_estimate_size["ism"]["icmp_testCount"]:<{max_label_length},}{fixed_spaces2}Frequency: {pop_estimate_size["ism"]["icmp_frequency"]}min')
+        else:
+            print(f'{fixed_spaces1}ICMP     Test: {pop_estimate_size["ism"]["icmp_testCount"]:<{max_label_length}}')
 
 
         agent_yes = "Yes" if pop_estimate_size["agent"] in ["y", "Y"] else "No"
