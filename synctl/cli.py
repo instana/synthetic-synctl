@@ -223,11 +223,17 @@ synctl get pop-size
 # Estimate the cost of Instana-hosted Pop
 synctl get pop-cost"""
 
-PATCH_USAGE = """synctl patch {test,cred} id [options]
+PATCH_USAGE = """synctl patch {test,cred} [id] [options]
 
 examples:
 # set active to false
 synctl patch test <syn-id> --active false
+
+# pause all tests on a given location
+synctl patch test --filter=locationid=<locationId> --active false
+
+# re-enable all tests on a given location
+synctl patch test --filter=locationid=<locationId> --active true
 
 # update frequency to 5, run test every 5min
 synctl patch test <id> --frequency 5
@@ -5841,7 +5847,11 @@ class ParseParameter:
             'syn_type', type=str, choices=["test", "cred"], help="specify test/cred/")
 
         self.parser_patch.add_argument(
-            'id', type=str, help="Synthetic test id")
+            'id', type=str, nargs='?', default=None, help="Synthetic test id")
+
+        self.parser_patch.add_argument(
+            '--filter', type=str, default=None, metavar="<key>=<value>",
+            help='pause/unpause tests in bulk by locationid or applicationid; only supported with --active')
 
         patch_exclusive_group = self.parser_patch.add_mutually_exclusive_group()
         # common options
@@ -6763,106 +6773,120 @@ def main():
             else:
                 syn_instance.exit_synctl(ERROR_CODE, '-t/--type is required to create synthetic test')
     elif COMMAND_PATCH == get_args.sub_command:
-        if get_args.id is not None:
-            patch_instance.set_test_id(get_args.id)
-        if get_args.active is not None:
-            patch_instance.patch_active(get_args.active)
-        elif get_args.timeout is not None:
-            # timeout Expected <number>(ms|s|m)
-            patch_instance.patch_config_timeout(get_args.timeout)
-        elif get_args.retries is not None:
-            patch_instance.patch_retries(get_args.retries)
-        elif get_args.frequency is not None:
-            patch_instance.patch_frequency(get_args.frequency)
-        elif get_args.retry_interval is not None:
-            patch_instance.patch_retry_interval(get_args.retry_interval)
-        elif get_args.operation is not None:
-            patch_instance.patch_ping_operation(get_args.operation)
-        elif get_args.script is not None:
-            patch_instance.patch_script_from_file(get_args.script)
-        elif get_args.description is not None:
-            patch_instance.patch_description(get_args.description)
-        elif get_args.record_video is not None:
-            patch_instance.patch_record_video(get_args.record_video)
-        elif get_args.browser is not None:
-            patch_instance.patch_browser(get_args.browser)
-        elif get_args.label is not None:
-            patch_instance.patch_label(get_args.label)
-        elif get_args.location is not None:
-            patch_instance.patch_locations(get_args.location)
-        elif get_args.mark_synthetic_call:
-            patch_instance.patch_mark_synthetic_call(
-                get_args.mark_synthetic_call)
-        elif get_args.allow_insecure is not None:
-            patch_instance.patch_allow_insecure(get_args.allow_insecure)
-        elif get_args.expect_json is not None:
-            patch_instance.patch_expect_json(get_args.expect_json)
-        elif get_args.expect_not_empty is not None:
-            patch_instance.patch_expect_not_empty(get_args.expect_not_empty)
-        elif get_args.expect_exists is not None:
-            patch_instance.patch_expect_exists(get_args.expect_exists)
-        elif get_args.expect_match is not None:
-            patch_instance.patch_expect_match(get_args.expect_match)
-        elif get_args.expect_status is not None:
-            patch_instance.patch_expect_status(get_args.expect_status)
-        elif get_args.bundle is not None:
-            patch_instance.patch_bundle(get_args.id, get_args.bundle)
-        elif get_args.bundle_entry_file is not None:
-            patch_instance.patch_bundle_entry_file(get_args.bundle_entry_file, get_args.id)
-        elif get_args.url is not None:
-            patch_instance.patch_url(get_args.url)
-        elif get_args.follow_redirect is not None:
-            patch_instance.patch_follow_redirect(get_args.follow_redirect)
-        elif get_args.validation_string is not None:
-            patch_instance.patch_validation_string(get_args.validation_string)
-        elif get_args.custom_properties is not None:
-            split_string = get_args.custom_properties.split(',')
-            patch_instance.patch_custom_properties(get_args.id, split_string)
-        elif get_args.apps is not None:
-            patch_instance.patch_application_id(get_args.apps)
-        elif get_args.hostname is not None:
-            patch_instance.patch_host(get_args.id, get_args.hostname)
-        elif get_args.port is not None:
-            patch_instance.patch_port(get_args.id, get_args.port)
-        elif get_args.remaining_days_check is not None:
-            patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days_check)
-        elif get_args.cname is not None:
-            patch_instance.patch_cname(get_args.cname)
-        elif get_args.lookup is not None:
-            patch_instance.patch_lookup(get_args.lookup)
-        elif get_args.lookup_server_name is not None:
-            patch_instance.patch_lookup_server_name(get_args.lookup_server_name)
-        elif get_args.query_time is not None:
-            query_time_json = json.loads(get_args.query_time)
-            patch_instance.patch_query_time(query_time_json)
-        elif get_args.query_type is not None:
-            patch_instance.patch_query_type(get_args.query_type)
-        elif get_args.recursive_lookups is not None:
-            patch_instance.patch_recursive_lookups(get_args.recursive_lookups)
-        elif get_args.server is not None:
-            patch_instance.patch_server(get_args.server)
-        elif get_args.server_retries is not None:
-            patch_instance.patch_server_retries(get_args.server_retries)
-        elif get_args.target_values is not None:
-            target_values_json = json.loads(get_args.target_values)
-            patch_instance.patch_target_values([target_values_json])
-        elif get_args.transport is not None:
-            patch_instance.patch_transport(get_args.transport)
-        elif get_args.target_host is not None:
-            patch_instance.patch_target_host(get_args.target_host)
-        elif get_args.packet_count is not None:
-            patch_instance.patch_packet_count(get_args.packet_count)
-        elif get_args.packet_size is not None:
-            patch_instance.patch_packet_size(get_args.packet_size)
-        elif get_args.packet_timeout is not None:
-            patch_instance.patch_packet_timeout(get_args.packet_timeout)
-        elif get_args.use_ipv6 is not None:
-            patch_instance.patch_use_ipv6(get_args.use_ipv6)
-        elif get_args.use_dns is not None:
-            patch_instance.patch_use_dns(get_args.use_dns)
-        elif get_args.validation_rules is not None:
-            validation_rules_json = json.loads(get_args.validation_rules)
-            patch_instance.patch_validation_rules(validation_rules_json)
+        if get_args.syn_type == SYN_TEST and get_args.filter is not None:
+            if get_args.active is None:
+                syn_instance.exit_synctl(ERROR_CODE, "--active is required when using --filter")
+            split_string = get_args.filter.split('=', 1)
+            if len(split_string) != 2:
+                syn_instance.exit_synctl(ERROR_CODE, "--filter must be in the format key=value, e.g. locationid=<id>")
+            filtered_tests = syn_instance.retrieve_synthetic_test_by_filter(split_string)
+            if not filtered_tests:
+                print("No tests found matching the given filter")
+            else:
+                for test in filtered_tests:
+                    patch_instance.set_test_id(test["id"])
+                    patch_instance.patch_active(get_args.active)
+        else:
+            if get_args.id is not None:
+                patch_instance.set_test_id(get_args.id)
+            if get_args.active is not None:
+                patch_instance.patch_active(get_args.active)
+            elif get_args.timeout is not None:
+                # timeout Expected <number>(ms|s|m)
+                patch_instance.patch_config_timeout(get_args.timeout)
+            elif get_args.retries is not None:
+                patch_instance.patch_retries(get_args.retries)
+            elif get_args.frequency is not None:
+                patch_instance.patch_frequency(get_args.frequency)
+            elif get_args.retry_interval is not None:
+                patch_instance.patch_retry_interval(get_args.retry_interval)
+            elif get_args.operation is not None:
+                patch_instance.patch_ping_operation(get_args.operation)
+            elif get_args.script is not None:
+                patch_instance.patch_script_from_file(get_args.script)
+            elif get_args.description is not None:
+                patch_instance.patch_description(get_args.description)
+            elif get_args.record_video is not None:
+                patch_instance.patch_record_video(get_args.record_video)
+            elif get_args.browser is not None:
+                patch_instance.patch_browser(get_args.browser)
+            elif get_args.label is not None:
+                patch_instance.patch_label(get_args.label)
+            elif get_args.location is not None:
+                patch_instance.patch_locations(get_args.location)
+            elif get_args.mark_synthetic_call:
+                patch_instance.patch_mark_synthetic_call(
+                    get_args.mark_synthetic_call)
+            elif get_args.allow_insecure is not None:
+                patch_instance.patch_allow_insecure(get_args.allow_insecure)
+            elif get_args.expect_json is not None:
+                patch_instance.patch_expect_json(get_args.expect_json)
+            elif get_args.expect_not_empty is not None:
+                patch_instance.patch_expect_not_empty(get_args.expect_not_empty)
+            elif get_args.expect_exists is not None:
+                patch_instance.patch_expect_exists(get_args.expect_exists)
+            elif get_args.expect_match is not None:
+                patch_instance.patch_expect_match(get_args.expect_match)
+            elif get_args.expect_status is not None:
+                patch_instance.patch_expect_status(get_args.expect_status)
+            elif get_args.bundle is not None:
+                patch_instance.patch_bundle(get_args.id, get_args.bundle)
+            elif get_args.bundle_entry_file is not None:
+                patch_instance.patch_bundle_entry_file(get_args.bundle_entry_file, get_args.id)
+            elif get_args.url is not None:
+                patch_instance.patch_url(get_args.url)
+            elif get_args.follow_redirect is not None:
+                patch_instance.patch_follow_redirect(get_args.follow_redirect)
+            elif get_args.validation_string is not None:
+                patch_instance.patch_validation_string(get_args.validation_string)
+            elif get_args.custom_properties is not None:
+                split_string = get_args.custom_properties.split(',')
+                patch_instance.patch_custom_properties(get_args.id, split_string)
+            elif get_args.apps is not None:
+                patch_instance.patch_application_id(get_args.apps)
+            elif get_args.hostname is not None:
+                patch_instance.patch_host(get_args.id, get_args.hostname)
+            elif get_args.port is not None:
+                patch_instance.patch_port(get_args.id, get_args.port)
+            elif get_args.remaining_days_check is not None:
+                patch_instance.patch_remaining_days(get_args.id, get_args.remaining_days_check)
+            elif get_args.cname is not None:
+                patch_instance.patch_cname(get_args.cname)
+            elif get_args.lookup is not None:
+                patch_instance.patch_lookup(get_args.lookup)
+            elif get_args.lookup_server_name is not None:
+                patch_instance.patch_lookup_server_name(get_args.lookup_server_name)
+            elif get_args.query_time is not None:
+                query_time_json = json.loads(get_args.query_time)
+                patch_instance.patch_query_time(query_time_json)
+            elif get_args.query_type is not None:
+                patch_instance.patch_query_type(get_args.query_type)
+            elif get_args.recursive_lookups is not None:
+                patch_instance.patch_recursive_lookups(get_args.recursive_lookups)
+            elif get_args.server is not None:
+                patch_instance.patch_server(get_args.server)
+            elif get_args.server_retries is not None:
+                patch_instance.patch_server_retries(get_args.server_retries)
+            elif get_args.target_values is not None:
+                target_values_json = json.loads(get_args.target_values)
+                patch_instance.patch_target_values([target_values_json])
+            elif get_args.transport is not None:
+                patch_instance.patch_transport(get_args.transport)
+            elif get_args.target_host is not None:
+                patch_instance.patch_target_host(get_args.target_host)
+            elif get_args.packet_count is not None:
+                patch_instance.patch_packet_count(get_args.packet_count)
+            elif get_args.packet_size is not None:
+                patch_instance.patch_packet_size(get_args.packet_size)
+            elif get_args.packet_timeout is not None:
+                patch_instance.patch_packet_timeout(get_args.packet_timeout)
+            elif get_args.use_ipv6 is not None:
+                patch_instance.patch_use_ipv6(get_args.use_ipv6)
+            elif get_args.use_dns is not None:
+                patch_instance.patch_use_dns(get_args.use_dns)
+            elif get_args.validation_rules is not None:
+                validation_rules_json = json.loads(get_args.validation_rules)
+                patch_instance.patch_validation_rules(validation_rules_json)
         if get_args.syn_type == SYN_CRED:
             if get_args.applications is not None:
                 cred_instance.patch_applications(get_args.id, get_args.applications)
