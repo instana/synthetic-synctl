@@ -6888,8 +6888,8 @@ def main():
                 validation_rules_json = json.loads(get_args.validation_rules)
                 patch_instance.patch_validation_rules(validation_rules_json)
         if get_args.syn_type == SYN_CRED:
-            if get_args.applications is not None:
-                cred_instance.patch_applications(get_args.id, get_args.applications)
+            if get_args.apps is not None:
+                cred_instance.patch_applications(get_args.id, get_args.apps)
             if get_args.websites is not None:
                 cred_instance.patch_websites(get_args.id, get_args.websites)
             if get_args.mobile_apps is not None:
