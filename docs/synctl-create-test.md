@@ -49,16 +49,26 @@ synctl create test [options]
     --allow-insecure <boolean>          if set to true then allow insecure certificates
 ```
 ### Options for API Script test
-```  
+```
     --script <file>                     load script (.js) from file
     --bundle <bundle>                   Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
     --bundle-entry-file <file-name>     Synthetic bundle test entry file, e.g, myscript.js
+    --github-url <url>                  GitHub URL to the script file or bundle
+    --github-credential <name>          credential name containing the GitHub personal access token
+    --github-script-file <file-name>    entry point file inside a GitHub-hosted bundle, default is index.js
+    --github-allowed-credentials <name> [<name> ...]
+                                         credential names that the fetched GitHub script is allowed to use
 ```
 ### Options for Browser Script test
-```    
+```
     --script <file>                     load script (.js) from file
     --bundle <bundle>                   Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
     --bundle-entry-file <file-name>     Synthetic bundle test entry file, e.g, myscript.js
+    --github-url <url>                  GitHub URL to the script file or bundle
+    --github-credential <name>          credential name containing the GitHub personal access token
+    --github-script-file <file-name>    entry point file inside a GitHub-hosted bundle, default is index.js
+    --github-allowed-credentials <name> [<name> ...]
+                                         credential names that the fetched GitHub script is allowed to use
     --browser <string>                  browser type, support chrome and firefox
     --record-video <boolean>            set true to record video
 ```
@@ -266,6 +276,39 @@ synctl create test -t 2 \
     --label browser-script-test \
     --script browserscripts/api-sample.js \
     --location "$LOCATION" \
+    --frequency 15
+```
+
+Create an API Script test from a GitHub URL
+```
+synctl create test -t 1 \
+    --label "github-api-script" \
+    --location "$LOCATION" \
+    --github-url "https://github.com/<org>/<repo>/blob/main/script.js" \
+    --github-credential "my-gh-token" \
+    --frequency 5
+```
+
+Create an API Script bundle test from GitHub
+```
+synctl create test -t 1 \
+    --label "github-api-bundle" \
+    --location "$LOCATION" \
+    --github-url "https://github.com/<org>/<repo>/blob/main/bundle.zip" \
+    --github-credential "my-gh-token" \
+    --github-script-file index.js \
+    --github-allowed-credentials db-password api-key \
+    --frequency 5
+```
+
+Create a Browser Script test from a GitHub URL
+```
+synctl create test -t 2 \
+    --label "github-browser-script" \
+    --browser chrome \
+    --location "$LOCATION" \
+    --github-url "https://github.com/<org>/<repo>/blob/main/browser-test.js" \
+    --github-credential "my-gh-token" \
     --frequency 15
 ```
 

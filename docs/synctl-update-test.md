@@ -57,6 +57,11 @@ synctl update test <id> [options]
     --script <file>                    load script (.js) from file
     --bundle <bundle>                  Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
     --bundle-entry-file <file-name>    Synthetic bundle test entry file, e.g, myscript.js
+    --github-url <url>                 GitHub URL to the script file or bundle
+    --github-credential <name>         credential name containing the GitHub personal access token
+    --github-script-file <file-name>   entry point file inside a GitHub-hosted bundle
+    --github-allowed-credentials <name> [<name> ...]
+                                       credential names the fetched GitHub script is allowed to use
     --mark-synthetic-call <boolean>    set markSyntheticCall
 ```
 
@@ -66,6 +71,11 @@ synctl update test <id> [options]
     --mark-synthetic-call <boolean>    set markSyntheticCall
     --bundle <bundle>                  Synthetic bundle test script, support zip file (.zip) path or zip file content encoded with base64
     --bundle-entry-file <file-name>    Synthetic bundle test entry file, e.g, myscript.js
+    --github-url <url>                 GitHub URL to the script file or bundle
+    --github-credential <name>         credential name containing the GitHub personal access token
+    --github-script-file <file-name>   entry point file inside a GitHub-hosted bundle
+    --github-allowed-credentials <name> [<name> ...]
+                                       credential names the fetched GitHub script is allowed to use
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
 ```
@@ -180,7 +190,22 @@ synctl update test <synthetic-id> \
 
 2. edit json file and update test.
     synctl update test <synthetic-id> --from-file/-f test.json
+```
 
+Update an API Script test to use a GitHub URL
+```
+synctl update test <synthetic-id> \
+    --github-url "https://github.com/<org>/<repo>/blob/main/script.js" \
+    --github-credential "my-gh-token"
+```
+
+Update an API Script bundle test to use GitHub
+```
+synctl update test <synthetic-id> \
+    --github-url "https://github.com/<org>/<repo>/blob/main/bundle.zip" \
+    --github-credential "my-gh-token" \
+    --github-script-file index.js \
+    --github-allowed-credentials db-password api-key
 ```
 
 ### Example for Browser Script test
@@ -188,6 +213,14 @@ synctl update test <synthetic-id> \
 synctl update test <synthetic-id> \
     --mark-synthetic-call false \
     --script script.js
+```
+
+Update a Browser Script test to use a GitHub URL
+```
+synctl update test <synthetic-id> \
+    --browser chrome \
+    --github-url "https://github.com/<org>/<repo>/blob/main/browser-test.js" \
+    --github-credential "my-gh-token"
 ```
 
 ### Example for Webpage Simple test
