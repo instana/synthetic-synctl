@@ -172,12 +172,28 @@ synctl create test -t 1 --label script-test --script script-name.js --location <
 synctl create test -t 1 --label script-bundle-test --bundle file.zip --bundle-entry-file index.js --location <id>
 synctl create test -t 1 --label script-bundle-test --bundle <base64> --bundle-entry-file index.js --location <id>
 
+# create an API Script from GitHub URL (script/bundle fetched at runtime by the PoP controller)
+synctl create test -t 1 --label github-api-script --location <id> \
+    --github-url https://github.com/org/repo/blob/main/script.js \
+    --github-credential my-gh-token
+
+# create an API Script bundle from GitHub
+synctl create test -t 1 --label github-bundle --location <id> \
+    --github-url https://github.com/org/repo/blob/main/bundle.zip \
+    --github-credential my-gh-token --github-script-file index.js \
+    --github-allowed-credentials db-password api-key
+
 # create browserscript
 synctl create test -t 2 --label browserscript-test --script browserscripts/api-sample.js --browser firefox --location <id>
 
 # create browserscript bundle
 synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --bundle-entry-file mytest.js --browser chrome --location <id>
 synctl create test -t 2 --label "browserscript-bundle-test" --bundle "<base64>" --bundle-entry-file mytest.js --browser chrome --location <id>
+
+# create browserscript from GitHub URL
+synctl create test -t 2 --label github-browser-test --browser chrome --location <id> \
+    --github-url https://github.com/org/repo/blob/main/browser-test.js \
+    --github-credential my-gh-token
 
 # create webpagescript
 synctl create test -t 3 --label "webpagescript-test" --script side/webpage-script.side --browser chrome --location <id>
@@ -1241,11 +1257,17 @@ class SyntheticConfiguration(Base):
         self.syn_test_config["configuration"]["syntheticType"] = syn_type
 
     def __ensure_script_not_empty(self):
+        # skip check when a GitHub source is configured — controller fetches the script
+        if "github" in self.syn_test_config["configuration"] and self.syn_test_config["configuration"]["github"]:
+            return
         if "script" in self.syn_test_config["configuration"]:
             if self.syn_test_config["configuration"]["script"] is None or self.syn_test_config["configuration"]["script"] == "":
                 self.exit_synctl(ERROR_CODE, "Error: script cannot be empty")
 
     def __ensure_bundle_script_not_empty(self):
+        # skip check when a GitHub source is configured — controller fetches the bundle
+        if "github" in self.syn_test_config["configuration"] and self.syn_test_config["configuration"]["github"]:
+            return
         if "scripts" in self.syn_test_config["configuration"]:
             bundle_scripts = self.syn_test_config["configuration"]["scripts"]["bundle"]
             if bundle_scripts is None or bundle_scripts == "":
@@ -1531,7 +1553,20 @@ class SyntheticConfiguration(Base):
     def set_validation_rules(self, validation_rules):
         if validation_rules is not None:
             self.syn_test_config["configuration"]["validationRules"] = validation_rules
-            
+
+    def set_github(self, github_url, github_credential, github_script_file=None, github_allowed_credentials=None):
+        """set GitHub source for script — url and credential are required"""
+        if not github_url or not github_credential:
+            self.exit_synctl(ERROR_CODE, "Error: --github-url and --github-credential are required together")
+        github_source = {
+            "url": github_url,
+            "credentialName": github_credential,
+        }
+        if github_script_file:
+            github_source["scriptFile"] = github_script_file
+        if github_allowed_credentials:
+            github_source["allowedCredentials"] = github_allowed_credentials
+        self.syn_test_config["configuration"]["github"] = github_source
 
     def read_js_file(self, file_name: str) -> str:
         """read javascript file"""
@@ -4504,6 +4539,19 @@ class UpdateSyntheticTest(SyntheticTest):
         else:
             print("validation rules should not be None")
 
+    def update_github(self, github_url, github_credential, github_script_file=None, github_allowed_credentials=None):
+        """update GitHub source configuration"""
+        if not github_url or not github_credential:
+            self.exit_synctl(ERROR_CODE, "Error: --github-url and --github-credential are required together")
+        github_source = {
+            "url": github_url,
+            "credentialName": github_credential,
+        }
+        if github_script_file:
+            github_source["scriptFile"] = github_script_file
+        if github_allowed_credentials:
+            github_source["allowedCredentials"] = github_allowed_credentials
+        self.update_config["configuration"]["github"] = github_source
 
     def get_updated_test_config(self):
         """return payload as json"""
@@ -5192,6 +5240,20 @@ class PatchSyntheticTest(SyntheticTest):
         else:
             print("validation rules should not be None")
 
+    def patch_github(self, github_url, github_credential, github_script_file=None, github_allowed_credentials=None):
+        """patch GitHub source configuration"""
+        if not github_url or not github_credential:
+            self.exit_synctl(ERROR_CODE, "Error: --github-url and --github-credential are required together")
+        github_source = {
+            "url": github_url,
+            "credentialName": github_credential,
+        }
+        if github_script_file:
+            github_source["scriptFile"] = github_script_file
+        if github_allowed_credentials:
+            github_source["allowedCredentials"] = github_allowed_credentials
+        payload = {"configuration": {"github": github_source}}
+        self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
 
 
 class SyntheticResult(Base):
@@ -5702,6 +5764,17 @@ class ParseParameter:
         httpScript_group.add_argument('--bundle', type=str, metavar="<bundle>", help='Synthetic bundle test script, support zip file, zip file encoded with base64')
         httpScript_group.add_argument('--bundle-entry-file', type=str, metavar="<filename>", help='Synthetic bundle test entry file, e.g, myscript.js')
 
+        # GitHub source options
+        github_group = self.parser_create.add_argument_group("GitHub Source Options (API Script / Browser Script)")
+        github_group.add_argument('--github-url', type=str, metavar="<url>",
+            help='GitHub URL to the script file, e.g. https://github.com/org/repo/blob/main/script.js')
+        github_group.add_argument('--github-credential', type=str, metavar="<name>",
+            help='Name of the credential containing the GitHub personal access token')
+        github_group.add_argument('--github-script-file', type=str, metavar="<filename>",
+            help='Entry point file inside a GitHub-hosted bundle (default: index.js)')
+        github_group.add_argument('--github-allowed-credentials', type=str, nargs='+', metavar="<name>",
+            help='Credential names that the fetched GitHub script is allowed to use')
+
         # browser type
         browser_group = self.parser_create.add_argument_group("Browser Script Options")
         browser_group.add_argument('--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
@@ -5962,6 +6035,20 @@ class ParseParameter:
             '--custom-payloads', type=str, metavar="<json>", help="Custom payload fields to send additional information in the alert notifications. Can be left empty.")
 
 
+        # GitHub source options for patch (outside mutex group — multiple fields needed together)
+        self.parser_patch.add_argument(
+            '--github-url', type=str, metavar="<url>",
+            help='GitHub URL to the script file (HTTPScript/BrowserScript)')
+        self.parser_patch.add_argument(
+            '--github-credential', type=str, metavar="<name>",
+            help='Credential name containing the GitHub personal access token')
+        self.parser_patch.add_argument(
+            '--github-script-file', type=str, metavar="<filename>",
+            help='Entry point file inside a GitHub-hosted bundle')
+        self.parser_patch.add_argument(
+            '--github-allowed-credentials', type=str, nargs='+', metavar="<name>",
+            help='Credential names the fetched GitHub script is allowed to use')
+
         # parser_patch.add_mutually_exclusive_group
         self.parser_patch.add_argument(
             '--use-env', '-e', type=str, default=None, metavar="<name>", help='use a config hostname')
@@ -6031,6 +6118,17 @@ class ParseParameter:
         script_group.add_argument('--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
         script_group.add_argument('--bundle', type=str, metavar="<bundle>", help='set bundle')
         script_group.add_argument('--bundle-entry-file', type=str, metavar="<string>", help="entry file of a bundle test")
+
+        # GitHub source options for update
+        github_update_group = self.parser_update.add_argument_group("GitHub Source Options (API Script / Browser Script)")
+        github_update_group.add_argument('--github-url', type=str, metavar="<url>",
+            help='GitHub URL to the script file')
+        github_update_group.add_argument('--github-credential', type=str, metavar="<name>",
+            help='Credential name containing the GitHub personal access token')
+        github_update_group.add_argument('--github-script-file', type=str, metavar="<filename>",
+            help='Entry point file inside a GitHub-hosted bundle')
+        github_update_group.add_argument('--github-allowed-credentials', type=str, nargs='+', metavar="<name>",
+            help='Credential names the fetched GitHub script is allowed to use')
 
         # SSL Certificate
         ssl_group = self.parser_update.add_argument_group("SSL test options")
@@ -6639,6 +6737,15 @@ def main():
                     else:
                         # script file use index.js
                         payload.set_api_bundle_script(bundle_base64_str)
+                # GitHub source (HTTPScript type 1, BrowserScript type 2)
+                if get_args.type in (1, 2) and getattr(get_args, 'github_url', None) is not None:
+                    payload.set_github(
+                        github_url=get_args.github_url,
+                        github_credential=get_args.github_credential,
+                        github_script_file=getattr(get_args, 'github_script_file', None),
+                        github_allowed_credentials=getattr(get_args, 'github_allowed_credentials', None),
+                    )
+
                 # BrowserScript 2, WebpageScript 3, WebpageAction 4
                 if get_args.type in (2, 3, 4):
                     payload.set_browser_type(get_args.browser)
@@ -6863,6 +6970,13 @@ def main():
         elif get_args.validation_rules is not None:
             validation_rules_json = json.loads(get_args.validation_rules)
             patch_instance.patch_validation_rules(validation_rules_json)
+        if getattr(get_args, 'github_url', None) is not None:
+            patch_instance.patch_github(
+                github_url=get_args.github_url,
+                github_credential=get_args.github_credential,
+                github_script_file=getattr(get_args, 'github_script_file', None),
+                github_allowed_credentials=getattr(get_args, 'github_allowed_credentials', None),
+            )
         if get_args.syn_type == SYN_CRED:
             if get_args.applications is not None:
                 cred_instance.patch_applications(get_args.id, get_args.applications)
@@ -6996,6 +7110,13 @@ def main():
                 if get_args.validation_rules is not None:
                     validation_rules_json = json.loads(get_args.validation_rules)
                     syn_update_instance.update_validation_rules(validation_rules_json)
+                if getattr(get_args, 'github_url', None) is not None:
+                    syn_update_instance.update_github(
+                        github_url=get_args.github_url,
+                        github_credential=get_args.github_credential,
+                        github_script_file=getattr(get_args, 'github_script_file', None),
+                        github_allowed_credentials=getattr(get_args, 'github_allowed_credentials', None),
+                    )
 
                 updated_payload = syn_update_instance.get_updated_test_config()
                 syn_update_instance.update_a_synthetic_test(get_args.id, updated_payload)
