@@ -3,7 +3,7 @@ The command `patch` can be used to updates selected attributes of a Synthetic te
 
 ## Syntax
 ```
-synctl patch test id [options]
+synctl patch test [id] [options]
 ```
 
 ## Options
@@ -13,7 +13,10 @@ synctl patch test id [options]
     -h, --help                         show this help message and exit
     --verify-tls                       verify tls certificate
 
-    --active <boolean>                 set active
+    --filter <key>=<value>             pause/unpause tests in bulk by locationid or applicationid;
+                                       only supported together with --active; use instead of [id]
+                                       supported keys: locationid, applicationid
+    --active <boolean>                 pause (false) or unpause (true) the test; required when --filter is used
     --frequency <int>                  set frequency
     --location <id> [<id> ...]         set location
     --description <string>             set description
@@ -139,8 +142,17 @@ synctl patch test <synthetic-id> --retry-interval 5
 # Set test timeout to 120s
 synctl patch test <synthetic-id> --timeout 120s
 
-# Pause Synthetic test
+# Pause a single Synthetic test
 synctl patch test <synthetic-id> --active false
+
+# Pause all tests running on a given location
+synctl patch test --filter=locationid=<locationId> --active false
+
+# Re-enable all tests on a given location
+synctl patch test --filter=locationid=<locationId> --active true
+
+# Pause all tests associated with a given application
+synctl patch test --filter=applicationid=<applicationId> --active false
 
 # Set custom properties of a test
 synctl patch test <synthetic-id> --custom-properties key=value
