@@ -181,7 +181,7 @@ synctl create test -t 1 --label script-bundle-test --bundle file.zip --bundle-en
 synctl create test -t 1 --label script-bundle-test --bundle <base64> --bundle-entry-file index.js --location <id>
 
 # create browserscript
-synctl create test -t 2 --label browserscript-test --script browserscripts/api-sample.js --browser firefox --location <id>
+synctl create test -t 2 --label browserscript-test --script browserscripts/api-sample.js --browser firefox --profile 3G --location <id>
 
 # create browserscript bundle
 synctl create test -t 2 --label "browserscript-bundle-test" --bundle "file.zip" --bundle-entry-file mytest.js --browser chrome --location <id>
@@ -1465,10 +1465,8 @@ class SyntheticConfiguration(Base):
     def set_profiles(self, profiles):
         """network profiles"""
         if profiles is not None:
-            if isinstance(profiles, str):
-                profiles = [p.strip() for p in profiles.split(",") if p.strip()]
-            normalized = [NETWORK_PROFILE_MAP.get(p.lower(), p) for p in profiles]
-            self.syn_test_config["configuration"]["profiles"] = normalized
+            normalized = NETWORK_PROFILE_MAP.get(profiles.lower(), profiles)
+            self.syn_test_config["configuration"]["profiles"] = [normalized]
 
     def set_host(self, hostname):
         if hostname is not None:
@@ -4195,10 +4193,8 @@ class UpdateSyntheticTest(SyntheticTest):
     def update_profiles(self, profiles):
         """update profiles"""
         if profiles is not None:
-            if isinstance(profiles, str):
-                profiles = [p.strip() for p in profiles.split(",") if p.strip()]
-            normalized = [NETWORK_PROFILE_MAP.get(p.lower(), p) for p in profiles]
-            self.update_config["configuration"]["profiles"] = normalized
+            normalized = NETWORK_PROFILE_MAP.get(profiles.lower(), profiles)
+            self.update_config["configuration"]["profiles"] = [normalized]
         else:
             self.exit_synctl(ERROR_CODE, "profiles should not be None")
 
@@ -4792,12 +4788,9 @@ class PatchSyntheticTest(SyntheticTest):
 
     def patch_profiles(self, profiles):
         """patch profiles"""
-        payload = {"configuration": {"profiles": []}}
         if profiles is not None:
-            if isinstance(profiles, str):
-                profiles = [p.strip() for p in profiles.split(",") if p.strip()]
-            normalized = [NETWORK_PROFILE_MAP.get(p.lower(), p) for p in profiles]
-            payload["configuration"]["profiles"] = normalized
+            normalized = NETWORK_PROFILE_MAP.get(profiles.lower(), profiles)
+            payload = {"configuration": {"profiles": [normalized]}}
             self.__patch_a_synthetic_test(self.test_id, json.dumps(payload))
         else:
             self.exit_synctl(ERROR_CODE, "profiles should not be None")
@@ -5750,7 +5743,8 @@ class ParseParameter:
         browser_group = self.parser_create.add_argument_group("Browser Script Options")
         browser_group.add_argument('--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
         browser_group.add_argument('--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
-        browser_group.add_argument('--profile', '--profiles', '--network-profile', '--network-profiles', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help="network profiles to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
+        browser_group.add_argument('--profile', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help="network profile to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
+        browser_group.add_argument('--profiles', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help=argparse.SUPPRESS)
 
         # SSLCertificate
         ssl_group = self.parser_create.add_argument_group("SSLCertificate Options")
@@ -5944,7 +5938,9 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
         patch_exclusive_group.add_argument(
-            '--profile', '--profiles', '--network-profile', '--network-profiles', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help="network profiles to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
+            '--profile', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help="network profile to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
+        patch_exclusive_group.add_argument(
+            '--profiles', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help=argparse.SUPPRESS)
         patch_exclusive_group.add_argument(
             '--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
         patch_exclusive_group.add_argument(
@@ -6078,7 +6074,8 @@ class ParseParameter:
         script_group = self.parser_update.add_argument_group("API Script/Browser test options")
         script_group.add_argument('--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
         script_group.add_argument('--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
-        script_group.add_argument('--profile', '--profiles', '--network-profile', '--network-profiles', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help="network profiles to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
+        script_group.add_argument('--profile', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help="network profile to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
+        script_group.add_argument('--profiles', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help=argparse.SUPPRESS)
         script_group.add_argument('-f', '--from-file', type=str, metavar="<filename>", help="Synthetic payload from (.json) file")
         script_group.add_argument('--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
         script_group.add_argument('--bundle', type=str, metavar="<bundle>", help='set bundle')
@@ -6699,7 +6696,9 @@ def main():
                         payload.set_record_video(get_args.record_video)
 
                 if get_args.profiles is not None:
-                    payload.set_profiles(get_args.profiles)
+                    if len(get_args.profiles) > 1:
+                        syn_instance.exit_synctl(ERROR_CODE, "Error: only one network profile can be specified, e.g. --profile 3G")
+                    payload.set_profiles(get_args.profiles[0])
 
 
                 if get_args.type == 4:
@@ -6856,7 +6855,9 @@ def main():
             elif get_args.browser is not None:
                 patch_instance.patch_browser(get_args.browser)
             elif get_args.profiles is not None:
-                patch_instance.patch_profiles(get_args.profiles)
+                if len(get_args.profiles) > 1:
+                    syn_instance.exit_synctl(ERROR_CODE, "Error: only one network profile can be specified, e.g. --profile 3G")
+                patch_instance.patch_profiles(get_args.profiles[0])
             elif get_args.label is not None:
                 patch_instance.patch_label(get_args.label)
             elif get_args.location is not None:
@@ -6979,7 +6980,9 @@ def main():
                 if get_args.browser is not None:
                     syn_update_instance.update_browser(get_args.browser)
                 if get_args.profiles is not None:
-                    syn_update_instance.update_profiles(get_args.profiles)
+                    if len(get_args.profiles) > 1:
+                        syn_instance.exit_synctl(ERROR_CODE, "Error: only one network profile can be specified, e.g. --profile 3G")
+                    syn_update_instance.update_profiles(get_args.profiles[0])
                 if get_args.location is not None:
                     syn_update_instance.update_locations(get_args.location)
                 if get_args.mark_synthetic_call:

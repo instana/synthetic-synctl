@@ -61,7 +61,7 @@ synctl create test [options]
     --bundle-entry-file <file-name>     Synthetic bundle test entry file, e.g, myscript.js
     --browser <string>                  browser type, support chrome and firefox
     --record-video <boolean>            set true to record video
-    --profiles <profile ...>            network profiles to simulate (3G, Slow4G, Fast4G, Offline)
+    --profile, --profiles <profile>     network profile to simulate (3G, Slow4G, Fast4G, Offline)
 ```
 ### Options for Webpage Script test
 ```  

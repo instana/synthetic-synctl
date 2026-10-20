@@ -63,7 +63,7 @@ synctl patch test [id] [options]
     --browser <string>                 browser type, support chrome and firefox
     --record-video <boolean>           enable/disable record video, false by default
     --mark-synthetic-call <boolean>    set markSyntheticCall
-    --profiles <profile ...>           network profiles to simulate (3G, Slow4G, Fast4G, Offline)
+    --profile, --profiles <profile>    network profile to simulate (3G, Slow4G, Fast4G, Offline)
 ```
 
 ### Options for Webpage Simple test

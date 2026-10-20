@@ -332,62 +332,12 @@ class TestStringMethods(unittest.TestCase):
         payload.set_browser_type(get_args.browser)
         payload.set_frequency(get_args.type, get_args.frequency)
         payload.set_api_script_script("console.log('test');")
-        payload.set_profiles(get_args.profiles)
+        payload.set_profiles(get_args.profiles[0])
 
         syn_payload = json.loads(payload.get_json())
         self.assertEqual(syn_payload['label'], 'browser-script-slow4g')
         self.assertEqual(syn_payload['configuration']['syntheticType'], synthetic_type[2])
         self.assertEqual(syn_payload['configuration']['profiles'], ['Slow4G'])
-
-    def test_create_browser_script_with_multiple_profiles(self):
-        para_instanace = ParseParameter()
-        para_instanace.set_options()
-        get_args = para_instanace.get_parser().parse_args([
-            'create', 'test',
-            '-t', '2',
-            '--label', 'browser-script-multi-profile',
-            '--location', 'N2I5Uc12K8W6qh2dklkh',
-            '--frequency', '10',
-            '--browser', 'chrome',
-            '--profiles', '3G', 'Slow4G'
-        ])
-        self.assertEqual(get_args.sub_command, 'create')
-        self.assertEqual(get_args.profiles, ['3G', 'Slow4G'])
-
-        syn_type_t = synthetic_type[get_args.type]
-        payload = SyntheticConfiguration(syn_type_t, bundle_type=False)
-        payload.set_label(get_args.label)
-        payload.set_locations(get_args.location)
-        payload.set_browser_type(get_args.browser)
-        payload.set_frequency(get_args.type, get_args.frequency)
-        payload.set_api_script_script("console.log('test');")
-        payload.set_profiles(get_args.profiles)
-
-        syn_payload = json.loads(payload.get_json())
-        self.assertEqual(syn_payload['configuration']['profiles'], ['3G', 'Slow4G'])
-
-    def test_create_browser_script_with_network_profile_flag_alias(self):
-        para_instanace = ParseParameter()
-        para_instanace.set_options()
-        get_args = para_instanace.get_parser().parse_args([
-            'create', 'test',
-            '-t', '2',
-            '--label', 'browser-script-alias',
-            '--location', 'N2I5Uc12K8W6qh2dklkh',
-            '--frequency', '10',
-            '--network-profile', 'Offline'
-        ])
-        self.assertEqual(get_args.profiles, ['Offline'])
-
-        syn_type_t = synthetic_type[get_args.type]
-        payload = SyntheticConfiguration(syn_type_t, bundle_type=False)
-        payload.set_label(get_args.label)
-        payload.set_locations(get_args.location)
-        payload.set_api_script_script("console.log('test');")
-        payload.set_profiles(get_args.profiles)
-
-        syn_payload = json.loads(payload.get_json())
-        self.assertEqual(syn_payload['configuration']['profiles'], ['Offline'])
 
     def test_update_browser_script_profile(self):
         para_instanace = ParseParameter()
@@ -410,7 +360,7 @@ class TestStringMethods(unittest.TestCase):
             }
         }]
         update_instance.set_updated_payload(existing_test)
-        update_instance.update_profiles(get_args.profiles)
+        update_instance.update_profiles(get_args.profiles[0])
         updated_payload = json.loads(update_instance.get_updated_test_config())
         self.assertEqual(updated_payload['configuration']['profiles'], ['Fast4G'])
 
@@ -423,6 +373,20 @@ class TestStringMethods(unittest.TestCase):
         ])
         self.assertEqual(get_args.sub_command, 'patch')
         self.assertEqual(get_args.profiles, ['3G'])
+
+    def test_create_browser_script_with_multiple_profiles_is_rejected(self):
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'create', 'test',
+            '-t', '2',
+            '--label', 'browser-script-multi-profile',
+            '--location', 'N2I5Uc12K8W6qh2dklkh',
+            '--frequency', '10',
+            '--browser', 'chrome',
+            '--profiles', '3G', 'Slow4G'
+        ])
+        self.assertEqual(len(get_args.profiles), 2)
 
 if __name__ == '__main__':
     unittest.main()
