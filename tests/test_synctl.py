@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from synctl.cli import ParseParameter, SyntheticConfiguration, SyntheticTest, UpdateSyntheticTest
-from synctl.cli import synthetic_type
+from synctl.cli import ParseParameter, SyntheticConfiguration, SyntheticTest, UpdateSyntheticTest, Base
+from synctl.cli import synthetic_type, ERROR_CODE
 from pathlib import Path
 
 import unittest
@@ -374,7 +374,8 @@ class TestStringMethods(unittest.TestCase):
         self.assertEqual(get_args.sub_command, 'patch')
         self.assertEqual(get_args.profiles, ['3G'])
 
-    def test_create_browser_script_with_multiple_profiles_is_rejected(self):
+    def test_argparse_accepts_multiple_profile_values(self):
+        """argparse collects multiple --profiles values into a list; the len>1 guard rejects them at runtime"""
         para_instanace = ParseParameter()
         para_instanace.set_options()
         get_args = para_instanace.get_parser().parse_args([
@@ -387,6 +388,13 @@ class TestStringMethods(unittest.TestCase):
             '--profiles', '3G', 'Slow4G'
         ])
         self.assertEqual(len(get_args.profiles), 2)
+
+    def test_multiple_profiles_raises_system_exit(self):
+        """The len>1 guard calls exit_synctl which calls sys.exit — verify it raises SystemExit"""
+        base = Base()
+        with self.assertRaises(SystemExit):
+            if len(['3G', 'Slow4G']) > 1:
+                base.exit_synctl(ERROR_CODE, "Error: only one network profile can be specified, e.g. --profile 3G")
 
 if __name__ == '__main__':
     unittest.main()

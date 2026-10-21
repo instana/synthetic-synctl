@@ -68,6 +68,7 @@ synctl update test <id> [options]
     --bundle-entry-file <file-name>    Synthetic bundle test entry file, e.g, myscript.js
     --record-video <boolean>           enable/disable record video, false by default
     --browser <string>                 browser type, support chrome and firefox
+    --profile <profile>                network profile to simulate (3G, Slow4G, Fast4G, Offline)
 ```
 
 ### Options for Webpage Simple test
@@ -188,6 +189,11 @@ synctl update test <synthetic-id> \
 synctl update test <synthetic-id> \
     --mark-synthetic-call false \
     --script script.js
+```
+
+Update network profile
+```
+synctl update test <synthetic-id> --profile Slow4G
 ```
 
 ### Example for Webpage Simple test

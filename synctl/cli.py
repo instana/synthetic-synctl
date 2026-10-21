@@ -5743,8 +5743,8 @@ class ParseParameter:
         browser_group = self.parser_create.add_argument_group("Browser Script Options")
         browser_group.add_argument('--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", default="chrome", help="browser type, support chrome and firefox")
         browser_group.add_argument('--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
-        browser_group.add_argument('--profile', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help="network profile to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
-        browser_group.add_argument('--profiles', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help=argparse.SUPPRESS)
+        browser_group.add_argument('--profile', dest='profiles', type=str, nargs='+', choices=VALID_NETWORK_PROFILES + list(NETWORK_PROFILE_MAP.keys()), metavar="<profile>", help="network profile to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
+        browser_group.add_argument('--profiles', dest='profiles', type=str, nargs='+', choices=VALID_NETWORK_PROFILES + list(NETWORK_PROFILE_MAP.keys()), metavar="<profile>", help=argparse.SUPPRESS)
 
         # SSLCertificate
         ssl_group = self.parser_create.add_argument_group("SSLCertificate Options")
@@ -5938,9 +5938,9 @@ class ParseParameter:
         patch_exclusive_group.add_argument(
             '--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
         patch_exclusive_group.add_argument(
-            '--profile', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help="network profile to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
+            '--profile', dest='profiles', type=str, nargs='+', choices=VALID_NETWORK_PROFILES + list(NETWORK_PROFILE_MAP.keys()), metavar="<profile>", help="network profile to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
         patch_exclusive_group.add_argument(
-            '--profiles', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help=argparse.SUPPRESS)
+            '--profiles', dest='profiles', type=str, nargs='+', choices=VALID_NETWORK_PROFILES + list(NETWORK_PROFILE_MAP.keys()), metavar="<profile>", help=argparse.SUPPRESS)
         patch_exclusive_group.add_argument(
             '--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
         patch_exclusive_group.add_argument(
@@ -6074,8 +6074,8 @@ class ParseParameter:
         script_group = self.parser_update.add_argument_group("API Script/Browser test options")
         script_group.add_argument('--record-video', type=str, choices=['true', 'false'], metavar="<boolean>", help='set true to record video')
         script_group.add_argument('--browser', type=str, choices=["chrome", "firefox"], metavar="<string>", help="browser type, support chrome and firefox")
-        script_group.add_argument('--profile', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help="network profile to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
-        script_group.add_argument('--profiles', dest='profiles', type=str, nargs='+', choices=["3G", "Slow4G", "Fast4G", "Offline", "3g", "slow4g", "fast4g", "offline"], metavar="<profile>", help=argparse.SUPPRESS)
+        script_group.add_argument('--profile', dest='profiles', type=str, nargs='+', choices=VALID_NETWORK_PROFILES + list(NETWORK_PROFILE_MAP.keys()), metavar="<profile>", help="network profile to simulate, e.g. 3G, Slow4G, Fast4G, Offline")
+        script_group.add_argument('--profiles', dest='profiles', type=str, nargs='+', choices=VALID_NETWORK_PROFILES + list(NETWORK_PROFILE_MAP.keys()), metavar="<profile>", help=argparse.SUPPRESS)
         script_group.add_argument('-f', '--from-file', type=str, metavar="<filename>", help="Synthetic payload from (.json) file")
         script_group.add_argument('--script', type=str, metavar="<filename>", help="specify a script file to update APIScript (.js), BrowserScript (.js) or WebpageScript (.side)")
         script_group.add_argument('--bundle', type=str, metavar="<bundle>", help='set bundle')
@@ -6695,10 +6695,10 @@ def main():
                     if get_args.record_video is not None:
                         payload.set_record_video(get_args.record_video)
 
-                if get_args.profiles is not None:
-                    if len(get_args.profiles) > 1:
-                        syn_instance.exit_synctl(ERROR_CODE, "Error: only one network profile can be specified, e.g. --profile 3G")
-                    payload.set_profiles(get_args.profiles[0])
+                    if get_args.profiles is not None:
+                        if len(get_args.profiles) > 1:
+                            syn_instance.exit_synctl(ERROR_CODE, "Error: only one network profile can be specified, e.g. --profile 3G")
+                        payload.set_profiles(get_args.profiles[0])
 
 
                 if get_args.type == 4:
@@ -6980,6 +6980,8 @@ def main():
                 if get_args.browser is not None:
                     syn_update_instance.update_browser(get_args.browser)
                 if get_args.profiles is not None:
+                    if syn_update_instance.update_config["configuration"]["syntheticType"] != BrowserScript_TYPE:
+                        syn_instance.exit_synctl(ERROR_CODE, "Error: --profile is only supported for BrowserScript tests")
                     if len(get_args.profiles) > 1:
                         syn_instance.exit_synctl(ERROR_CODE, "Error: only one network profile can be specified, e.g. --profile 3G")
                     syn_update_instance.update_profiles(get_args.profiles[0])

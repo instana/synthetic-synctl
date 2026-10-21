@@ -204,6 +204,9 @@ synctl patch test <synthetic-id> --bundle-entry-file bundle-test/index.js
 # Set browser to firefox
 synctl patch test <synthetic-id> --browser firefox
 
+# Set network profile to simulate
+synctl patch test <synthetic-id> --profile Slow4G
+
 # Set multiple custom properties of a test
 synctl patch test <synthetic-id> --custom-properties "key1=value1,key2=value2,key3=value3"
 ```

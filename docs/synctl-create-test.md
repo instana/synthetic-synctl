@@ -270,6 +270,17 @@ synctl create test -t 2 \
     --frequency 15
 ```
 
+Create a browser script test with a network profile
+```
+synctl create test -t 2 \
+    --label browser-script-test \
+    --script browserscripts/api-sample.js \
+    --browser firefox \
+    --profile 3G \
+    --location "$LOCATION" \
+    --frequency 15
+```
+
 Create browser bundle test using a zip file
 ```
 synctl create test -t 2 \
