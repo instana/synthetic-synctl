@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 from synctl.cli import ParseParameter, SyntheticConfiguration, SyntheticTest, UpdateSyntheticTest, Base
 from synctl.cli import synthetic_type, ERROR_CODE
+from contextlib import redirect_stdout
 from pathlib import Path
 
+import io
 import unittest
 import json
 
@@ -392,9 +394,12 @@ class TestStringMethods(unittest.TestCase):
     def test_multiple_profiles_raises_system_exit(self):
         """The len>1 guard calls exit_synctl which calls sys.exit — verify it raises SystemExit"""
         base = Base()
-        with self.assertRaises(SystemExit):
-            if len(['3G', 'Slow4G']) > 1:
-                base.exit_synctl(ERROR_CODE, "Error: only one network profile can be specified, e.g. --profile 3G")
+        message = "Error: only one network profile can be specified, e.g. --profile 3G"
+        buf = io.StringIO()
+        with redirect_stdout(buf), self.assertRaises(SystemExit) as cm:
+            base.exit_synctl(ERROR_CODE, message)
+        self.assertEqual(cm.exception.code, ERROR_CODE)
+        self.assertIn("only one network profile", buf.getvalue())
 
 if __name__ == '__main__':
     unittest.main()
