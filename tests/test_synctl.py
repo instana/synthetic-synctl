@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-from synctl.cli import ParseParameter, SyntheticConfiguration, SyntheticTest
-from synctl.cli import synthetic_type
+from synctl.cli import ParseParameter, SyntheticConfiguration, SyntheticTest, UpdateSyntheticTest, Base
+from synctl.cli import synthetic_type, ERROR_CODE
+from contextlib import redirect_stdout
 from pathlib import Path
 
+import io
 import unittest
 import json
 
@@ -22,7 +24,7 @@ class TestStringMethods(unittest.TestCase):
             'create', 'test',
             '-t', 0,'--frequency', '5',
             '--url', 'https://www.ibm.com',
-            '--lo', 'N2I5Uc12K8W6qh2dklkh',
+            '--location', 'N2I5Uc12K8W6qh2dklkh',
             '--label', 'ibm-simple-ping',
             '--retries', '1',
             '--retry-interval', '5',
@@ -64,7 +66,7 @@ class TestStringMethods(unittest.TestCase):
             'create', 'test',
             '-t', '1',
             '--frequency', '5',
-            '--lo', 'N2I5Uc12K8W6qh2dklkh',
+            '--location', 'N2I5Uc12K8W6qh2dklkh',
             '--label', 'synthetic-api-script-test',
             '-f', '../examples/http-scripts/http-get.js'
             ])
@@ -76,7 +78,7 @@ class TestStringMethods(unittest.TestCase):
         payload.set_locations(get_args.location)
         payload.set_frequency(get_args.type, get_args.frequency)
 
-        with open(Path(get_args.from_file).resolve(), "r", encoding="utf-8") as file1:
+        with open((Path(__file__).parent / get_args.from_file).resolve(), "r", encoding="utf-8") as file1:
             script_str = file1.read()
             payload.set_api_script_script(script_str)
 
@@ -96,7 +98,7 @@ class TestStringMethods(unittest.TestCase):
         get_args = para_instanace.get_parser().parse_args([
             'create', 'test',
             '-t', '1','--frequency', '5',
-            '--lo', 'N2I5Uc12K8W6qh2dklkh',
+            '--location', 'N2I5Uc12K8W6qh2dklkh',
             '--label', 'synthetic-bundle-test',
             '--bundle', 'UEsDBAoAAAAAAOiGTFUAAAAAAAAAAAAAAAAOABwAYnVuZGxlLXRlc3QwMS9VVAkAA/SARmP1gEZjdXgLAAEE9QEAAAQUAAAAUEsDBBQAAAAIAOCmTFVLcg0lsQAAAGoBAAAWABwAYnVuZGxlLXRlc3QwMS9pbmRleC5qc1VUCQADJLlGYyS5RmN1eAsAAQT1AQAABBQAAAB9zs0KwjAMB/D7nqKHQStIh/OmyBBPgriLL7DO6Apdq23mx9u7FEF0slPT9PdPWjsbkJ0dztiKebh22oPgMjNaZdTlk2VSR9MgXvIhoisEzD9Qq3Y+dNQlk9BU0RdxHhX0QmeSVoheqw4hyAAoeAPGOD5l/O68OcY0rXAGpLYnJ7ipFJgepOFpsQHU9fsXY6SQsVdIW7Xw3zPrkMFDB1yMRn+yYG/fXu7KzfqwLfe9fQFQSwMECgAAAAAA1aZMVQAAAAAAAAAAAAAAABIAHABidW5kbGUtdGVzdDAxL2xpYi9VVAkAAxG5RmMSuUZjdXgLAAEE9QEAAAQUAAAAUEsDBBQAAAAIAMumTFX5mkDz8QAAAKcBAAAZABwAYnVuZGxlLXRlc3QwMS9saWIvaWJtMy5qc1VUCQAD/bhGYxO5RmN1eAsAAQT1AQAABBQAAABVUEFuwyAQvPOKPVQCSxaO2lutntKeesgbCKxbSzbrwiInqvL3gh27CqdlZnY0O5Z8ZDAxYmB4g4A/qQ+o5IrIqhVNA3YRFQ7jg+oOyUoU2YAMT9/M012SmVZ0yVvuyUMhXlQFvwJWlf5CVrJM8bVp5nnW/XnUlkZZZwnAtqkwhDobxinHwBrO5K6rTXl9B0XwD8ASlwbUGaawkO3OBeQU/Pa/iceN3nekPM7wbhhVVYOM6N1+uSOPcjdbK9KZM4Pa4unIhlM8kstJnw+HbPFxmdAyOjAFgNPnfsvmVWLk8SbESC6V5JeJAsfc49JaK/4AUEsDBBQAAAAIAMamTFUlcJfDtAAAAAQBAAAZABwAYnVuZGxlLXRlc3QwMS9saWIvZ290MS5qc1VUCQAD87hGY/S4RmN1eAsAAQT1AQAABBQAAAAtjkEOgyAQRfecYuIGTBqJW0x7F6pUaShjYYw1hrsXaDcMkP/fvBF9JJiR4ArBvDcbjOD5yduBMR0PP8Jj8yNZ9CXVixZOBjDW2jlp0ik39a5tpXQrRhJ8IVqjkrLMu/Udhllqf9Bi/cwvlQDwjOjV/w6wGOdQAd8xuInXz5TP1HYlJ4rOby060zmcq2WfnePmKDOLSg4BSHm9wdlUXqOgqcAmscTYC6ctt81nxUAxexfEwL5QSwMEFAAAAAgABKZMVfkY0sj6AAAAuwEAAB0AHABidW5kbGUtdGVzdDAxL2xpYi9yZXF1ZXN0Mi5qc1VUCQADiLdGYwm5RmN1eAsAAQT1AQAABBQAAABVUM1OxCAQvvMUczCBJg3d7NHGk+vJg89AYapNWqbCkK4x++5Cu63Kafj+8s1Y8pHBxIiB4QkCfqYhoJIbIqtWiKaBngKMZM0IjJELYldfkWfgr/EOyaqoRmR4+GCe74pM5MA+ecsDeSjMWVXwLWCT6XdkJcsUH5tmWRbdmcElbWmSdRYB7F6FIdQ5M865CNbQkfvagsobeiiCXwDWwjSizjCFlWwPLiCn4Pf/Tfx3DL4n5XGBi2FUVQ1y6KZjdUce5ZG1nU1nzoxqb6cjG07xmVwuej6dcsLLdUbL6MAUAN5ej1X2rNIijzchJnKpFL/OFDjmS65na8UPUEsBAh4DCgAAAAAA6IZMVQAAAAAAAAAAAAAAAA4AGAAAAAAAAAAQAO1BAAAAAGJ1bmRsZS10ZXN0MDEvVVQFAAP0gEZjdXgLAAEE9QEAAAQUAAAAUEsBAh4DFAAAAAgA4KZMVUtyDSWxAAAAagEAABYAGAAAAAAAAQAAAKSBSAAAAGJ1bmRsZS10ZXN0MDEvaW5kZXguanNVVAUAAyS5RmN1eAsAAQT1AQAABBQAAABQSwECHgMKAAAAAADVpkxVAAAAAAAAAAAAAAAAEgAYAAAAAAAAABAA7UFJAQAAYnVuZGxlLXRlc3QwMS9saWIvVVQFAAMRuUZjdXgLAAEE9QEAAAQUAAAAUEsBAh4DFAAAAAgAy6ZMVfmaQPPxAAAApwEAABkAGAAAAAAAAQAAAKSBlQEAAGJ1bmRsZS10ZXN0MDEvbGliL2libTMuanNVVAUAA/24RmN1eAsAAQT1AQAABBQAAABQSwECHgMUAAAACADGpkxVJXCXw7QAAAAEAQAAGQAYAAAAAAABAAAApIHZAgAAYnVuZGxlLXRlc3QwMS9saWIvZ290MS5qc1VUBQAD87hGY3V4CwABBPUBAAAEFAAAAFBLAQIeAxQAAAAIAASmTFX5GNLI+gAAALsBAAAdABgAAAAAAAEAAACkgeADAABidW5kbGUtdGVzdDAxL2xpYi9yZXF1ZXN0Mi5qc1VUBQADiLdGY3V4CwABBPUBAAAEFAAAAFBLBQYAAAAABgAGACkCAAAxBQAAAAA=',
             '--bundle-entry-file', 'index.js',
@@ -191,7 +193,7 @@ class TestStringMethods(unittest.TestCase):
         payload.set_frequency(get_args.type, get_args.frequency)
 
         # read script
-        with open(Path(get_args.from_file).resolve(), "r", encoding="utf-8") as file1:
+        with open((Path(__file__).parent / get_args.from_file).resolve(), "r", encoding="utf-8") as file1:
             script_str = file1.read()
             payload.set_api_script_script(script_str)
 
@@ -309,6 +311,95 @@ class TestStringMethods(unittest.TestCase):
 
         syn_instance = SyntheticTest()
         syn_instance.set_synthetic_payload(payload=syn_payload)
+
+    def test_create_browser_script_with_profile(self):
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'create', 'test',
+            '-t', '2',
+            '--label', 'browser-script-slow4g',
+            '--location', 'N2I5Uc12K8W6qh2dklkh',
+            '--frequency', '10',
+            '--browser', 'chrome',
+            '--profiles', 'Slow4G'
+        ])
+        self.assertEqual(get_args.sub_command, 'create')
+        self.assertEqual(get_args.profiles, ['Slow4G'])
+
+        syn_type_t = synthetic_type[get_args.type]
+        payload = SyntheticConfiguration(syn_type_t, bundle_type=False)
+        payload.set_label(get_args.label)
+        payload.set_locations(get_args.location)
+        payload.set_browser_type(get_args.browser)
+        payload.set_frequency(get_args.type, get_args.frequency)
+        payload.set_api_script_script("console.log('test');")
+        payload.set_profiles(get_args.profiles[0])
+
+        syn_payload = json.loads(payload.get_json())
+        self.assertEqual(syn_payload['label'], 'browser-script-slow4g')
+        self.assertEqual(syn_payload['configuration']['syntheticType'], synthetic_type[2])
+        self.assertEqual(syn_payload['configuration']['profiles'], ['Slow4G'])
+
+    def test_update_browser_script_profile(self):
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'update', 'test', 'test-id-123',
+            '--profiles', 'Fast4G'
+        ])
+        self.assertEqual(get_args.sub_command, 'update')
+        self.assertEqual(get_args.profiles, ['Fast4G'])
+
+        update_instance = UpdateSyntheticTest()
+        existing_test = [{
+            "id": "test-id-123",
+            "label": "existing-test",
+            "configuration": {
+                "syntheticType": "BrowserScript",
+                "script": "console.log('hi');",
+                "profiles": ["Slow4G"]
+            }
+        }]
+        update_instance.set_updated_payload(existing_test)
+        update_instance.update_profiles(get_args.profiles[0])
+        updated_payload = json.loads(update_instance.get_updated_test_config())
+        self.assertEqual(updated_payload['configuration']['profiles'], ['Fast4G'])
+
+    def test_patch_browser_script_profile_arg(self):
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'patch', 'test', 'test-id-123',
+            '--profiles', '3G'
+        ])
+        self.assertEqual(get_args.sub_command, 'patch')
+        self.assertEqual(get_args.profiles, ['3G'])
+
+    def test_argparse_accepts_multiple_profile_values(self):
+        """argparse collects multiple --profiles values into a list; the len>1 guard rejects them at runtime"""
+        para_instanace = ParseParameter()
+        para_instanace.set_options()
+        get_args = para_instanace.get_parser().parse_args([
+            'create', 'test',
+            '-t', '2',
+            '--label', 'browser-script-multi-profile',
+            '--location', 'N2I5Uc12K8W6qh2dklkh',
+            '--frequency', '10',
+            '--browser', 'chrome',
+            '--profiles', '3G', 'Slow4G'
+        ])
+        self.assertEqual(len(get_args.profiles), 2)
+
+    def test_multiple_profiles_raises_system_exit(self):
+        """The len>1 guard calls exit_synctl which calls sys.exit — verify it raises SystemExit"""
+        base = Base()
+        message = "Error: only one network profile can be specified, e.g. --profile 3G"
+        buf = io.StringIO()
+        with redirect_stdout(buf), self.assertRaises(SystemExit) as cm:
+            base.exit_synctl(ERROR_CODE, message)
+        self.assertEqual(cm.exception.code, ERROR_CODE)
+        self.assertIn("only one network profile", buf.getvalue())
 
 if __name__ == '__main__':
     unittest.main()
